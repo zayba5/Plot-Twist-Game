@@ -1,0 +1,6 @@
+flask_restful
+peewee
+bcrypt
+flask_compress
+pdf2image
+pillow
