@@ -20,14 +20,6 @@ Compress(app)
 api = Api(app)
 API_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# run database migrators here
-@app.before_first_request
-def before_first_request():
-    db.connect()
-        ##one time stuff that may need to be done, previously used for migration
-    db.close()
-
-
 # opens db connection before request
 @app.before_request
 def beforeRequest():
