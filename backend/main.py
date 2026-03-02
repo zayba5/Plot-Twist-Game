@@ -5,6 +5,7 @@ from models import *
 from itsdangerous import TimestampSigner
 from functools import wraps
 from flask_compress import Compress
+from config import *
 
 
 ##deleted imports noting just to make easier if I need them again:
@@ -12,9 +13,8 @@ from flask_compress import Compress
 # itsdangerous SignatureExpired/BadSignature, werkzeug.utils secure_filename
 # datetime datetime/timedelta, pdf2image convert_from_path, playhouse.migrate *
 
-##secret key should be actually protected in real deployment
-secretKey = "R]5~iyq'@,ysP1!FuP#ove,h!rY#:dp74QDYh!o1G*1O4ieKGSp7&V'fE<b[MALwp"
-s = TimestampSigner(secretKey)
+
+s = TimestampSigner(config["secretKey"])
 app = Flask(__name__)
 Compress(app)
 api = Api(app)
