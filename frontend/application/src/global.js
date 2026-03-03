@@ -1,1 +1,1 @@
-export const api = "http://192.168.1.173:5000/"
+export const api = process.env.REACT_APP_api
