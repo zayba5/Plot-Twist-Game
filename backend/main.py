@@ -5,8 +5,10 @@ from models import *
 from itsdangerous import TimestampSigner
 from functools import wraps
 from flask_compress import Compress
-from config import *
+import os
+from dotenv import load_dotenv
 
+load_dotenv()
 
 ##deleted imports noting just to make easier if I need them again:
 # bcrypt, hashlib, flask abort/send_from_directory/g, dateutil parser
@@ -14,7 +16,7 @@ from config import *
 # datetime datetime/timedelta, pdf2image convert_from_path, playhouse.migrate *
 
 
-s = TimestampSigner(config["secretKey"])
+s = TimestampSigner(os.getenv("secretKey"))
 app = Flask(__name__)
 Compress(app)
 api = Api(app)
