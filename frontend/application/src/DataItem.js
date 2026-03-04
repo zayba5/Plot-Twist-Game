@@ -1,9 +1,11 @@
-export class DataItem{
-    constructor(itemJSON){
-        this.text = itemJSON.text
-    }
+export class DataItem {
+  constructor(itemJSON) {
+    const item = itemJSON ?? {};
 
-    getText(){
-        return this.text
-    }
+    this.text = item.text ?? "";
+  }
+
+  getText() {
+    return this.text;
+  }
 }

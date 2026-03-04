@@ -1,47 +1,58 @@
-import React, { useState, useEffect } from 'react';
-import './index.css';
-import { fetchItem } from "./Utility.js"
-import { SampleCard } from "./SampleCard.js"
+import React, { useState, useEffect } from "react";
+import "./index.css";
+import { fetchItem } from "./Utility.js";
+import { SampleCard } from "./SampleCard.js";
 
-//display cards
+// display cards
 const DisplayCard = () => {
   return (
     <div id="card-list">
       <LoadCard />
     </div>
-  )
-}
-
+  );
+};
 
 function LoadCard() {
-  const [item, setItem] = useState(null);
+  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     (async () => {
       try {
         setLoading(true);
+        setError(null);
+
         const data = await fetchItem();
-        setItem(data.text)
+
+        // expect an array in data.text, but guard it
+        const nextItems = Array.isArray(data?.text) ? data.text : [];
+
+        if (!cancelled) setItems(nextItems);
       } catch (e) {
-        setError(e);
+        if (!cancelled) setError(e);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   if (loading) return <div className="loader"><div className="loader-bar" /></div>;
   if (error) return <div>Failed to load</div>;
+
   return (
     <div>
-      {item.map((it, idx) => (
+      {items.map((it, idx) => (
         <SampleCard key={idx} item={it} />
       ))}
     </div>
   );
 }
 
-export default DisplayCard
-
+export default DisplayCard;
