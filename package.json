@@ -4,7 +4,7 @@
   },
   "scripts": {
     "frontend": "npm start --prefix frontend/application",
-    "backend": "python backend/main.py",
+    "backend": "cd backend && python main.py",
     "dev": "concurrently -n \"frontend,backend\" -c \"cyan,green\" \"npm run frontend\" \"npm run backend\""
   }
 }
