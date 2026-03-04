@@ -1,0 +1,10 @@
+{
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  },
+  "scripts": {
+    "frontend": "npm start --prefix frontend/application",
+    "backend": "python backend/main.py",
+    "dev": "concurrently -n \"frontend,backend\" -c \"cyan,green\" \"npm run frontend\" \"npm run backend\""
+  }
+}
