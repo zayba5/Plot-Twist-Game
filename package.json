@@ -3,8 +3,13 @@
     "concurrently": "^9.2.1"
   },
   "scripts": {
-    "frontend": "npm start --prefix frontend/application",
+    "frontend": "npm run dev --prefix frontend",
     "backend": "cd backend && python main.py",
     "dev": "concurrently -n \"frontend,backend\" -c \"cyan,green\" \"npm run frontend\" \"npm run backend\""
+  },
+  "dependencies": {
+    "@fortawesome/free-solid-svg-icons": "^7.2.0",
+    "@fortawesome/react-fontawesome": "^3.2.0",
+    "react-router-dom": "^7.13.1"
   }
 }
