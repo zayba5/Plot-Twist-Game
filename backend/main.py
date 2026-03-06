@@ -1,83 +1,73 @@
 import os
-from flask import Flask, request
+from flask import Flask, request, redirect
 from flask_restful import Resource, Api
-from models import *
-from itsdangerous import TimestampSigner
-from functools import wraps
 from flask_compress import Compress
-import os
+from itsdangerous import TimestampSigner
 from dotenv import load_dotenv
+import models  
+from models import db
 
 load_dotenv()
 
-##deleted imports noting just to make easier if I need them again:
-# bcrypt, hashlib, flask abort/send_from_directory/g, dateutil parser
-# itsdangerous SignatureExpired/BadSignature, werkzeug.utils secure_filename
-# datetime datetime/timedelta, pdf2image convert_from_path, playhouse.migrate *
+def create_app(test_config: dict | None = None):
+    app = Flask(__name__)
 
+    # allow tests to override config easily
+    app.config.update(
+        TESTING=False,
+    )
+    if test_config:
+        app.config.update(test_config)
 
-s = TimestampSigner(os.getenv("secretKey"))
-app = Flask(__name__)
-Compress(app)
-api = Api(app)
-API_DIR = os.path.dirname(os.path.abspath(__file__))
+    Compress(app)
+    api = Api(app)
 
-# opens db connection before request
-@app.before_request
-def beforeRequest():
-    criteria = [ request.is_secure, app.debug, request.headers.get('X-Forwarded-Proto', 'http') == 'https' ]
-    if not any(criteria):
-        url = request.url.replace('http://', 'https://', 1)
-        return redirect(url, code=308)
-    db.connect()
+    signer = TimestampSigner(os.getenv("secretKey") or "")
 
+    API_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# closes db connection after request
-@app.after_request
-def afterRequest(response):
-    response.headers.set("Access-Control-Allow-Origin", "*")
-    response.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, PATCH, DELETE")
-    response.headers.set("Access-Control-Allow-Headers", "x-api-key, Content-Type, Content-Length")
-    response.headers.set("Content-Disposition", "attachment")
-    db.close()
-    return response
+    @app.before_request
+    def beforeRequest():
+        if app.config.get("TESTING"):
+            return
 
+        criteria = [request.is_secure, app.debug, request.headers.get("X-Forwarded-Proto", "http") == "https"]
+        if not any(criteria):
+            url = request.url.replace("http://", "https://", 1)
+            return redirect(url, code=308)
 
-# verifies user is authorized
-#def requireAuth(func):
-    #@wraps(func)
-    #def inner(*args, **kwargs):
-        ##sub in the appropriate validation for whatever system of choice if needed
+        db.connect(reuse_if_open=True)
 
-        #apiKey = request.headers.get("X-api-key").encode("utf8")
-        #try:
-        #    g.user = User.get(User.id == int(s.unsign(apiKey, max_age=7 * 24 * 3600).decode("utf8")))
-        #except SignatureExpired:
-        #    abort(401)
-        #except BadSignature:
-        #    abort(401)
-        #except User.DoesNotExist:
-        #    abort(401)
-        #return func(*args, **kwargs)
+    @app.after_request
+    def afterRequest(response):
+        response.headers.set("Access-Control-Allow-Origin", "*")
+        response.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, PATCH, DELETE")
+        response.headers.set("Access-Control-Allow-Headers", "X-api-key, Content-Type, accept")
+        response.headers.set("Content-Disposition", "attachment")
 
-    #return inner
+        if not app.config.get("TESTING"):
+            try:
+                if not db.is_closed():
+                    db.close()
+            except Exception:
+                pass
 
+        return response
 
-# endpoint for gender
-class SampleEndpoint(Resource):
-    def get(self):
-        items = DefaultTable.select()
-        textList = {"text": []}
+    #endpoints
+    class SampleEndpoint(Resource):
+        def get(self):
+            items = models.DefaultTable.select()   # <<-- reference via models.DefaultTable
+            textlist = {"text": []}
+            for item in items.iterator():
+                curText = {"text": item.textEntry}
+                textlist["text"].append(curText)
+            return textlist
 
-        for item in items.iterator():
-            curText = {"text": item.textEntry}
-            textList["text"].append(curText)
+    api.add_resource(SampleEndpoint, "/Sample")
 
-        return textList
+    return app
 
-
-api.add_resource(SampleEndpoint, '/Sample')
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
+    app = create_app()
     app.run(host="0.0.0.0", debug=True)

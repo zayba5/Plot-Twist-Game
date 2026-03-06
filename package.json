@@ -1,11 +1,32 @@
 {
   "devDependencies": {
-    "concurrently": "^9.2.1"
+    "@playwright/test": "^1.58.2",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@vitejs/plugin-react": "^5.1.4",
+    "concurrently": "^9.2.1",
+    "jsdom": "^28.1.0",
+    "junit-report-merger": "^9.0.3",
+    "playwright": "^1.58.2",
+    "vitest": "^4.0.18",
+    "xunit-viewer": "^10.6.1"
   },
   "scripts": {
     "frontend": "npm run dev --prefix frontend",
     "backend": "cd backend && python main.py",
-    "dev": "concurrently -n \"frontend,backend\" -c \"cyan,green\" \"npm run frontend\" \"npm run backend\""
+    "dev": "concurrently -n \"frontend,backend\" -c \"cyan,green\" \"npm run frontend\" \"npm run backend\"",
+    "test": "npm run test:all",
+    "test:all": "npm run test:fe && npm run test:be && npm run test:e2e:headed",
+    "test:fe": "npm --prefix frontend run test:run",
+    "test:fe:watch": "npm --prefix frontend run test",
+    "test:fe:ui": "npm --prefix frontend run test:ui",
+    "test:e2e": "npm --prefix frontend run test:e2e",
+    "test:e2e:headed": "npm --prefix frontend run test:e2e:headed",
+    "test:be": "cd backend && python -m pytest -q --junitxml=test-results/pytest/junit.xml",
+    "test:report": "(npm run test:all) & npm run report:html",
+    "report:merge": "junit-report-merger test-results/junit-merged.xml \"frontend/v-test/vitest/junit.xml\" \"frontend/test-results/playwright/*.xml\" \"backend/test-results/pytest/*.xml\"",
+    "report:html": "npm run report:merge && xunit-viewer -r test-results/junit-merged.xml -o test-results/report.html"
   },
   "dependencies": {
     "@fortawesome/free-solid-svg-icons": "^7.2.0",
