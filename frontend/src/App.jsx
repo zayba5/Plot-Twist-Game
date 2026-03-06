@@ -1,18 +1,21 @@
 import React, { useState, useEffect, lazy, Suspense } from "react";
-import { createRoot } from "react-dom/client";
 import "./index.css";
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from "react-router-dom";
 import { faBars } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
-const SamplePage = lazy(() => import("./Display2"));
-const SamplePage2 = lazy(() => import("./Display1"));
+const LobbyPage = lazy(() => import("./Lobby"));
+const StoryPage = lazy(() => import("./StoryTelling"));
+const VotingPage = lazy(() => import("./Voting"));
+const ScorePage = lazy(() => import("./Scoreboard"));
 
 // start navigation functions
 function NavItem({ menuOpen, closeMenu }) {
   const items = [
-    { name: "Sample1", key: 1, route: "SamplePage" },
-    { name: "Sample2", key: 2, route: "SamplePage2" },
+    { name: "Lobby", key: 1, route: "lobby" },
+    { name: "Story Telling", key: 2, route: "story" },
+    { name: "Voting", key: 3, route: "vote" },
+    { name: "Scoreboard", key: 4, route: "score" }
   ];
 
   const navItems = items.map((item) => (
@@ -76,9 +79,11 @@ function PageState() {
       <div id="page-body">
         <Suspense fallback={<div>Loading...</div>}>
           <Routes>
-            <Route path="/" element={<SamplePage />} />
-            <Route path="/SamplePage" element={<SamplePage />} />
-            <Route path="/SamplePage2" element={<SamplePage2 />} />
+            <Route path="/" element={<LobbyPage />} />
+            <Route path="/lobby" element={<LobbyPage />} />
+            <Route path="/story" element={<StoryPage />} />
+            <Route path="/vote" element={<VotingPage />} />
+            <Route path="/score" element={<ScorePage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
