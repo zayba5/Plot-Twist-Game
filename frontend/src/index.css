@@ -142,11 +142,46 @@ body {
   margin: 15px;
   width: 20%;
 }
+#voting-page #story-vote-card-list .story-vote-card .story-part {
+  background: #84a2d9;
+  padding: 20px;
+  margin: 20px;
+  position: relative;
+  border-radius: 5px;
+}
+#voting-page #story-vote-card-list .story-vote-card .story-part:nth-of-type(odd):after {
+  border-top: 20px solid transparent;
+  border-bottom: 20px solid transparent;
+  border-right: 20px solid #84a2d9;
+  border-left: none;
+  right: auto;
+  left: -20px;
+}
+#voting-page #story-vote-card-list .story-vote-card .story-part::after {
+  content: "";
+  width: 0;
+  height: 0;
+  border-top: 20px solid transparent;
+  border-bottom: 20px solid transparent;
+  border-left: 20px solid #84a2d9;
+  right: -20px;
+  position: absolute;
+  top: 10px;
+}
 #voting-page #story-vote-card-list .story-vote-card:hover {
   background-color: #cbcbcd;
 }
 #voting-page #story-vote-card-list .selected-card {
   background-color: #84a2d9;
+}
+#voting-page #story-vote-card-list .selected-card .story-part {
+  background-color: #e5e2e2;
+}
+#voting-page #story-vote-card-list .selected-card .story-part:nth-of-type(odd)::after {
+  border-right: 20px solid #e5e2e2;
+}
+#voting-page #story-vote-card-list .selected-card .story-part::after {
+  border-left: 20px solid #e5e2e2;
 }
 #voting-page #story-vote-card-list .selected-card:hover {
   background-color: #6a8ecf;

@@ -171,23 +171,66 @@ body {
 			background-color: $secondary-color;
 			margin: $margin-sm;
 			width: 20%;
+
+			.story-part {
+				background: $accent-color;
+				padding: 20px;
+				margin: 20px;
+				position: relative;
+				border-radius: 5px;
+			}
+
+			.story-part:nth-of-type(odd):after {
+				border-top: 20px solid transparent;
+				border-bottom: 20px solid transparent;
+				border-right: 20px solid $accent-color;
+				border-left: none;
+				right: auto;
+				left: -20px;
+			}
+
+			.story-part::after {
+				content: "";
+				width: 0;
+				height: 0;
+				border-top: 20px solid transparent;
+				border-bottom: 20px solid transparent;
+				border-left: 20px solid $accent-color;
+				right: -20px;
+				position: absolute;
+				top: 10px;
+			}
 		}
 
-		.story-vote-card:hover{
+		.story-vote-card:hover {
 			background-color: $secondary-color-hover;
 		}
 
-		.selected-card{
+		.selected-card {
 			background-color: $accent-color;
+
+			.story-part {
+				background-color: $secondary-color;
+			}
+
+			.story-part:nth-of-type(odd)::after {
+				border-right: 20px solid $secondary-color;
+
+			}
+
+			.story-part::after {
+				border-left: 20px solid $secondary-color;
+			}
+
 		}
 
-		.selected-card:hover{
+		.selected-card:hover {
 			background-color: $accent-color-hover;
 		}
 
 	}
 
-	#vote-button{
+	#vote-button {
 		font-size: larger;
 		height: fit-content;
 	}

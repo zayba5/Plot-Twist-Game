@@ -2,6 +2,16 @@ import React, { useState, useEffect } from 'react';
 import './index.css';
 import { api } from "./global.jsx"
 
+const StoryPart = ({ part }) => {
+  if (!part) return null;
+
+  return (
+    <div className="story-part">
+      <p>{part ?? "No content available"}</p>
+    </div>
+  );
+}
+
 //a react component to display an individual story
 //to display for voting
 const StoryCard = ({ story, isSelected, onClick, id }) => {
@@ -11,7 +21,9 @@ const StoryCard = ({ story, isSelected, onClick, id }) => {
 
   return (
     <div className={classes} onClick={() => onClick(id)}>
-      <p>{story ?? "No content available"}</p>
+      <StoryPart part={story}></StoryPart>
+      <StoryPart part={story}></StoryPart>
+
     </div>
   );
 }
@@ -32,7 +44,7 @@ const StoryCardList = () => {
   return (
     <div id='story-vote-card-list'>
       {stories.map((story, idx) => (
-        <StoryCard story={story} key={idx} id={idx} onClick={handleStoryClick} isSelected={idx === selectedStory}/>
+        <StoryCard story={story} key={idx} id={idx} onClick={handleStoryClick} isSelected={idx === selectedStory} />
       ))}
     </div>
   );
