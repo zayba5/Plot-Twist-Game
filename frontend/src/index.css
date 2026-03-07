@@ -26,7 +26,7 @@ body {
   align-items: center;
   justify-content: space-between;
   background-color: #e5e2e2;
-  border-bottom: thin #d8d5d5 solid;
+  border-bottom: thin solid #d8d5d5;
   position: relative;
   z-index: 1000;
 }
@@ -86,15 +86,65 @@ body {
   height: 100%;
 }
 
+.button {
+  background-color: #84a2d9;
+  padding: 10px;
+  border-radius: 10px;
+  border: #d8d5d5;
+  box-shadow: 0px 0px 10px 2px #CBCBCB;
+}
+
+.button:hover {
+  background-color: #6a8ecf;
+}
+
 .game-window {
   display: flex;
+  flex-direction: column;
   height: 80%;
   width: 80%;
   border-radius: 30px;
   box-shadow: 0px 0px 30px 10px #CBCBCB;
-  padding: 15px;
   align-self: center;
-  border: thin solid #9AA5B2;
+  border: thin solid #d8d5d5;
+  justify-content: space-between;
+}
+.game-window .game-window-control-bar {
+  height: 100px;
+  background-color: #e5e2e2;
+  padding: 15px;
+  margin-top: 15px;
+  display: flex;
+  justify-content: end;
+  align-items: center;
+}
+.game-window .game-window-header {
+  height: 100px;
+  background-color: #e5e2e2;
+  padding: 15px;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+}
+
+#voting-page #story-vote-card-list {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  height: 60%;
+  justify-content: center;
+}
+#voting-page #story-vote-card-list .story-vote-card {
+  border: thin solid #d8d5d5;
+  border-radius: 30px;
+  padding: 15px;
+  background-color: #e5e2e2;
+  margin: 15px;
+  width: 20%;
+}
+#voting-page #vote-button {
+  font-size: larger;
+  height: fit-content;
 }
 
 /*# sourceMappingURL=index.css.map */

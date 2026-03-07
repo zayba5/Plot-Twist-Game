@@ -48,9 +48,11 @@ function LoadCard() {
 
   return (
     <div>
+      <div className='game-window-header'></div>
       {items.map((it, idx) => (
         <SampleCard key={idx} item={it} />
       ))}
+      <div className="game-window-control-bar"></div>
     </div>
   );
 }
