@@ -89,7 +89,7 @@ body {
 .button {
   background-color: #84a2d9;
   padding: 10px;
-  border-radius: 10px;
+  border-radius: 8px;
   border: #d8d5d5;
   box-shadow: 0px 0px 10px 2px #CBCBCB;
 }
@@ -141,6 +141,15 @@ body {
   background-color: #e5e2e2;
   margin: 15px;
   width: 20%;
+}
+#voting-page #story-vote-card-list .story-vote-card:hover {
+  background-color: #cbcbcd;
+}
+#voting-page #story-vote-card-list .selected-card {
+  background-color: #84a2d9;
+}
+#voting-page #story-vote-card-list .selected-card:hover {
+  background-color: #6a8ecf;
 }
 #voting-page #vote-button {
   font-size: larger;
