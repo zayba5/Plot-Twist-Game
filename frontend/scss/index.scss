@@ -161,8 +161,9 @@ body {
 		display: flex;
 		flex-direction: row;
 		flex-wrap: wrap;
-		height: 60%;
 		justify-content: center;
+		overflow: auto;
+		flex-grow: 1;
 
 		.story-vote-card {
 			border: thin solid $border-color;
@@ -171,6 +172,7 @@ body {
 			background-color: $secondary-color;
 			margin: $margin-sm;
 			width: 20%;
+			min-width: 200px;
 
 			.story-part {
 				background: $accent-color;

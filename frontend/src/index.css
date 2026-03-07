@@ -131,8 +131,9 @@ body {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  height: 60%;
   justify-content: center;
+  overflow: auto;
+  flex-grow: 1;
 }
 #voting-page #story-vote-card-list .story-vote-card {
   border: thin solid #d8d5d5;
@@ -141,6 +142,7 @@ body {
   background-color: #e5e2e2;
   margin: 15px;
   width: 20%;
+  min-width: 200px;
 }
 #voting-page #story-vote-card-list .story-vote-card .story-part {
   background: #84a2d9;
