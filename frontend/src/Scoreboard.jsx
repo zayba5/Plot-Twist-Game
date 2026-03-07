@@ -6,7 +6,7 @@ import {api} from "./global.jsx"
 //start display content functions
 const Display2 = () => {
     return(
-      <div >
+      <div className='game-window'>
         This is a second page for the sake of testing nav
       </div>
     )

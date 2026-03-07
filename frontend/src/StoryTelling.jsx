@@ -6,7 +6,7 @@ import { SampleCard } from "./SampleCard.jsx";
 // display cards
 const DisplayCard = () => {
   return (
-    <div id="card-list">
+    <div className="game-window">
       <LoadCard />
     </div>
   );

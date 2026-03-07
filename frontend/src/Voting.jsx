@@ -2,15 +2,14 @@ import React, { useState, useEffect } from 'react';
 import './index.css';
 import {api} from "./global.jsx"
 
-
 //start display content functions
-const Display2 = () => {
+const VotingPage = () => {
     return(
-      <div >
-        This is a second page for the sake of testing nav
+      <div className='game-window'>
+        <p>{"game window"}</p>
       </div>
     )
   }
   //end display content functions
 
-  export default Display2
+  export default VotingPage

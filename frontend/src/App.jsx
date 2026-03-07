@@ -52,7 +52,7 @@ function Header() {
   return (
     <div id="head-wrapper">
       <div id="head">
-        <h1 id="header-title-container">Title</h1>
+        <h1 id="header-title-container">Plot Twist</h1>
         <FontAwesomeIcon icon={faBars} onClick={toggleMenu} />
         <NavItem menuOpen={menuOpen} closeMenu={closeMenu} />
       </div>
@@ -74,7 +74,7 @@ function ScrollToTop() {
 
 function PageState() {
   return (
-    <div>
+    <div id="header-body"> 
       <Header />
       <div id="page-body">
         <Suspense fallback={<div>Loading...</div>}>
