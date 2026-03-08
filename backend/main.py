@@ -6,6 +6,7 @@ from itsdangerous import TimestampSigner
 from dotenv import load_dotenv
 import models  
 from models import db
+from flask import jsonify
 
 load_dotenv()
 
@@ -57,12 +58,14 @@ def create_app(test_config: dict | None = None):
     #endpoints
     class SampleEndpoint(Resource):
         def get(self):
-            items = models.DefaultTable.select()   # <<-- reference via models.DefaultTable
-            textlist = {"text": []}
-            for item in items.iterator():
-                curText = {"text": item.textEntry}
-                textlist["text"].append(curText)
-            return textlist
+            items = []
+            for g in models.Game.select():
+                items.append({
+                    "game_id": str(g.game_id),
+                    "game_status": str(g.game_status_id),   
+                    "game_host": str(g.game_host_id),
+                })
+            return jsonify({"items": items})
 
     api.add_resource(SampleEndpoint, "/Sample")
 

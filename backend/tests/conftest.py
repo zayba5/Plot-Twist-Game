@@ -8,13 +8,13 @@ def test_db():
     # create the in-memory DB instance
     db = SqliteDatabase(":memory:")
     # bind models to this test DB
-    db.bind([models.DefaultTable], bind_refs=False, bind_backrefs=False)
+    db.bind([models.Game], bind_refs=False, bind_backrefs=False)
     # create tables
     db.connect()
-    db.create_tables([models.DefaultTable])
+    db.create_tables([models.Game])
     yield db
     # teardown
-    db.drop_tables([models.DefaultTable])
+    db.drop_tables([models.Game])
     db.close()
 
 

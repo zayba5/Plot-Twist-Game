@@ -4,5 +4,5 @@ import { test, expect } from "vitest";
 
 test("renders the app shell", () => {
   render(<App />);
-  expect(screen.getByText(/Title/i)).toBeInTheDocument();
+  expect(screen.getByText(/Plot Twist/i)).toBeInTheDocument();
 });
