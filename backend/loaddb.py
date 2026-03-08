@@ -1,12 +1,12 @@
 from models import *
-import bcrypt
-import os
 
-try:
-	os.remove("project.db")
-except OSError:
-	pass
+def reset_tables():
+    db.connect(reuse_if_open=True)
+    db.drop_tables([Story_Part, Voting, Story, Voting_Session, 
+                    Game_Players, Game_Settings, Game, User, Status], safe=True, cascade=True)
+    db.create_tables([Status, User, Game, Game_Settings, Game_Players,
+                      Voting_Session, Story, Voting, Story_Part], safe=True)
+    db.close()
 
-db.create_tables([DefaultTable], safe=True)
-
-DefaultTable.create(textEntry = "This is a default db entry to test connection")
+if __name__ == "__main__":
+	reset_tables()
