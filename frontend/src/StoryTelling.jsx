@@ -7,7 +7,9 @@ import { SampleCard } from "./SampleCard.jsx";
 const DisplayCard = () => {
   return (
     <div className="game-window">
-      <LoadCard />
+      <div className='game-window-header'></div>
+      This is a second page for the sake of testing nav
+      <div className="game-window-control-bar"></div>
     </div>
   );
 };
