@@ -38,7 +38,7 @@ def create_app(test_config: dict | None = None):
         if token:
             try:
                 user_id = signer.unsign(token.encode("utf8"), max_age=60*60*24*365)
-                g.user = User.get(User.user_id == int(user_id))
+                g.user = User.get(User.user_id == user_id)
                 return
             except Exception:
                 pass
@@ -88,9 +88,34 @@ def create_app(test_config: dict | None = None):
             return jsonify({"items": items})
 
     api.add_resource(SampleEndpoint, "/Sample")
-    
 
+##start with arbitrary game for now
+##once story telling is implemented switch to active game
+##easier for now since i can't create story in browser
+##to test replace the game id with one in your DB
+    class StoryEndpoint(Resource):
+        def get(self):
+            game_id = "a3787d56-9f47-473e-aa0b-41369dc5b847"
+            game = Game.get(Game.game_id == game_id)
+            stories = []
+            for story in game.story:
+                parts = []
+                for part in story.part:
+                    parts.append({
+                        "part_id" : str(part.part_id),
+                        "part_content" : str(part.part_content),
+                        "part_number" : int(part.part_number)
+                    })
+                stories.append({
+                    "story_id" : str(story.story_id),
+                    "story_parts" : parts
+                })
+            return jsonify({"stories" : stories})
+    
+    api.add_resource(StoryEndpoint, "/Story")
+    
     return app
+            
 
 if __name__ == "__main__":
     app = create_app()
