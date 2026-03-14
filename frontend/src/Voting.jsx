@@ -35,6 +35,7 @@ const StoryCardList = () => {
   const [stories, setStories] = useState([]);
   const [selectedStory, setSelectedStory] = useState(null);
 
+    //fetch stories for the active game
     useEffect(() => {
     async function loadStories() {
       try {

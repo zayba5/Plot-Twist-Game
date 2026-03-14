@@ -6,6 +6,7 @@ export async function fetchItem() {
   });
 }
 
+//fetch stories and their parts for a given game
 export async function fetchGameStories() {
   return apiJson("Story", {
     method: "GET",

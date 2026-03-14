@@ -94,9 +94,10 @@ def create_app(test_config: dict | None = None):
 ##easier for now since i can't create story in browser
 ##to test replace the game id with one in your DB
     class StoryEndpoint(Resource):
+        ##get the stories and their parts for a given game
         def get(self):
             game_id = "a3787d56-9f47-473e-aa0b-41369dc5b847"
-            game = Game.get(Game.game_id == game_id)
+            game = Game.get(Game.game_id == uuid.UUID(game_id))
             stories = []
             for story in game.story:
                 parts = []
