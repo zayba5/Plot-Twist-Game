@@ -13,18 +13,8 @@ export async function fetchGameStories() {
   });
 }
 
-export async function fetchUserScores() {
-  // placeholder
-  return {
-    "userScores": [
-      {"user": "User A", "score": "12"},
-      {"user": "User B", "score": "10"},
-      {"user": "User C", "score": "8"},
-      {"user": "User D", "score": "6"}
-    ]
-  }
-
-  /*return apiJson("User", {
+export async function fetchScores() {
+  return apiJson("Scores", {
     method: "GET",
-  });*/
+  });
 }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './index.css';
 import { api } from "./global.jsx"
-import { fetchUserScores } from './Utility.jsx';
+import { fetchScores } from './Utility.jsx';
 
 
 const Header = () => {
@@ -24,25 +24,24 @@ const ScoreboardItem = ({ user, score, placement }) => {
 }
 
 const Scoreboard = () => {
-  const [userScores, setUserScores] = useState([]);
-
+  const [scores, setScores] = useState([]);
   useEffect(() => {
-    async function loadUserScores() {
+    async function loadScores() {
       try {
-        const data = await fetchUserScores();
-        setUserScores(data.userScores);
+        const data = await fetchScores();
+        setScores(data.scores.sort((a, b) => b.score - a.score));
       } catch (error) {
-        console.error("Failed to load user scores:", error);
-        setUserScores([]);
+        console.error("Failed to load scores:", error);
+        setScores([]);
       }
     }
-
-    loadUserScores();
+    
+    loadScores();
   }, []);
 
   return (
     <div id='scoreboard'>
-      {userScores.map((item, index) => (
+      {scores.map((item, index) => (
         <ScoreboardItem
           key={index}
           user={item?.user}

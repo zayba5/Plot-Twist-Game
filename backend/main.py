@@ -114,6 +114,21 @@ def create_app(test_config: dict | None = None):
             return jsonify({"stories" : stories})
     
     api.add_resource(StoryEndpoint, "/Story")
+
+
+    class ScoreEndpoint(Resource):
+        def get(self):
+            game_id = "a3787d56-9f47-473e-aa0b-41369dc5b847"
+            game = Game.get(Game.game_id == uuid.UUID(game_id))
+            scores = []
+            for player in game.player:
+                scores.append({
+                    "user" : str(player.user_id),
+                    "score" : int(player.user_score)
+                })
+            return jsonify({"scores" : scores})
+    
+    api.add_resource(ScoreEndpoint, "/Scores")
     
     return app
             
