@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import './index.css';
 import { api } from "./global.jsx"
+import { fetchGameStories } from './Utility.jsx';
 
 const StoryPart = ({ part }) => {
   if (!part) return null;
 
   return (
     <div className="story-part">
-      <p>{part ?? "No content available"}</p>
+      <p>{part.part_content ?? "No content available"}</p>
     </div>
   );
 }
@@ -21,9 +22,9 @@ const StoryCard = ({ story, isSelected, onClick, id }) => {
 
   return (
     <div className={classes} onClick={() => onClick(id)}>
-      <StoryPart part={story}></StoryPart>
-      <StoryPart part={story}></StoryPart>
-
+      {story.story_parts?.map((part) => (
+        <StoryPart part={part}></StoryPart>
+      ))}
     </div>
   );
 }
@@ -31,11 +32,22 @@ const StoryCard = ({ story, isSelected, onClick, id }) => {
 //react component to store of list of StoryVoteCards to 
 //display the stories that are being voted on
 const StoryCardList = () => {
-  let tempStory = "this is a temp story to display until the storytelling works";
-  let tempStory2 = "this is a second temp story to test voting";
-  let stories = [tempStory, tempStory2, tempStory, tempStory2];
-
+  const [stories, setStories] = useState([]);
   const [selectedStory, setSelectedStory] = useState(null);
+
+    useEffect(() => {
+    async function loadStories() {
+      try {
+        const data = await fetchGameStories();
+        setStories(data.stories ?? []);
+      } catch (error) {
+        console.error("Failed to load stories:", error);
+        setStories([]);
+      }
+    }
+
+    loadStories();
+  }, []);
 
   const handleStoryClick = (id) => {
     setSelectedStory(id);

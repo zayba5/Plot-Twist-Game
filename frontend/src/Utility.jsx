@@ -5,3 +5,9 @@ export async function fetchItem() {
     method: "GET",
   });
 }
+
+export async function fetchGameStories() {
+  return apiJson("Story", {
+    method: "GET",
+  });
+}
