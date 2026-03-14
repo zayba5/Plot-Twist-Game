@@ -8,10 +8,12 @@ from models import *
 from itsdangerous import TimestampSigner
 from functools import wraps
 import uuid
+from flask_socketio import SocketIO
 
 
 load_dotenv()
 s = TimestampSigner(os.getenv("secretKey"))
+socketio = SocketIO(cors_allowed_origins="*")
 
 def create_app(test_config: dict | None = None):
     app = Flask(__name__)
@@ -26,6 +28,7 @@ def create_app(test_config: dict | None = None):
 
     Compress(app)
     api = Api(app)
+    socketio.init_app(app)
 
     signer = TimestampSigner(os.getenv("secretKey") or "")
 
@@ -135,4 +138,4 @@ def create_app(test_config: dict | None = None):
 
 if __name__ == "__main__":
     app = create_app()
-    app.run(host="0.0.0.0", debug=True)
+    socketio.run(app, host="0.0.0.0", debug=True, allow_unsafe_werkzeug=True)

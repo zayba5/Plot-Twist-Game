@@ -22,8 +22,8 @@ const StoryCard = ({ story, isSelected, onClick, id }) => {
 
   return (
     <div className={classes} onClick={() => onClick(id)}>
-      {story.story_parts?.map((part) => (
-        <StoryPart part={part}></StoryPart>
+      {story.story_parts?.map((part, idx) => (
+        <StoryPart part={part} key={idx}></StoryPart>
       ))}
     </div>
   );
