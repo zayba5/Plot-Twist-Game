@@ -50,7 +50,7 @@ def testData():
         voting_session_id=uuid.uuid4(),
         game_id=game,
         voting_session_number=1,
-        voting_session_status=waiting
+        voting_session_status=active
     )
 
     # stories

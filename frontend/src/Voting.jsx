@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import './index.css';
-import { api } from "./global.jsx"
-import { fetchGameStories } from './Utility.jsx';
+import React, { useState, useEffect } from "react";
+import "./index.css";
+import { socket } from "./global.jsx";
+import { fetchGameStories, postVote } from "./Utility.jsx";
+import { useNavigate } from "react-router-dom";
 
 const StoryPart = ({ part }) => {
   if (!part) return null;
@@ -11,32 +12,26 @@ const StoryPart = ({ part }) => {
       <p>{part.part_content ?? "No content available"}</p>
     </div>
   );
-}
+};
 
-//a react component to display an individual story
-//to display for voting
-const StoryCard = ({ story, isSelected, onClick, id }) => {
+const StoryCard = ({ story, isSelected, onClick }) => {
   if (!story) return null;
 
   const classes = isSelected ? "story-vote-card selected-card" : "story-vote-card";
 
   return (
-    <div className={classes} onClick={() => onClick(id)}>
+    <div className={classes} onClick={() => onClick(story.story_id)}>
       {story.story_parts?.map((part, idx) => (
-        <StoryPart part={part} key={idx}></StoryPart>
+        <StoryPart part={part} key={idx} />
       ))}
     </div>
   );
-}
+};
 
-//react component to store of list of StoryVoteCards to 
-//display the stories that are being voted on
-const StoryCardList = () => {
+const StoryCardList = ({ selectedStoryId, setSelectedStoryId }) => {
   const [stories, setStories] = useState([]);
-  const [selectedStory, setSelectedStory] = useState(null);
 
-    //fetch stories for the active game
-    useEffect(() => {
+  useEffect(() => {
     async function loadStories() {
       try {
         const data = await fetchGameStories();
@@ -50,49 +45,92 @@ const StoryCardList = () => {
     loadStories();
   }, []);
 
-  const handleStoryClick = (id) => {
-    setSelectedStory(id);
-  }
-
   return (
-    <div id='story-vote-card-list'>
-      {stories.map((story, idx) => (
-        <StoryCard story={story} key={idx} id={idx} onClick={handleStoryClick} isSelected={idx === selectedStory} />
+    <div id="story-vote-card-list">
+      {stories.map((story) => (
+        <StoryCard
+          story={story}
+          key={story.story_id}
+          onClick={setSelectedStoryId}
+          isSelected={story.story_id === selectedStoryId}
+        />
       ))}
     </div>
   );
 };
 
-//react component for the window footer
-const ControlBar = () => {
+const ControlBar = ({ selectedStoryId, gameId }) => {
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleVoteClick = async () => {
+    if (!selectedStoryId || submitting) return;
+
+    try {
+      setSubmitting(true);
+      const result = await postVote(gameId, selectedStoryId);
+      console.log("vote submitted:", result);
+    } catch (error) {
+      console.error("Failed to submit vote:", error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="game-window-control-bar">
-      <button className='button' id='vote-button'>Vote</button>
+      <button
+        className="button"
+        id="vote-button"
+        onClick={handleVoteClick}
+        disabled={!selectedStoryId || submitting}
+      >
+        {submitting ? "Voting..." : "Vote"}
+      </button>
     </div>
-  )
-}
+  );
+};
 
-//react component for the window footer
 const Header = () => {
   return (
     <div className="game-window-header">
-      <h1>{"Vote for your favorite story"}</h1>
+      <h1>Vote for your favorite story</h1>
     </div>
+  );
+};
 
-  )
-}
-
-//React component to display the entire voting page
 const VotingPage = () => {
+  const navigate = useNavigate();
+  const [selectedStoryId, setSelectedStoryId] = useState(null);
+
+  const gameId = "83b1b426-1ddb-443f-a985-b72f98553d2f";
+
+  useEffect(() => {
+    function handleAllVotesIn(payload) {
+      console.log("all votes in:", payload);
+      navigate("/score");
+    }
+
+    socket.emit("join_game", { game_id: gameId });
+    socket.on("all_votes_in", handleAllVotesIn);
+
+    return () => {
+      socket.off("all_votes_in", handleAllVotesIn);
+    };
+  }, [navigate, gameId]);
 
   return (
-    <div className='game-window' id="voting-page">
-      <Header></Header>
-      <StoryCardList></StoryCardList>
-      <ControlBar></ControlBar>
+    <div className="game-window" id="voting-page">
+      <Header />
+      <StoryCardList
+        selectedStoryId={selectedStoryId}
+        setSelectedStoryId={setSelectedStoryId}
+      />
+      <ControlBar
+        selectedStoryId={selectedStoryId}
+        gameId={gameId}
+      />
     </div>
-  )
-}
-//end display content functions
+  );
+};
 
-export default VotingPage
+export default VotingPage;

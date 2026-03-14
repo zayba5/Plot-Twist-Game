@@ -60,7 +60,7 @@ class Voting(BaseModel):
     voting_session_id = ForeignKeyField(Voting_Session, backref="story")
     
     class Meta:
-        primary_key = CompositeKey("user_id", "story_id")
+        primary_key = CompositeKey("user_id", "voting_session_id")
 
 
 class Story_Part(BaseModel):

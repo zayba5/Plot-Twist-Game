@@ -8,7 +8,8 @@ from models import *
 from itsdangerous import TimestampSigner
 from functools import wraps
 import uuid
-from flask_socketio import SocketIO
+from flask_socketio import SocketIO, join_room
+from peewee import fn
 
 
 load_dotenv()
@@ -29,6 +30,14 @@ def create_app(test_config: dict | None = None):
     Compress(app)
     api = Api(app)
     socketio.init_app(app)
+    
+    ##websocket handlers
+    @socketio.on("join_game")
+    def handle_join_game(data):
+        game_id = data.get("game_id")
+        if game_id:
+            join_room(f"game:{game_id}")
+            print(f"socket joined room game:{game_id}")
 
     signer = TimestampSigner(os.getenv("secretKey") or "")
 
@@ -99,7 +108,7 @@ def create_app(test_config: dict | None = None):
     class StoryEndpoint(Resource):
         ##get the stories and their parts for a given game
         def get(self):
-            game_id = "a3787d56-9f47-473e-aa0b-41369dc5b847"
+            game_id = "83b1b426-1ddb-443f-a985-b72f98553d2f"
             game = Game.get(Game.game_id == uuid.UUID(game_id))
             stories = []
             for story in game.story:
@@ -121,7 +130,7 @@ def create_app(test_config: dict | None = None):
 
     class ScoreEndpoint(Resource):
         def get(self):
-            game_id = "a3787d56-9f47-473e-aa0b-41369dc5b847"
+            game_id = "83b1b426-1ddb-443f-a985-b72f98553d2f"
             game = Game.get(Game.game_id == uuid.UUID(game_id))
             scores = []
             for player in game.player:
@@ -133,6 +142,123 @@ def create_app(test_config: dict | None = None):
     
     api.add_resource(ScoreEndpoint, "/Scores")
     
+
+    
+###########################################################
+##hardcoded voting test until stories work
+    class TestVotesEndpoint(Resource):
+        def post(self):
+            data = request.get_json() or {}
+            game_id = data.get("game_id")
+
+            if not game_id:
+                return jsonify({
+                    "ok": False,
+                    "error": "game_id is required"
+                }), 400
+                
+            try:
+                game_uuid = uuid.UUID(game_id)
+            except ValueError:
+                return {
+                    "ok": False,
+                    "error": "invalid game_id format"
+                }, 400
+
+            game = Game.get_or_none(Game.game_id == game_uuid)
+
+            if not game:
+                return {
+                    "ok": False,
+                    "error": "game does not exist"
+                }, 404
+
+            active_session = (
+                Voting_Session
+                .select()
+                .join(Status)
+                .where(
+                    (Voting_Session.game_id == game) &
+                    (Status.status_type == "ACTIVE")
+                )
+                .get_or_none()
+            )
+
+            if not active_session:
+                return {
+                    "ok": False,
+                    "error": "no active voting session found"
+                }, 404
+
+            total_votes = Voting.select().where(
+                Voting.voting_session_id == active_session
+            ).count()
+
+            total_players = Game_Players.select().where(
+                Game_Players.game_id == game
+            ).count()
+
+            all_votes_in = total_players > 0 and total_votes >= total_players
+
+            if all_votes_in:
+                winner = (
+                    Voting
+                    .select(
+                        Voting.story_id,
+                        fn.COUNT(Voting.story_id).alias("vote_count")
+                    )
+                    .where(Voting.voting_session_id == active_session)
+                    .group_by(Voting.story_id)
+                    .order_by(fn.COUNT(Voting.story_id).desc())
+                    .first()
+                )
+                
+                if winner:
+                    winning_story = winner.story_id
+                    winning_writers = (
+                        Story_Part
+                        .select(Story_Part.user_id)
+                        .where(Story_Part.story_id == winning_story)
+                        .distinct()
+                    )
+
+                    for part in winning_writers:
+                        game_player = Game_Players.get_or_none(
+                            (Game_Players.game_id == game) &
+                            (Game_Players.user_id == part.user_id)
+                        )
+
+                        if game_player:
+                            game_player.user_score += 1  
+                            game_player.save()
+
+                
+                
+                complete_status = Status.get_or_none(Status.status_type == "FINISHED")
+                if complete_status:
+                    active_session.voting_session_status = complete_status
+                    active_session.save()
+
+                socketio.emit(
+                    "all_votes_in",
+                    {
+                        "game_id": str(game.game_id),
+                        "voting_session_id": str(active_session.voting_session_id),
+                        "total_votes": total_votes,
+                        "total_players": total_players,
+                    },
+                    to=f"game:{game.game_id}"
+                )
+
+            return{
+                "ok": True,
+                "all_votes_in": all_votes_in,
+                "total_votes": total_votes,
+                "total_players": total_players,
+            }
+    api.add_resource(TestVotesEndpoint, "/TestVote")
+###########################################################
+
     return app
             
 

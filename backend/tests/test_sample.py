@@ -2,7 +2,7 @@ import uuid
 from models import *
 
 def test_get_sample_endpoint(client): # using for setup
-    gid = uuid.UUID("a3787d56-9f47-473e-aa0b-41369dc5b847")
+    gid = uuid.UUID("b789aa67-c402-41eb-8b80-555d4ca98d1f")
     host = User.create(user_id=uuid.uuid4())
     status = Status.create(status_type = "active")
     Game.create(game_id=gid, game_status= status.status_id, game_host=host)

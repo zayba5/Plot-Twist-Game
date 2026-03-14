@@ -18,3 +18,14 @@ export async function fetchScores() {
     method: "GET",
   });
 }
+
+//post vote for a voting session in a game
+export async function postVote(gameID, storyID) {
+  return apiJson("TestVote", { //<---change this to Vote when stories work properly
+    method: "POST",
+    body: {
+      game_id: gameID,
+      story_id: storyID,
+    },
+  });
+}

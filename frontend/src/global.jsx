@@ -1,5 +1,9 @@
+import { io } from "socket.io-client";
+
 export const api =
   import.meta.env.VITE_API;
+
+export const socket = io(api, {withCredentials: true})
 
 export async function apiFetch(path, { loginKey, ...options } = {}) {
   const response = await fetch(api + path, {
