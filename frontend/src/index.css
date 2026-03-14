@@ -193,4 +193,24 @@ body {
   height: fit-content;
 }
 
+#scoreboard-page #scoreboard {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  justify-content: center;
+  overflow: auto;
+  flex-grow: 1;
+}
+
+#scoreboard-page #scoreboard .scoreboard-item {
+  border: thin solid #d8d5d5;
+  border-radius: 30px;
+  padding: 15px;
+  background-color: #e5e2e2;
+  margin: 15px;
+  min-width: 200px;
+  display: flex;
+  justify-content: space-between;
+}
+
 /*# sourceMappingURL=index.css.map */
