@@ -20,7 +20,7 @@ body {
   z-index: 1000;
 }
 #head-wrapper #head {
-  height: 65px;
+  height: 50px;
   width: 100%;
   display: flex;
   align-items: center;
@@ -112,8 +112,8 @@ body {
 .game-window .game-window-control-bar {
   height: 100px;
   background-color: #e5e2e2;
-  padding: 15px;
-  margin-top: 15px;
+  padding: 5px;
+  margin-top: 5px;
   display: flex;
   justify-content: end;
   align-items: center;
@@ -121,8 +121,8 @@ body {
 .game-window .game-window-header {
   height: 100px;
   background-color: #e5e2e2;
-  padding: 15px;
-  margin-bottom: 15px;
+  padding: 5px;
+  margin-bottom: 5px;
   display: flex;
   align-items: center;
 }
