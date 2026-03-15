@@ -129,20 +129,26 @@ def create_app(test_config: dict | None = None):
 
     class StorySubmissionEndpoint(Resource):
         def post(self):
+            if not getattr(g, "user", None):
+                return {"ok": False, "error": "unauthorized"}, 401
+
             data = request.get_json() or {}
 
             game_id = data.get("game_id")
             round_number = data.get("round_number")
             content = data.get("content")
 
-            if not game_id or round_number is None or not content or not str(content).strip():
+            if not game_id or round_number is None or content is None or not str(content).strip():
                 return {"ok": False, "error": "game_id, round_number, and content are required"}, 400
 
             try:
-                game_uuid = uuid.UUID(game_id)
+                game_uuid = uuid.UUID(str(game_id))
                 round_number = int(round_number)
-            except ValueError:
+            except (ValueError, TypeError):
                 return {"ok": False, "error": "invalid input"}, 400
+
+            if round_number < 1:
+                return {"ok": False, "error": "round_number must be >= 1"}, 400
 
             game = Game.get_or_none(Game.game_id == game_uuid)
             if not game:
@@ -154,6 +160,14 @@ def create_app(test_config: dict | None = None):
                     story_id=uuid.uuid4(),
                     game_id=game
                 )
+
+            existing = Story_Part.get_or_none(
+                (Story_Part.story_id == story) &
+                (Story_Part.part_number == round_number) &
+                (Story_Part.user_id == g.user)
+            )
+            if existing:
+                return {"ok": False, "error": "story part already submitted for this round"}, 409
 
             story_part = Story_Part.create(
                 part_id=uuid.uuid4(),
