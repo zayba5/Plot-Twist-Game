@@ -8,8 +8,8 @@ const Lobby = () => {
   const [gameLength, setGameLength] = useState('Medium');
   const [chatMessage, setChatMessage] = useState('');
   const [messages, setMessages] = useState([
-    { id: 1, user: 'Blues', text: 'Welcome to the story!', time: '14:32' },
-    { id: 2, user: 'Hydroponos', text: 'Ready when you are.', time: '14:33' },
+    { id: 1, user: 'Player1', text: 'Welcome to the story!', time: '14:32' },
+    { id: 2, user: 'Player2', text: 'Ready when you are.', time: '14:33' },
   ]);
 
   const handleSendMessage = (e) => {
