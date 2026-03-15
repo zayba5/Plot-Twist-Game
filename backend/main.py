@@ -108,7 +108,7 @@ def create_app(test_config: dict | None = None):
     class StoryEndpoint(Resource):
         ##get the stories and their parts for a given game
         def get(self):
-            game_id = "83b1b426-1ddb-443f-a985-b72f98553d2f"
+            game_id = "8b5404ae-f8c1-4b80-b4f5-18fa08ecdd5e"
             game = Game.get(Game.game_id == uuid.UUID(game_id))
             stories = []
             for story in game.story:
@@ -127,6 +127,48 @@ def create_app(test_config: dict | None = None):
     
     api.add_resource(StoryEndpoint, "/Story")
 
+    class StorySubmissionEndpoint(Resource):
+        def post(self):
+            data = request.get_json() or {}
+
+            game_id = data.get("game_id")
+            round_number = data.get("round_number")
+            content = data.get("content")
+
+            if not game_id or round_number is None or not content or not str(content).strip():
+                return {"ok": False, "error": "game_id, round_number, and content are required"}, 400
+
+            try:
+                game_uuid = uuid.UUID(game_id)
+                round_number = int(round_number)
+            except ValueError:
+                return {"ok": False, "error": "invalid input"}, 400
+
+            game = Game.get_or_none(Game.game_id == game_uuid)
+            if not game:
+                return {"ok": False, "error": "game not found"}, 404
+
+            story = Story.get_or_none(Story.game_id == game)
+            if not story:
+                story = Story.create(
+                    story_id=uuid.uuid4(),
+                    game_id=game
+                )
+
+            story_part = Story_Part.create(
+                part_id=uuid.uuid4(),
+                part_number=round_number,
+                part_content=str(content).strip(),
+                user_id=g.user,
+                story_id=story
+            )
+
+            return {
+                "ok": True,
+                "part_id": str(story_part.part_id)
+            }, 201
+
+    api.add_resource(StorySubmissionEndpoint, "/StorySubmission")
 
     class ScoreEndpoint(Resource):
         def get(self):
