@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import "./index.css";
 import { fetchItem } from "./Utility.jsx";
-//import {postStorySubmission } from "./Utility.jsx";
+import { postStory } from "./Utility.jsx";
 import { SampleCard } from "./SampleCard.jsx";
 import { socket } from "./global.jsx";
 import { useNavigate } from "react-router-dom";
@@ -10,17 +10,17 @@ import { useNavigate } from "react-router-dom";
 const DisplayCard = () => {
   const [userText, setUserText] = useState("");
 
-  const handleSubmit = (e) => {
+  const old_handleSubmit = (e) => {
     e.preventDefault();
     console.log("User entered:", userText);
-    //submit logic here
+    //submit logic 
   };
 
   return (
     <div className="game-window">
       <div className="game-window-header"></div>
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={old_handleSubmit}>
         <p>Please enter your response:</p>
 
         <input
@@ -90,8 +90,6 @@ function LoadCard() {
   );
 }
 
-
-
 const ROUND_TIME_SECONDS = 60;
 const MAX_ROUNDS = 3;
 
@@ -157,9 +155,10 @@ const ControlBar = ({ onSubmit, disabled, submitting, timeLeft }) => {
 
 const StorytellingPage = () => {
   const navigate = useNavigate();
+  const [submitted, setSubmitted] = useState(false);
 
-  //reuse the same game id teh voting section has
-  const gameId = "83b1b426-1ddb-443f-a985-b72f98553d2f";
+  //my own testing game ID
+  const gameId = "8b5404ae-f8c1-4b80-b4f5-18fa08ecdd5e";
 
   const [prompt, setPrompt] = useState("");
   const [storyText, setStoryText] = useState("");
@@ -176,10 +175,10 @@ const StorytellingPage = () => {
     async function loadPrompt() {
       try {
         const data = await fetchPrompt(gameId, roundNumber);
-        setPrompt(data?.prompt ?? "Write a short story based on this round.");
+        setPrompt(data?.prompt ?? `Write a short story based on this prompt, round ${roundNumber}`);
       } catch (error) {
         console.error("Failed to load prompt:", error);
-        setPrompt("Write a short story based on this round.");
+        setPrompt("Failed to load prompt. Write a short story based on this round.");
       }
     }
 
@@ -198,10 +197,11 @@ const StorytellingPage = () => {
   }, [timeLeft, hasSubmitted]);
 
   useEffect(() => {
-    if (timeLeft === 0 && !hasSubmitted && !submitting) {
+    if (timeLeft === 0 && !submitted && !submitting) {
+      console.log(`timeLeft: ${timeLeft}, submitted: ${submitted}, submitting: ${submitting}`);
       handleSubmit(true);
     }
-  }, [timeLeft, hasSubmitted, submitting]);
+  }, [timeLeft, submitted, submitting]);
 
   useEffect(() => {
     function handleRoundStarted(payload) {
@@ -260,34 +260,33 @@ const StorytellingPage = () => {
     };
   }, [navigate, gameId, roundNumber]);
 
-  const handleSubmit = async (isAutoSubmit = false) => {
-    if (hasSubmitted || submitting) return;
+ const handleSubmit = async (autoSubmit = false) => {
+  if (submitted || submitting) return;
 
-    try {
-      setSubmitting(true);
+  try {
+    setSubmitting(true);
 
-      const finalStory = storyText.trim();
+    const result = await postStory(gameId, roundNumber, storyText);
 
-      await postStorySubmission({
-        gameId,
-        roundNumber,
-        storyText: finalStory,
-        autoSubmitted: isAutoSubmit,
-      });
-
-      setHasSubmitted(true);
-
-      socket.emit("story_submitted", {
-        game_id: gameId,
-        round_number: roundNumber,
-        auto_submitted: isAutoSubmit,
-      });
-    } catch (error) {
-      console.error("Failed to submit story:", error);
-    } finally {
-      setSubmitting(false);
+    if (!result?.ok) {
+      throw new Error(result?.error || "Story submission failed");
     }
-  };
+
+    console.log("story submitted:", result);
+
+    setSubmitted(true);
+
+    socket.emit("story_submitted", {
+      game_id: gameId,
+      round_number: roundNumber,
+      auto_submit: autoSubmit,
+    });
+  } catch (error) {
+    console.error("Failed to submit story:", error);
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   return (
     <div className="game-window" id="storytelling-page">
