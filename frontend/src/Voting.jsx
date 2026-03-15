@@ -102,7 +102,8 @@ const VotingPage = () => {
   const navigate = useNavigate();
   const [selectedStoryId, setSelectedStoryId] = useState(null);
 
-  const gameId = "83b1b426-1ddb-443f-a985-b72f98553d2f";
+  ///////////////hardcoded beware//////////////////////
+  const gameId = "83b1b426-1ddb-443f-a985-b72f98553d2f"; 
 
   useEffect(() => {
     function handleAllVotesIn(payload) {

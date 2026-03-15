@@ -108,7 +108,7 @@ def create_app(test_config: dict | None = None):
     class StoryEndpoint(Resource):
         ##get the stories and their parts for a given game
         def get(self):
-            game_id = "8b5404ae-f8c1-4b80-b4f5-18fa08ecdd5e"
+            game_id = "83b1b426-1ddb-443f-a985-b72f98553d2f"
             game = Game.get(Game.game_id == uuid.UUID(game_id))
             stories = []
             for story in game.story:
