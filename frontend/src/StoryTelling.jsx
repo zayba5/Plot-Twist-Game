@@ -183,6 +183,7 @@ const StorytellingPage = () => {
     }
 
     loadPrompt();
+
   }, [gameId, roundNumber]);
 
   useEffect(() => {
@@ -260,33 +261,22 @@ const StorytellingPage = () => {
     };
   }, [navigate, gameId, roundNumber]);
 
- const handleSubmit = async (autoSubmit = false) => {
-  if (submitted || submitting) return;
+  const handleSubmit = async (isAutoSubmit = false) => {
+    if (submitted || submitting) return;
 
-  try {
-    setSubmitting(true);
+    try {
+      setSubmitting(true);
 
-    const result = await postStory(gameId, roundNumber, storyText);
+      const result = await postStory(gameId, roundNumber, storyText);
+      console.log(isAutoSubmit ? "auto-submitted:" : "submitted:", result);
 
-    if (!result?.ok) {
-      throw new Error(result?.error || "Story submission failed");
+      setSubmitted(true);
+    } catch (error) {
+      console.error("Failed to submit story:", error);
+    } finally {
+      setSubmitting(false);
     }
-
-    console.log("story submitted:", result);
-
-    setSubmitted(true);
-
-    socket.emit("story_submitted", {
-      game_id: gameId,
-      round_number: roundNumber,
-      auto_submit: autoSubmit,
-    });
-  } catch (error) {
-    console.error("Failed to submit story:", error);
-  } finally {
-    setSubmitting(false);
-  }
-};
+  };
 
   return (
     <div className="game-window" id="storytelling-page">
