@@ -20,12 +20,12 @@ body {
   z-index: 1000;
 }
 #head-wrapper #head {
-  height: 125px;
+  height: 65px;
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background-color: #e5e2e2;
+  background-color: rgba(159, 36, 253, 0.25);
   border-bottom: thin solid #d8d5d5;
   position: relative;
   z-index: 1000;
