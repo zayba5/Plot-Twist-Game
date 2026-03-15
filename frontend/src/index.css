@@ -2,11 +2,19 @@ html {
   height: 100%;
 }
 
+h1, p, h2, label, span {
+  color: #d3bece;
+}
+
+.story-part p {
+  color: whitesmoke;
+}
+
 body {
   font-family: "Roboto Condensed", sans-serif;
   height: 100%;
   width: 100%;
-  background-color: whitesmoke;
+  background-color: #242023;
   overflow-x: hidden;
   margin: 0;
 }
@@ -26,25 +34,25 @@ body {
   align-items: center;
   justify-content: space-between;
   background-color: rgba(159, 36, 253, 0.25);
-  border-bottom: thin solid #d8d5d5;
+  border-bottom: thin solid #6c36c3;
   position: relative;
   z-index: 1000;
 }
 #head-wrapper #head #header-title-container {
   display: flex;
   flex-direction: column;
-  color: rgb(255, 254, 254);
+  color: #d3bece;
   padding-left: 30px;
 }
 #head-wrapper #head .fa-bars {
-  color: rgb(255, 255, 255);
+  color: black;
   font-size: 2.5em;
   cursor: pointer;
   margin-right: 50px;
   display: none;
 }
 #head-wrapper #head .fa-bars:hover {
-  color: rgb(234, 119, 240);
+  color: gray;
 }
 #head-wrapper #head #nav-items {
   display: inline-flex;
@@ -58,10 +66,10 @@ body {
   cursor: pointer;
   font-size: 1.5em;
   text-decoration: none;
-  color: rgb(254, 254, 254);
+  color: #d3bece;
 }
 #head-wrapper #head #nav-items .nav-item:hover {
-  color: rgb(234, 119, 240);
+  color: gray;
 }
 
 #root {
@@ -87,15 +95,16 @@ body {
 }
 
 .button {
-  background-color: #84a2d9;
+  background-color: #82719d;
   padding: 10px;
   border-radius: 8px;
-  border: #d8d5d5;
-  box-shadow: 0px 0px 10px 2px #CBCBCB;
+  border: #6c36c3;
+  box-shadow: 0px 0px 10px 2px #494141;
+  color: whitesmoke;
 }
 
 .button:hover {
-  background-color: #6a8ecf;
+  background-color: #a778a7;
 }
 
 .game-window {
@@ -104,27 +113,29 @@ body {
   height: 80%;
   width: 80%;
   border-radius: 30px;
-  box-shadow: 0px 0px 30px 10px #CBCBCB;
+  box-shadow: 0px 0px 30px 10px #494141;
   align-self: center;
-  border: thin solid #d8d5d5;
+  border: thin solid #6c36c3;
   justify-content: space-between;
 }
 .game-window .game-window-control-bar {
   height: 100px;
-  background-color: #e5e2e2;
-  padding: 5px;
-  margin-top: 5px;
+  background-color: rgba(159, 36, 253, 0.25);
+  padding: 15px;
+  margin-top: 15px;
   display: flex;
   justify-content: end;
   align-items: center;
+  border-radius: 0 0 30px 30px;
 }
 .game-window .game-window-header {
   height: 100px;
-  background-color: #e5e2e2;
-  padding: 5px;
-  margin-bottom: 5px;
+  background-color: rgba(159, 36, 253, 0.25);
+  padding: 15px;
+  margin-bottom: 15px;
   display: flex;
   align-items: center;
+  border-radius: 30px 30px 0 0;
 }
 
 #voting-page #story-vote-card-list {
@@ -136,16 +147,16 @@ body {
   flex-grow: 1;
 }
 #voting-page #story-vote-card-list .story-vote-card {
-  border: thin solid #d8d5d5;
+  border: thin solid #6c36c3;
   border-radius: 30px;
   padding: 15px;
-  background-color: #e5e2e2;
+  background-color: rgba(159, 36, 253, 0.25);
   margin: 15px;
   width: 20%;
   min-width: 200px;
 }
 #voting-page #story-vote-card-list .story-vote-card .story-part {
-  background: #84a2d9;
+  background: #82719d;
   padding: 20px;
   margin: 20px;
   position: relative;
@@ -154,7 +165,7 @@ body {
 #voting-page #story-vote-card-list .story-vote-card .story-part:nth-of-type(odd):after {
   border-top: 20px solid transparent;
   border-bottom: 20px solid transparent;
-  border-right: 20px solid #84a2d9;
+  border-right: 20px solid #82719d;
   border-left: none;
   right: auto;
   left: -20px;
@@ -165,28 +176,28 @@ body {
   height: 0;
   border-top: 20px solid transparent;
   border-bottom: 20px solid transparent;
-  border-left: 20px solid #84a2d9;
+  border-left: 20px solid #82719d;
   right: -20px;
   position: absolute;
   top: 10px;
 }
 #voting-page #story-vote-card-list .story-vote-card:hover {
-  background-color: #cbcbcd;
+  background-color: #4c415f;
 }
 #voting-page #story-vote-card-list .selected-card {
-  background-color: #84a2d9;
+  background-color: #82719d;
 }
 #voting-page #story-vote-card-list .selected-card .story-part {
-  background-color: #e5e2e2;
+  background-color: rgba(159, 36, 253, 0.25);
 }
 #voting-page #story-vote-card-list .selected-card .story-part:nth-of-type(odd)::after {
-  border-right: 20px solid #e5e2e2;
+  border-right: 20px solid rgba(159, 36, 253, 0.25);
 }
 #voting-page #story-vote-card-list .selected-card .story-part::after {
-  border-left: 20px solid #e5e2e2;
+  border-left: 20px solid rgba(159, 36, 253, 0.25);
 }
 #voting-page #story-vote-card-list .selected-card:hover {
-  background-color: #6a8ecf;
+  background-color: #a778a7;
 }
 #voting-page #vote-button {
   font-size: larger;
@@ -203,10 +214,10 @@ body {
 }
 
 #scoreboard-page #scoreboard .scoreboard-item {
-  border: thin solid #d8d5d5;
+  border: thin solid #6c36c3;
   border-radius: 30px;
   padding: 15px;
-  background-color: #e5e2e2;
+  background-color: #242023;
   margin: 15px;
   min-width: 200px;
   display: flex;
