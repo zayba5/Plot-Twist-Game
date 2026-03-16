@@ -135,11 +135,17 @@ const StoryInput = ({ storyText, setStoryText, disabled }) => {
   );
 };
 
-const ControlBar = ({ onSubmit, disabled, submitting, timeLeft }) => {
+const ControlBar = ({ onSubmit, disabled, submitted, submitting, timeLeft }) => {
   return (
     <div className="game-window-control-bar">
       <div className="control-bar-left">
-        <span>{timeLeft > 0 ? `Auto-submit in ${timeLeft}s` : "Submitting..."}</span>
+        <span>
+          {submitted
+            ? "Submitted"
+            : submitting
+            ? "Submitting..."
+            : `Auto-submit in ${timeLeft}s`}
+        </span>
       </div>
 
       <button
@@ -155,7 +161,7 @@ const ControlBar = ({ onSubmit, disabled, submitting, timeLeft }) => {
 
 const StorytellingPage = () => {
   const navigate = useNavigate();
-  const [submitted, setSubmitted] = useState(false);
+  
 
   //my own testing game ID
   const gameId = "8b5404ae-f8c1-4b80-b4f5-18fa08ecdd5e";
@@ -164,12 +170,12 @@ const StorytellingPage = () => {
   const [storyText, setStoryText] = useState("");
   const [timeLeft, setTimeLeft] = useState(ROUND_TIME_SECONDS);
   const [submitting, setSubmitting] = useState(false);
-  const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [roundNumber, setRoundNumber] = useState(1);
 
   const canSubmit = useMemo(() => {
-    return !hasSubmitted && storyText.trim().length > 0;
-  }, [hasSubmitted, storyText]);
+    return !submitted && storyText.trim().length > 0;
+  }, [submitted, storyText]);
 
   useEffect(() => {
     async function loadPrompt() {
@@ -187,7 +193,7 @@ const StorytellingPage = () => {
   }, [gameId, roundNumber]);
 
   useEffect(() => {
-    if (hasSubmitted) return;
+    if (submitted) return;
     if (timeLeft <= 0) return;
 
     const intervalId = setInterval(() => {
@@ -195,7 +201,7 @@ const StorytellingPage = () => {
     }, 1000);
 
     return () => clearInterval(intervalId);
-  }, [timeLeft, hasSubmitted]);
+  }, [timeLeft, submitted]);
 
   useEffect(() => {
     if (timeLeft === 0 && !submitted && !submitting) {
@@ -211,7 +217,7 @@ const StorytellingPage = () => {
       setRoundNumber(payload?.round_number ?? 1);
       setPrompt(payload?.prompt ?? "");
       setStoryText("");
-      setHasSubmitted(false);
+      setSubmitted(false);
       setSubmitting(false);
       setTimeLeft(payload?.round_time_seconds ?? ROUND_TIME_SECONDS);
     }
@@ -231,7 +237,7 @@ const StorytellingPage = () => {
       setRoundNumber(payload?.next_round_number ?? roundNumber + 1);
       setPrompt(payload?.next_prompt ?? "");
       setStoryText("");
-      setHasSubmitted(false);
+      setSubmitted(false);
       setSubmitting(false);
       setTimeLeft(payload?.round_time_seconds ?? ROUND_TIME_SECONDS);
     }
@@ -266,9 +272,9 @@ const StorytellingPage = () => {
 
     try {
       setSubmitting(true);
-
-      const result = await postStory(gameId, roundNumber, storyText);
-      console.log(isAutoSubmit ? "auto-submitted:" : "submitted:", result);
+      const normStorytext = storyText?.trim() || "someone forgot to type!";
+      const result = await postStory(gameId, roundNumber, normStorytext);
+      console.log(isAutoSubmit ? "auto-submitted:" : "manual-submitted:", result);
 
       setSubmitted(true);
     } catch (error) {
@@ -286,11 +292,12 @@ const StorytellingPage = () => {
       <StoryInput
         storyText={storyText}
         setStoryText={setStoryText}
-        disabled={hasSubmitted}
+        disabled={submitted}
       />
       <ControlBar
         onSubmit={() => handleSubmit(false)}
         disabled={!canSubmit}
+        submitted={submitted}
         submitting={submitting}
         timeLeft={timeLeft}
       />
