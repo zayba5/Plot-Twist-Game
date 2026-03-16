@@ -139,7 +139,13 @@ const ControlBar = ({ onSubmit, disabled, submitting, timeLeft }) => {
   return (
     <div className="game-window-control-bar">
       <div className="control-bar-left">
-        <span>{timeLeft > 0 ? `Auto-submit in ${timeLeft}s` : "Submitting..."}</span>
+        <span>
+          {submitted
+            ? "Submitted"
+            : submitting
+            ? "Submitting..."
+            : `Auto-submit in ${timeLeft}s`}
+        </span>
       </div>
 
       <button
