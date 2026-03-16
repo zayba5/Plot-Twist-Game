@@ -135,7 +135,7 @@ const StoryInput = ({ storyText, setStoryText, disabled }) => {
   );
 };
 
-const ControlBar = ({ onSubmit, disabled, submitting, timeLeft }) => {
+const ControlBar = ({ onSubmit, disabled, submitted, submitting, timeLeft }) => {
   return (
     <div className="game-window-control-bar">
       <div className="control-bar-left">
@@ -171,7 +171,6 @@ const StorytellingPage = () => {
   const [timeLeft, setTimeLeft] = useState(ROUND_TIME_SECONDS);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  //const [hasSubmitted, setHasSubmitted] = useState(false);
   const [roundNumber, setRoundNumber] = useState(1);
 
   const canSubmit = useMemo(() => {
@@ -273,8 +272,8 @@ const StorytellingPage = () => {
 
     try {
       setSubmitting(true);
-
-      const result = await postStory(gameId, roundNumber, storyText);
+      const normStorytext = storyText?.trim() || "someone forgot to type!";
+      const result = await postStory(gameId, roundNumber, normStorytext);
       console.log(isAutoSubmit ? "auto-submitted:" : "manual-submitted:", result);
 
       setSubmitted(true);
@@ -298,6 +297,7 @@ const StorytellingPage = () => {
       <ControlBar
         onSubmit={() => handleSubmit(false)}
         disabled={!canSubmit}
+        submitted={submitted}
         submitting={submitting}
         timeLeft={timeLeft}
       />
