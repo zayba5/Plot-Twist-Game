@@ -35,21 +35,32 @@ const Scoreboard = () => {
         setScores([]);
       }
     }
-    
+
     loadScores();
   }, []);
 
+  let prevScore = null;
+  let placement = 0;
+
   return (
     <div id='scoreboard'>
-      {scores.map((item, index) => (
-        <ScoreboardItem
-          key={index}
-          user={item?.user}
-          score={item?.score}
-          placement={index+1}
-        />
-      ))}
-      
+      {scores.map((item, index) => {
+        if (!item) return null;
+
+        if (item.score !== prevScore) {
+          prevScore = item.score;
+          placement = index + 1;
+        }
+
+        return (
+          <ScoreboardItem
+            key={index}
+            user={item.user}
+            score={item.score}
+            placement={placement}
+          />
+        );
+      })}
     </div>
   );
 };
