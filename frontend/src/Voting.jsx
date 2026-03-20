@@ -3,6 +3,7 @@ import "./index.css";
 import { socket } from "./global.jsx";
 import { fetchGameStories, postVote } from "./Utility.jsx";
 import { useNavigate } from "react-router-dom";
+import Timer from "./timer.jsx";
 
 const StoryPart = ({ part }) => {
   if (!part) return null;
@@ -94,6 +95,7 @@ const Header = () => {
   return (
     <div className="game-window-header">
       <h1>Vote for your favorite story</h1>
+      <Timer/>
     </div>
   );
 };
