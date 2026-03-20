@@ -319,7 +319,7 @@ const StorytellingPage = () => {
   return (
     <div className="game-window" id="storytelling-page">
       <div>
-        <strong>Claimed Player:</strong> {claimedPlayerId || "Not assigned"}
+        <label><strong>Claimed Player: {claimedPlayerId || "Not assigned"}</strong></label> 
         {claimError ? <div>{claimError}</div> : null}
       </div>
 
