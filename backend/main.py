@@ -10,10 +10,7 @@ from functools import wraps
 import uuid
 from flask_socketio import SocketIO, join_room
 from peewee import fn
-<<<<<<< HEAD
-=======
 from player_claims import claim_player_for_socket, release_player_for_socket
->>>>>>> 0de057a58719f631e4345929cd0b89d98ce1a087
 
 load_dotenv()
 s = TimestampSigner(os.getenv("secretKey"))
@@ -150,12 +147,8 @@ def create_app(test_config: dict | None = None):
     class StoryEndpoint(Resource):
         ##get the stories and their parts for a given game
         def get(self):
-<<<<<<< HEAD
             user = require_user()
             game_id = "01731b8d-0f53-42a2-9172-49674c247858"
-=======
-            game_id = "8b5404ae-f8c1-4b80-b4f5-18fa08ecdd5e"
->>>>>>> 0de057a58719f631e4345929cd0b89d98ce1a087
             game = Game.get(Game.game_id == uuid.UUID(game_id))
             stories = []
             for story in game.story:
@@ -176,13 +169,10 @@ def create_app(test_config: dict | None = None):
 
     class StorySubmissionEndpoint(Resource):
         def post(self):
-<<<<<<< HEAD
             user = require_user()
-=======
             if not getattr(g, "user", None):
                 return {"ok": False, "error": "unauthorized"}, 401
 
->>>>>>> 0de057a58719f631e4345929cd0b89d98ce1a087
             data = request.get_json() or {}
 
             game_id = data.get("game_id")
