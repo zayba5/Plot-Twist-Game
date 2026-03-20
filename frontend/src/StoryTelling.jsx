@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import "./index.css";
 import { fetchItem } from "./Utility.jsx";
+import { fetchGameStories, fetchUserId } from "./Utility";
 import { postStory } from "./Utility.jsx";
 import { SampleCard } from "./SampleCard.jsx";
 import { socket } from "./global.jsx";
@@ -170,14 +171,44 @@ const StorytellingPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [roundNumber, setRoundNumber] = useState(1);
-  const [claimedPlayerId, setClaimedPlayerId] = useState("");
   const [claimError, setClaimError] = useState("");
+  const [userId, setUserId] = useState(null);
   const hasClaimedRef = useRef(false);
   const canSubmit = useMemo(() => {
     return !submitted && storyText.trim().length > 0;
   }, [submitted, storyText]);
 
   useEffect(() => {
+
+    async function fetchPrompt(gameId, roundNumber) {
+      const data = await fetchGameStories();
+      const stories = data?.stories ?? [];
+
+      // Use roundNumber to choose a story from the returned list.
+      // Assumes roundNumber starts at 1.
+      const story = stories[roundNumber - 1];
+
+      if (!story) {
+        return {
+          prompt: "There is no story yet. Please think of an initial prompt to begin the story."
+        };
+      }
+
+      const storyParts = story?.story_parts ?? [];
+
+      if (storyParts.length === 0) {
+        return {
+          prompt: "There is no story yet. Please think of an initial prompt to begin the story."
+        };
+      }
+
+      const lastStoryPart = storyParts[storyParts.length - 1];
+
+      return {
+        prompt: lastStoryPart?.part_content ?? "Please continue the story."
+      };
+    }
+
     async function loadPrompt() {
       try {
         const data = await fetchPrompt(gameId, roundNumber);
@@ -279,24 +310,8 @@ const StorytellingPage = () => {
 
     console.log("joining game:", gameId);
     socket.emit("join_game", { game_id: gameId });
+    fetchUserId().then(setUserId);
 
-    console.log("emitting claim_player for game:", gameId);
-    socket.emit("claim_player", { game_id: gameId }, (response) => {
-      console.log("claim_player response:", response);
-
-      if (response?.ok) {
-        setClaimedPlayerId(response.player_id ?? "");
-        setClaimError("");
-      } else {
-        setClaimedPlayerId("");
-        setClaimError(response?.error ?? "Failed to claim player");
-      }
-    });
-
-    // return () => {
-    //   socket.emit("release_player");
-    //   hasClaimedRef.current = false;
-    // };
   }, [gameId]);
 
   const handleSubmit = async (isAutoSubmit = false) => {
@@ -319,7 +334,7 @@ const StorytellingPage = () => {
   return (
     <div className="game-window" id="storytelling-page">
       <div>
-        <strong>Claimed Player:</strong> {claimedPlayerId || "Not assigned"}
+        <label><strong>Claimed Player: {userId || "Not assigned"}</strong></label> 
         {claimError ? <div>{claimError}</div> : null}
       </div>
 
