@@ -43,26 +43,26 @@ def create_app(test_config: dict | None = None):
 
     API_DIR = os.path.dirname(os.path.abspath(__file__))
 
-    #events for claiming player after room membership
-    @socketio.on("claim_player")
-    def handle_claim_player(data):
-        game_id = data.get("game_id")
-        if not game_id:
-            return {"ok": False, "error": "game_id is required"}
+    # #events for claiming player after room membership
+    # @socketio.on("claim_player")
+    # def handle_claim_player(data):
+    #     game_id = data.get("game_id")
+    #     if not game_id:
+    #         return {"ok": False, "error": "game_id is required"}
 
-        sid = request.sid
-        return claim_player_for_socket(game_id, sid)
+    #     sid = request.sid
+    #     return claim_player_for_socket(game_id, sid)
 
 
-    @socketio.on("release_player")
-    def handle_release_player():
-        sid = request.sid
-        released = release_player_for_socket(sid)
-        return {"ok": True, "released": released}
+    # @socketio.on("release_player")
+    # def handle_release_player():
+    #     sid = request.sid
+    #     released = release_player_for_socket(sid)
+    #     return {"ok": True, "released": released}
 
-    @socketio.on("disconnect")
-    def handle_disconnect():
-        release_player_for_socket(request.sid)
+    # @socketio.on("disconnect")
+    # def handle_disconnect():
+    #     release_player_for_socket(request.sid)
 
     @app.before_request
     def before_request():
@@ -144,6 +144,23 @@ def create_app(test_config: dict | None = None):
 ##once story telling is implemented switch to active game
 ##easier for now since i can't create story in browser
 ##to test replace the game id with one in your DB
+    class WhoAmIEndpoint(Resource): #expose uder Id w/o reading cookie directly
+        def get(self):
+            user = require_user()
+
+            if not getattr(g, "user", None):
+                return {
+                    "ok": False,
+                    "user_id": None,
+                    "error": "unauthorized"
+                }, 401
+
+            return {
+                "ok": True,
+                "user_id": str(g.user)
+            }, 200
+    api.add_resource(WhoAmIEndpoint, "/WhoAmI")
+
     class StoryEndpoint(Resource):
         ##get the stories and their parts for a given game
         def get(self):
