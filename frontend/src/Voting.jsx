@@ -92,10 +92,13 @@ const ControlBar = ({ selectedStoryId, gameId }) => {
 };
 
 const Header = () => {
+  function handleTimerExpire(){
+    console.log("time up");
+  }
   return (
     <div className="game-window-header">
       <h1>Vote for your favorite story</h1>
-      <Timer/>
+      <Timer durationSec={20} onExpire={handleTimerExpire}/>
     </div>
   );
 };

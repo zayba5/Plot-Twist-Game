@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./index.css";
 
-export default function Timer() {
-    const TIME_LIMIT_MS = 20 * 1000; //<-----hardcoded until game settings are saved
+export default function Timer({durationSec, onExpire}) {
+    const TIME_LIMIT_MS = durationSec * 1000; 
     const INTERVAL_MS = 100;
     const RADIUS = 40;
     const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
-    const [time, setTime] = useState(TIME_LIMIT_MS)
+    const [time, setTime] = useState(TIME_LIMIT_MS);
+    const isExpired = useRef(false);
 
     useEffect(() => {
         const startTime = Date.now();
@@ -20,11 +21,16 @@ export default function Timer() {
 
             if (remaining <= 0) {
                 clearInterval(intervalId);
+
+                if(!isExpired.current){
+                    isExpired.current = true;
+                    onExpire?.();
+                }
             }
         }, INTERVAL_MS);
 
         return () => clearInterval(intervalId);
-    }, []);
+    }, [onExpire]);
 
     const progress = time / TIME_LIMIT_MS;
     const offset = CIRCUMFERENCE * (1 - progress)
