@@ -103,7 +103,7 @@ const VotingPage = () => {
   const [selectedStoryId, setSelectedStoryId] = useState(null);
 
   ///////////////hardcoded beware//////////////////////
-  const gameId = "83b1b426-1ddb-443f-a985-b72f98553d2f"; 
+  const gameId = "01731b8d-0f53-42a2-9172-49674c247858"; 
 
   useEffect(() => {
     function handleAllVotesIn(payload) {

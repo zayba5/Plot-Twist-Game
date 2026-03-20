@@ -2,7 +2,7 @@ import os
 from flask import Flask, request, redirect, abort, g, jsonify, session
 from flask_restful import Resource, Api
 from flask_compress import Compress
-from itsdangerous import TimestampSigner
+from itsdangerous import TimestampSigner, BadSignature, SignatureExpired
 from dotenv import load_dotenv
 from models import *
 from itsdangerous import TimestampSigner
@@ -14,8 +14,8 @@ from player_claims import claim_player_for_socket, release_player_for_socket
 
 load_dotenv()
 s = TimestampSigner(os.getenv("secretKey"))
-socketio = SocketIO(cors_allowed_origins="*")
-
+socketio = SocketIO(cors_allowed_origins=["http://localhost:5173"])
+FRONTEND_ORIGIN = "http://localhost:5173"
 def create_app(test_config: dict | None = None):
     app = Flask(__name__)
     app.config["secretKey"] = os.getenv("secretKey")
@@ -65,27 +65,37 @@ def create_app(test_config: dict | None = None):
         release_player_for_socket(request.sid)
 
     @app.before_request
-    def beforeRequest():
+    def before_request():
+        g.user = None
+        g.should_set_uid_cookie = False
+
+        if request.method == "OPTIONS":
+            return
+
         token = request.cookies.get("uid")
+        if not token:
+            return
 
-        if token:
-            try:
-                user_id = signer.unsign(token.encode("utf8"), max_age=60*60*24*365)
-                g.user = User.get(User.user_id == user_id)
-                return
-            except Exception:
-                pass
+        try:
+            raw_user_id = signer.unsign(token, max_age=60 * 60 * 24 * 365)
 
-        # if no cookie create user
-        user = User.create(user_id=uuid.uuid4())
-        g.user = user
+            if isinstance(raw_user_id, bytes):
+                raw_user_id = raw_user_id.decode("utf8")
+
+            user_id = uuid.UUID(str(raw_user_id))
+            g.user = User.get_or_none(User.user_id == user_id)
+            print("loaded user:", g.user, flush=True)
+
+        except (BadSignature, SignatureExpired, ValueError) as e:
+            print("cookie lookup failed:", repr(e))
+            g.user = None
 
     @app.after_request
     def afterRequest(response):
-        response.headers.set("Access-Control-Allow-Origin", "*")
+        response.headers["Access-Control-Allow-Origin"] = FRONTEND_ORIGIN
+        response.headers["Access-Control-Allow-Credentials"] = "true"        
         response.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, PATCH, DELETE")
         response.headers.set("Access-Control-Allow-Headers", "X-api-key, Content-Type, accept")
-        response.headers.set("Content-Disposition", "attachment")
 
         if not app.config.get("TESTING"):
             try:
@@ -93,19 +103,27 @@ def create_app(test_config: dict | None = None):
                     db.close()
             except Exception:
                 pass
-            
-        if not request.cookies.get("uid") and hasattr(g, "user"):
-            signed = signer.sign(str(g.user.user_id).encode("utf8")).decode("utf8")
+        if getattr(g, "should_set_uid_cookie", False) and getattr(g, "user", None):
+            print("setting cookie for user:", g.user.user_id, flush=True)
 
+            signed = signer.sign(str(g.user.user_id).encode("utf8")).decode("utf8")
             response.set_cookie(
                 "uid",
                 signed,
-                max_age=60*60*24*365,
+                max_age=60 * 60 * 24 * 365,
                 httponly=True,
-                samesite="Lax"
+                samesite="Lax",
+                secure=False,
+                path="/"
             )
 
+
         return response
+    
+    def require_user():
+        if not getattr(g, "user", None):
+            abort(401, description="Missing or invalid user cookie")
+        return g.user
 
 
     #endpoints
@@ -129,7 +147,8 @@ def create_app(test_config: dict | None = None):
     class StoryEndpoint(Resource):
         ##get the stories and their parts for a given game
         def get(self):
-            game_id = "8b5404ae-f8c1-4b80-b4f5-18fa08ecdd5e"
+            user = require_user()
+            game_id = "01731b8d-0f53-42a2-9172-49674c247858"
             game = Game.get(Game.game_id == uuid.UUID(game_id))
             stories = []
             for story in game.story:
@@ -150,6 +169,7 @@ def create_app(test_config: dict | None = None):
 
     class StorySubmissionEndpoint(Resource):
         def post(self):
+            user = require_user()
             if not getattr(g, "user", None):
                 return {"ok": False, "error": "unauthorized"}, 401
 
@@ -207,7 +227,8 @@ def create_app(test_config: dict | None = None):
 
     class ScoreEndpoint(Resource):
         def get(self):
-            game_id = "83b1b426-1ddb-443f-a985-b72f98553d2f"
+            user = require_user()
+            game_id = "01731b8d-0f53-42a2-9172-49674c247858"
             game = Game.get(Game.game_id == uuid.UUID(game_id))
             scores = []
             for player in game.player:
@@ -225,6 +246,7 @@ def create_app(test_config: dict | None = None):
 ##hardcoded voting test until stories work
     class TestVotesEndpoint(Resource):
         def post(self):
+            user =require_user()
             data = request.get_json() or {}
             game_id = data.get("game_id")
 
@@ -334,7 +356,27 @@ def create_app(test_config: dict | None = None):
                 "total_players": total_players,
             }
     api.add_resource(TestVotesEndpoint, "/TestVote")
-###########################################################
+    
+    class SessionEndpoint(Resource):
+        def get(self):
+            if getattr(g, "user", None):
+                return {
+                    "ok": True,
+                    "user_id": str(g.user.user_id),
+                    "existing": True
+                }, 200
+
+            user = User.create(user_id=uuid.uuid4())
+            g.user = user
+            g.should_set_uid_cookie = True
+
+            return {
+                "ok": True,
+                "user_id": str(user.user_id),
+                "existing": False
+            }, 201
+    
+    api.add_resource(SessionEndpoint, "/session")
 
     return app
             

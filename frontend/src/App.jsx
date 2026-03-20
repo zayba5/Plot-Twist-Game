@@ -1,4 +1,4 @@
-import React, { useState, useEffect, lazy, Suspense } from "react";
+import React, { useState, useEffect, lazy, Suspense, useRef } from "react";
 import "./index.css";
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from "react-router-dom";
 import { faBars } from "@fortawesome/free-solid-svg-icons";
@@ -74,7 +74,7 @@ function ScrollToTop() {
 
 function PageState() {
   return (
-    <div id="header-body"> 
+    <div id="header-body">
       <Header />
       <div id="page-body">
         <Suspense fallback={<div>Loading...</div>}>
@@ -102,6 +102,38 @@ function NotFound() {
 }
 
 export default function App() {
+  const [sessionReady, setSessionReady] = useState(false);
+  const [sessionError, setSessionError] = useState("");
+  const startedRef = useRef(false);
+
+  useEffect(() => {
+    if (startedRef.current) return;
+    startedRef.current = true;
+
+    async function initSession() {
+      try {
+        const response = await fetch("http://localhost:5000/session", {
+          method: "GET",
+          credentials: "include",
+        });
+
+        if (!response.ok) {
+          throw new Error(`session init failed: ${response.status}`);
+        }
+
+        setSessionReady(true);
+      } catch (err) {
+        console.error(err);
+        setSessionError("Could not start session.");
+      }
+    }
+
+    initSession();
+  }, []);
+
+  if (sessionError) return <div>{sessionError}</div>;
+  if (!sessionReady) return <div>Starting session...</div>;
+
   return (
     <div id="main-page">
       <Router>

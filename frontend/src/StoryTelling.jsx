@@ -162,7 +162,7 @@ const ControlBar = ({ onSubmit, disabled, submitted, submitting, timeLeft }) => 
 const StorytellingPage = () => {
   const navigate = useNavigate();
 
-  const gameId = "8b5404ae-f8c1-4b80-b4f5-18fa08ecdd5e";
+  const gameId = "01731b8d-0f53-42a2-9172-49674c247858";
 
   const [prompt, setPrompt] = useState("");
   const [storyText, setStoryText] = useState("");
