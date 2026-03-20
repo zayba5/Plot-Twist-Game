@@ -10,12 +10,14 @@ export async function fetchItem() {
 export async function fetchGameStories() {
   return apiJson("Story", {
     method: "GET",
+    credentials: "include"
   });
 }
 
 export async function fetchScores() {
   return apiJson("Scores", {
     method: "GET",
+    credentials: "include"
   });
 }
 
@@ -23,6 +25,7 @@ export async function fetchScores() {
 export async function postVote(gameID, storyID) {
   return apiJson("TestVote", { //<---change this to Vote when stories work properly
     method: "POST",
+    credentials: "include",
     body: {
       game_id: gameID,
       story_id: storyID,

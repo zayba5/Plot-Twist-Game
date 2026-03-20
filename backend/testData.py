@@ -25,7 +25,7 @@ def testData():
 
     # game
     game = Game.create(
-        game_id=uuid.uuid4(),
+        game_id="01731b8d-0f53-42a2-9172-49674c247858",
         game_status=waiting,
         game_host=host
     )
