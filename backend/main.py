@@ -383,4 +383,6 @@ def create_app(test_config: dict | None = None):
 
 if __name__ == "__main__":
     app = create_app()
+    print(app.url_map, flush=True)
+
     socketio.run(app, host="0.0.0.0", debug=True, allow_unsafe_werkzeug=True)
