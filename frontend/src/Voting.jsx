@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import "./index.css";
 import { socket } from "./global.jsx";
 import { fetchGameStories, postVote } from "./Utility.jsx";
 import { useNavigate } from "react-router-dom";
+import Timer from "./timer.jsx";
 
 const StoryPart = ({ part }) => {
   if (!part) return null;
@@ -90,10 +91,12 @@ const ControlBar = ({ selectedStoryId, gameId }) => {
   );
 };
 
-const Header = () => {
+const Header = ({ handleTimerExpire }) => {
+
   return (
     <div className="game-window-header">
       <h1>Vote for your favorite story</h1>
+      <Timer durationSec={20} onExpire={handleTimerExpire} />
     </div>
   );
 };
@@ -101,14 +104,27 @@ const Header = () => {
 const VotingPage = () => {
   const navigate = useNavigate();
   const [selectedStoryId, setSelectedStoryId] = useState(null);
+  const finished = useRef(false)
 
   ///////////////hardcoded beware//////////////////////
-  const gameId = "01731b8d-0f53-42a2-9172-49674c247858"; 
+  const gameId = "01731b8d-0f53-42a2-9172-49674c247858";
+
+  const endRound = useCallback((reason, payload = null) => {
+    if (finished.current) return;
+    finished.current = true;
+    console.log("round finished because:", reason, payload);
+    navigate("/score");
+  }, [navigate])
+
+
+  function handleTimerExpire() {
+    endRound("timer_expired");
+  }
 
   useEffect(() => {
     function handleAllVotesIn(payload) {
       console.log("all votes in:", payload);
-      navigate("/score");
+      endRound("all_votes_in", payload)
     }
 
     socket.emit("join_game", { game_id: gameId });
@@ -117,11 +133,11 @@ const VotingPage = () => {
     return () => {
       socket.off("all_votes_in", handleAllVotesIn);
     };
-  }, [navigate, gameId]);
+  }, [gameId, endRound]);
 
   return (
     <div className="game-window" id="voting-page">
-      <Header />
+      <Header handleTimerExpire={handleTimerExpire} />
       <StoryCardList
         selectedStoryId={selectedStoryId}
         setSelectedStoryId={setSelectedStoryId}

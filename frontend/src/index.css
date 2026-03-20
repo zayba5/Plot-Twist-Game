@@ -136,6 +136,7 @@ body {
   display: flex;
   align-items: center;
   border-radius: 30px 30px 0 0;
+  justify-content: space-between;
 }
 
 #voting-page #story-vote-card-list {
@@ -202,6 +203,40 @@ body {
 #voting-page #vote-button {
   font-size: larger;
   height: fit-content;
+}
+
+.timer_box {
+  position: relative;
+  height: 80px;
+  width: 80px;
+}
+.timer_box .timer_circle {
+  fill: none;
+  stroke: none;
+}
+.timer_box .timer_circle .timer_total {
+  stroke-width: 15px;
+  stroke: darkgray;
+}
+.timer_box .timer_circle .timer_remaining {
+  stroke-width: 15px;
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: center;
+  transition: 1s linear all;
+  transition: stroke 0.3s linear, stroke-dashoffset 0.1s linear;
+}
+.timer_box .timer_counter {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: bolder;
+  color: #d3bece;
 }
 
 #scoreboard-page #scoreboard {
