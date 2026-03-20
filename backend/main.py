@@ -14,8 +14,8 @@ from player_claims import claim_player_for_socket, release_player_for_socket
 
 load_dotenv()
 s = TimestampSigner(os.getenv("secretKey"))
-socketio = SocketIO(cors_allowed_origins=["http://localhost:5173"])
-FRONTEND_ORIGIN = "http://localhost:5173"
+socketio = SocketIO(cors_allowed_origins=[os.getenv("frontHost")])
+FRONTEND_ORIGIN = os.getenv("frontHost")
 def create_app(test_config: dict | None = None):
     app = Flask(__name__)
     app.config["secretKey"] = os.getenv("secretKey")
