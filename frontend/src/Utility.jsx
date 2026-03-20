@@ -7,7 +7,7 @@ export async function fetchItem() {
 }
 
 //fetch stories and their parts for a given game
-const USE_MOCK_DATA = true; // for testing, change to false in deployment
+const USE_MOCK_DATA = false; // for testing, change to false in deployment
 export async function fetchGameStories() {
   if (USE_MOCK_DATA) {
     return {
@@ -61,10 +61,21 @@ export async function postStory(gameID, roundNumber, content) {
   console.log("stroy POST endpoint called")
   return apiJson("StorySubmission", {
     method: "POST",
+    credentials: "include",
     body: {
       game_id: gameID,
       round_number: roundNumber,
       content: content?.trim(),
     },
   });
+}
+
+export async function fetchUserId() {
+  const res = await fetch("http://localhost:5000/WhoAmI", {
+    method: "GET",
+    credentials: "include"
+  });
+
+  const data = await res.json();
+  return data.user_id;
 }
