@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import "./index.css";
 import { fetchItem } from "./Utility.jsx";
 import { postStory } from "./Utility.jsx";
@@ -90,7 +90,7 @@ function LoadCard() {
   );
 }
 
-const ROUND_TIME_SECONDS = 60;
+const ROUND_TIME_SECONDS = 60000; // on deployment change it to 60
 const MAX_ROUNDS = 3;
 
 const Header = ({ roundNumber, maxRounds }) => {
@@ -161,9 +161,7 @@ const ControlBar = ({ onSubmit, disabled, submitted, submitting, timeLeft }) => 
 
 const StorytellingPage = () => {
   const navigate = useNavigate();
-  
 
-  //my own testing game ID
   const gameId = "8b5404ae-f8c1-4b80-b4f5-18fa08ecdd5e";
 
   const [prompt, setPrompt] = useState("");
@@ -172,7 +170,9 @@ const StorytellingPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [roundNumber, setRoundNumber] = useState(1);
-
+  const [claimedPlayerId, setClaimedPlayerId] = useState("");
+  const [claimError, setClaimError] = useState("");
+  const hasClaimedRef = useRef(false);
   const canSubmit = useMemo(() => {
     return !submitted && storyText.trim().length > 0;
   }, [submitted, storyText]);
@@ -189,7 +189,6 @@ const StorytellingPage = () => {
     }
 
     loadPrompt();
-
   }, [gameId, roundNumber]);
 
   useEffect(() => {
@@ -211,15 +210,23 @@ const StorytellingPage = () => {
   }, [timeLeft, submitted, submitting]);
 
   useEffect(() => {
-    function handleRoundStarted(payload) {
-      console.log("round_started:", payload);
-
-      setRoundNumber(payload?.round_number ?? 1);
-      setPrompt(payload?.prompt ?? "");
+    function resetRoundState(nextPrompt, nextRoundNumber, nextTimeLeft) {
+      setRoundNumber(nextRoundNumber);
+      setPrompt(nextPrompt);
       setStoryText("");
       setSubmitted(false);
       setSubmitting(false);
-      setTimeLeft(payload?.round_time_seconds ?? ROUND_TIME_SECONDS);
+      setTimeLeft(nextTimeLeft);
+    }
+
+    function handleRoundStarted(payload) {
+      console.log("round_started:", payload);
+
+      resetRoundState(
+        payload?.prompt ?? "",
+        payload?.round_number ?? 1,
+        payload?.round_time_seconds ?? ROUND_TIME_SECONDS
+      );
     }
 
     function handleAllStoriesIn(payload) {
@@ -229,17 +236,17 @@ const StorytellingPage = () => {
     function handleRoundEnded(payload) {
       console.log("round ended:", payload);
 
-      if ((payload?.round_number ?? roundNumber) >= MAX_ROUNDS) {
+      const endedRoundNumber = payload?.round_number ?? 1;
+      if (endedRoundNumber >= MAX_ROUNDS) {
         navigate("/vote");
         return;
       }
 
-      setRoundNumber(payload?.next_round_number ?? roundNumber + 1);
-      setPrompt(payload?.next_prompt ?? "");
-      setStoryText("");
-      setSubmitted(false);
-      setSubmitting(false);
-      setTimeLeft(payload?.round_time_seconds ?? ROUND_TIME_SECONDS);
+      resetRoundState(
+        payload?.next_prompt ?? "",
+        payload?.next_round_number ?? endedRoundNumber + 1,
+        payload?.round_time_seconds ?? ROUND_TIME_SECONDS
+      );
     }
 
     function handleGoToVoting(payload) {
@@ -251,7 +258,6 @@ const StorytellingPage = () => {
       console.log("stories rotated:", payload);
     }
 
-    socket.emit("join_game", { game_id: gameId });
     socket.on("round_started", handleRoundStarted);
     socket.on("all_stories_in", handleAllStoriesIn);
     socket.on("round_ended", handleRoundEnded);
@@ -265,7 +271,33 @@ const StorytellingPage = () => {
       socket.off("go_to_voting", handleGoToVoting);
       socket.off("stories_rotated", handleStoriesRotated);
     };
-  }, [navigate, gameId, roundNumber]);
+  }, [navigate]);
+
+  useEffect(() => {
+    if (hasClaimedRef.current) return;
+    hasClaimedRef.current = true;
+
+    console.log("joining game:", gameId);
+    socket.emit("join_game", { game_id: gameId });
+
+    console.log("emitting claim_player for game:", gameId);
+    socket.emit("claim_player", { game_id: gameId }, (response) => {
+      console.log("claim_player response:", response);
+
+      if (response?.ok) {
+        setClaimedPlayerId(response.player_id ?? "");
+        setClaimError("");
+      } else {
+        setClaimedPlayerId("");
+        setClaimError(response?.error ?? "Failed to claim player");
+      }
+    });
+
+    // return () => {
+    //   socket.emit("release_player");
+    //   hasClaimedRef.current = false;
+    // };
+  }, [gameId]);
 
   const handleSubmit = async (isAutoSubmit = false) => {
     if (submitted || submitting) return;
@@ -286,6 +318,11 @@ const StorytellingPage = () => {
 
   return (
     <div className="game-window" id="storytelling-page">
+      <div>
+        <strong>Claimed Player:</strong> {claimedPlayerId || "Not assigned"}
+        {claimError ? <div>{claimError}</div> : null}
+      </div>
+
       <Header roundNumber={roundNumber} maxRounds={MAX_ROUNDS} />
       <PromptBox prompt={prompt} />
       <TimerBar timeLeft={timeLeft} />

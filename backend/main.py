@@ -10,7 +10,7 @@ from functools import wraps
 import uuid
 from flask_socketio import SocketIO, join_room
 from peewee import fn
-
+from player_claims import claim_player_for_socket, release_player_for_socket
 
 load_dotenv()
 s = TimestampSigner(os.getenv("secretKey"))
@@ -42,6 +42,27 @@ def create_app(test_config: dict | None = None):
     signer = TimestampSigner(os.getenv("secretKey") or "")
 
     API_DIR = os.path.dirname(os.path.abspath(__file__))
+
+    #events for claiming player after room membership
+    @socketio.on("claim_player")
+    def handle_claim_player(data):
+        game_id = data.get("game_id")
+        if not game_id:
+            return {"ok": False, "error": "game_id is required"}
+
+        sid = request.sid
+        return claim_player_for_socket(game_id, sid)
+
+
+    @socketio.on("release_player")
+    def handle_release_player():
+        sid = request.sid
+        released = release_player_for_socket(sid)
+        return {"ok": True, "released": released}
+
+    @socketio.on("disconnect")
+    def handle_disconnect():
+        release_player_for_socket(request.sid)
 
     @app.before_request
     def beforeRequest():
@@ -108,7 +129,7 @@ def create_app(test_config: dict | None = None):
     class StoryEndpoint(Resource):
         ##get the stories and their parts for a given game
         def get(self):
-            game_id = "83b1b426-1ddb-443f-a985-b72f98553d2f"
+            game_id = "8b5404ae-f8c1-4b80-b4f5-18fa08ecdd5e"
             game = Game.get(Game.game_id == uuid.UUID(game_id))
             stories = []
             for story in game.story:
