@@ -10,6 +10,10 @@ from functools import wraps
 import uuid
 from flask_socketio import SocketIO, join_room
 from peewee import fn
+<<<<<<< HEAD
+=======
+from player_claims import claim_player_for_socket, release_player_for_socket
+>>>>>>> 0de057a58719f631e4345929cd0b89d98ce1a087
 
 load_dotenv()
 s = TimestampSigner(os.getenv("secretKey"))
@@ -41,6 +45,27 @@ def create_app(test_config: dict | None = None):
     signer = TimestampSigner(os.getenv("secretKey") or "")
 
     API_DIR = os.path.dirname(os.path.abspath(__file__))
+
+    #events for claiming player after room membership
+    @socketio.on("claim_player")
+    def handle_claim_player(data):
+        game_id = data.get("game_id")
+        if not game_id:
+            return {"ok": False, "error": "game_id is required"}
+
+        sid = request.sid
+        return claim_player_for_socket(game_id, sid)
+
+
+    @socketio.on("release_player")
+    def handle_release_player():
+        sid = request.sid
+        released = release_player_for_socket(sid)
+        return {"ok": True, "released": released}
+
+    @socketio.on("disconnect")
+    def handle_disconnect():
+        release_player_for_socket(request.sid)
 
     @app.before_request
     def before_request():
@@ -125,8 +150,12 @@ def create_app(test_config: dict | None = None):
     class StoryEndpoint(Resource):
         ##get the stories and their parts for a given game
         def get(self):
+<<<<<<< HEAD
             user = require_user()
             game_id = "01731b8d-0f53-42a2-9172-49674c247858"
+=======
+            game_id = "8b5404ae-f8c1-4b80-b4f5-18fa08ecdd5e"
+>>>>>>> 0de057a58719f631e4345929cd0b89d98ce1a087
             game = Game.get(Game.game_id == uuid.UUID(game_id))
             stories = []
             for story in game.story:
@@ -147,21 +176,30 @@ def create_app(test_config: dict | None = None):
 
     class StorySubmissionEndpoint(Resource):
         def post(self):
+<<<<<<< HEAD
             user = require_user()
+=======
+            if not getattr(g, "user", None):
+                return {"ok": False, "error": "unauthorized"}, 401
+
+>>>>>>> 0de057a58719f631e4345929cd0b89d98ce1a087
             data = request.get_json() or {}
 
             game_id = data.get("game_id")
             round_number = data.get("round_number")
             content = data.get("content")
 
-            if not game_id or round_number is None or not content or not str(content).strip():
+            if not game_id or round_number is None or content is None or not str(content).strip():
                 return {"ok": False, "error": "game_id, round_number, and content are required"}, 400
 
             try:
-                game_uuid = uuid.UUID(game_id)
+                game_uuid = uuid.UUID(str(game_id))
                 round_number = int(round_number)
-            except ValueError:
+            except (ValueError, TypeError):
                 return {"ok": False, "error": "invalid input"}, 400
+
+            if round_number < 1:
+                return {"ok": False, "error": "round_number must be >= 1"}, 400
 
             game = Game.get_or_none(Game.game_id == game_uuid)
             if not game:
@@ -173,6 +211,14 @@ def create_app(test_config: dict | None = None):
                     story_id=uuid.uuid4(),
                     game_id=game
                 )
+
+            existing = Story_Part.get_or_none(
+                (Story_Part.story_id == story) &
+                (Story_Part.part_number == round_number) &
+                (Story_Part.user_id == g.user)
+            )
+            if existing:
+                return {"ok": False, "error": "story part already submitted for this round"}, 409
 
             story_part = Story_Part.create(
                 part_id=uuid.uuid4(),

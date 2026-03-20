@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import "./index.css";
 import { fetchItem } from "./Utility.jsx";
-//import {postStorySubmission } from "./Utility.jsx";
+import { postStory } from "./Utility.jsx";
 import { SampleCard } from "./SampleCard.jsx";
 import { socket } from "./global.jsx";
 import { useNavigate } from "react-router-dom";
@@ -10,17 +10,17 @@ import { useNavigate } from "react-router-dom";
 const DisplayCard = () => {
   const [userText, setUserText] = useState("");
 
-  const handleSubmit = (e) => {
+  const old_handleSubmit = (e) => {
     e.preventDefault();
     console.log("User entered:", userText);
-    //submit logic here
+    //submit logic 
   };
 
   return (
     <div className="game-window">
       <div className="game-window-header"></div>
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={old_handleSubmit}>
         <p>Please enter your response:</p>
 
         <input
@@ -90,9 +90,7 @@ function LoadCard() {
   );
 }
 
-
-
-const ROUND_TIME_SECONDS = 60;
+const ROUND_TIME_SECONDS = 60000; // on deployment change it to 60
 const MAX_ROUNDS = 3;
 
 const Header = ({ roundNumber, maxRounds }) => {
@@ -137,11 +135,17 @@ const StoryInput = ({ storyText, setStoryText, disabled }) => {
   );
 };
 
-const ControlBar = ({ onSubmit, disabled, submitting, timeLeft }) => {
+const ControlBar = ({ onSubmit, disabled, submitted, submitting, timeLeft }) => {
   return (
     <div className="game-window-control-bar">
       <div className="control-bar-left">
-        <span>{timeLeft > 0 ? `Auto-submit in ${timeLeft}s` : "Submitting..."}</span>
+        <span>
+          {submitted
+            ? "Submitted"
+            : submitting
+            ? "Submitting..."
+            : `Auto-submit in ${timeLeft}s`}
+        </span>
       </div>
 
       <button
@@ -158,28 +162,29 @@ const ControlBar = ({ onSubmit, disabled, submitting, timeLeft }) => {
 const StorytellingPage = () => {
   const navigate = useNavigate();
 
-  //reuse the same game id teh voting section has
-  const gameId = "83b1b426-1ddb-443f-a985-b72f98553d2f";
+  const gameId = "8b5404ae-f8c1-4b80-b4f5-18fa08ecdd5e";
 
   const [prompt, setPrompt] = useState("");
   const [storyText, setStoryText] = useState("");
   const [timeLeft, setTimeLeft] = useState(ROUND_TIME_SECONDS);
   const [submitting, setSubmitting] = useState(false);
-  const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [roundNumber, setRoundNumber] = useState(1);
-
+  const [claimedPlayerId, setClaimedPlayerId] = useState("");
+  const [claimError, setClaimError] = useState("");
+  const hasClaimedRef = useRef(false);
   const canSubmit = useMemo(() => {
-    return !hasSubmitted && storyText.trim().length > 0;
-  }, [hasSubmitted, storyText]);
+    return !submitted && storyText.trim().length > 0;
+  }, [submitted, storyText]);
 
   useEffect(() => {
     async function loadPrompt() {
       try {
         const data = await fetchPrompt(gameId, roundNumber);
-        setPrompt(data?.prompt ?? "Write a short story based on this round.");
+        setPrompt(data?.prompt ?? `Write a short story based on this prompt, round ${roundNumber}`);
       } catch (error) {
         console.error("Failed to load prompt:", error);
-        setPrompt("Write a short story based on this round.");
+        setPrompt("Failed to load prompt. Write a short story based on this round.");
       }
     }
 
@@ -187,7 +192,7 @@ const StorytellingPage = () => {
   }, [gameId, roundNumber]);
 
   useEffect(() => {
-    if (hasSubmitted) return;
+    if (submitted) return;
     if (timeLeft <= 0) return;
 
     const intervalId = setInterval(() => {
@@ -195,24 +200,33 @@ const StorytellingPage = () => {
     }, 1000);
 
     return () => clearInterval(intervalId);
-  }, [timeLeft, hasSubmitted]);
+  }, [timeLeft, submitted]);
 
   useEffect(() => {
-    if (timeLeft === 0 && !hasSubmitted && !submitting) {
+    if (timeLeft === 0 && !submitted && !submitting) {
+      console.log(`timeLeft: ${timeLeft}, submitted: ${submitted}, submitting: ${submitting}`);
       handleSubmit(true);
     }
-  }, [timeLeft, hasSubmitted, submitting]);
+  }, [timeLeft, submitted, submitting]);
 
   useEffect(() => {
+    function resetRoundState(nextPrompt, nextRoundNumber, nextTimeLeft) {
+      setRoundNumber(nextRoundNumber);
+      setPrompt(nextPrompt);
+      setStoryText("");
+      setSubmitted(false);
+      setSubmitting(false);
+      setTimeLeft(nextTimeLeft);
+    }
+
     function handleRoundStarted(payload) {
       console.log("round_started:", payload);
 
-      setRoundNumber(payload?.round_number ?? 1);
-      setPrompt(payload?.prompt ?? "");
-      setStoryText("");
-      setHasSubmitted(false);
-      setSubmitting(false);
-      setTimeLeft(payload?.round_time_seconds ?? ROUND_TIME_SECONDS);
+      resetRoundState(
+        payload?.prompt ?? "",
+        payload?.round_number ?? 1,
+        payload?.round_time_seconds ?? ROUND_TIME_SECONDS
+      );
     }
 
     function handleAllStoriesIn(payload) {
@@ -222,17 +236,17 @@ const StorytellingPage = () => {
     function handleRoundEnded(payload) {
       console.log("round ended:", payload);
 
-      if ((payload?.round_number ?? roundNumber) >= MAX_ROUNDS) {
+      const endedRoundNumber = payload?.round_number ?? 1;
+      if (endedRoundNumber >= MAX_ROUNDS) {
         navigate("/vote");
         return;
       }
 
-      setRoundNumber(payload?.next_round_number ?? roundNumber + 1);
-      setPrompt(payload?.next_prompt ?? "");
-      setStoryText("");
-      setHasSubmitted(false);
-      setSubmitting(false);
-      setTimeLeft(payload?.round_time_seconds ?? ROUND_TIME_SECONDS);
+      resetRoundState(
+        payload?.next_prompt ?? "",
+        payload?.next_round_number ?? endedRoundNumber + 1,
+        payload?.round_time_seconds ?? ROUND_TIME_SECONDS
+      );
     }
 
     function handleGoToVoting(payload) {
@@ -244,7 +258,6 @@ const StorytellingPage = () => {
       console.log("stories rotated:", payload);
     }
 
-    socket.emit("join_game", { game_id: gameId });
     socket.on("round_started", handleRoundStarted);
     socket.on("all_stories_in", handleAllStoriesIn);
     socket.on("round_ended", handleRoundEnded);
@@ -258,30 +271,44 @@ const StorytellingPage = () => {
       socket.off("go_to_voting", handleGoToVoting);
       socket.off("stories_rotated", handleStoriesRotated);
     };
-  }, [navigate, gameId, roundNumber]);
+  }, [navigate]);
+
+  useEffect(() => {
+    if (hasClaimedRef.current) return;
+    hasClaimedRef.current = true;
+
+    console.log("joining game:", gameId);
+    socket.emit("join_game", { game_id: gameId });
+
+    console.log("emitting claim_player for game:", gameId);
+    socket.emit("claim_player", { game_id: gameId }, (response) => {
+      console.log("claim_player response:", response);
+
+      if (response?.ok) {
+        setClaimedPlayerId(response.player_id ?? "");
+        setClaimError("");
+      } else {
+        setClaimedPlayerId("");
+        setClaimError(response?.error ?? "Failed to claim player");
+      }
+    });
+
+    // return () => {
+    //   socket.emit("release_player");
+    //   hasClaimedRef.current = false;
+    // };
+  }, [gameId]);
 
   const handleSubmit = async (isAutoSubmit = false) => {
-    if (hasSubmitted || submitting) return;
+    if (submitted || submitting) return;
 
     try {
       setSubmitting(true);
+      const normStorytext = storyText?.trim() || "someone forgot to type!";
+      const result = await postStory(gameId, roundNumber, normStorytext);
+      console.log(isAutoSubmit ? "auto-submitted:" : "manual-submitted:", result);
 
-      const finalStory = storyText.trim();
-
-      await postStorySubmission({
-        gameId,
-        roundNumber,
-        storyText: finalStory,
-        autoSubmitted: isAutoSubmit,
-      });
-
-      setHasSubmitted(true);
-
-      socket.emit("story_submitted", {
-        game_id: gameId,
-        round_number: roundNumber,
-        auto_submitted: isAutoSubmit,
-      });
+      setSubmitted(true);
     } catch (error) {
       console.error("Failed to submit story:", error);
     } finally {
@@ -291,17 +318,23 @@ const StorytellingPage = () => {
 
   return (
     <div className="game-window" id="storytelling-page">
+      <div>
+        <strong>Claimed Player:</strong> {claimedPlayerId || "Not assigned"}
+        {claimError ? <div>{claimError}</div> : null}
+      </div>
+
       <Header roundNumber={roundNumber} maxRounds={MAX_ROUNDS} />
       <PromptBox prompt={prompt} />
       <TimerBar timeLeft={timeLeft} />
       <StoryInput
         storyText={storyText}
         setStoryText={setStoryText}
-        disabled={hasSubmitted}
+        disabled={submitted}
       />
       <ControlBar
         onSubmit={() => handleSubmit(false)}
         disabled={!canSubmit}
+        submitted={submitted}
         submitting={submitting}
         timeLeft={timeLeft}
       />

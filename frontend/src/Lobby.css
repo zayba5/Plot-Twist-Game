@@ -92,7 +92,7 @@
   min-height: 0;
   min-width: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.5fr);
   gap: 1.25rem;
   max-width: min(1100px, 100%);
   margin: 0 auto;
@@ -124,16 +124,103 @@
   letter-spacing: 0.03em;
 }
 
-/* Left panel – create game / invite code */
+/* Left panel – Create Game + Join Game flows */
 .lobby-panel-left {
   min-height: 200px;
+  overflow: visible;
 }
 
-.lobby-options {
+.lobby-flow-section {
+  margin-bottom: 0;
+}
+
+.lobby-flow-section:last-child {
+  margin-bottom: 0;
+}
+
+.lobby-panel-left .lobby-panel-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+}
+
+.lobby-flow-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+  margin: 0.6rem 0;
+}
+
+.lobby-btn-invite {
+  padding: 0.4rem 0.75rem;
+  background: rgba(145, 6, 252, 0.35);
+  border: 1px solid rgba(145, 6, 252, 0.4);
+  border-radius: 6px;
+  color: #d7bcea;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  margin-top: 0.25rem;
+  width: 100%;
+  max-width: 180px;
+  box-sizing: border-box;
+}
+
+.lobby-btn-invite:hover {
+  background: rgba(74, 4, 128, 0.4);
+  border-color: rgba(145, 6, 252, 0.5);
+}
+
+/* After Invite is clicked – show code + Start Game */
+.lobby-invite-result {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
-  margin-bottom: 1.25rem;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.lobby-game-code-label {
+  font-size: 0.8rem;
+  color: #8c35e8;
+  margin: 0;
+}
+
+.lobby-game-code {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: #d7bcea;
+  margin: 0;
+  font-family: ui-monospace, monospace;
+}
+
+.lobby-btn-start {
+  align-self: flex-start;
+  padding: 0.6rem 1.25rem;
+  background: linear-gradient(135deg, #d7bcea 0%, #9001f5 100%);
+  border: 1px solid rgba(145, 6, 252, 0.4);
+  border-radius: 8px;
+  color: #1a0a0a;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: filter 0.2s, transform 0.15s;
+}
+
+.lobby-btn-start:hover {
+  filter: brightness(1.1);
+}
+
+.lobby-btn-start:active {
+  transform: scale(0.98);
+}
+
+.lobby-panel-left .lobby-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
 }
 
 .lobby-label {
@@ -164,6 +251,119 @@
   outline: none;
   border-color: rgba(145, 6, 252, 0.25);
   box-shadow: 0 0 0 2px rgba(145, 6, 252, 0.25);
+}
+
+/* Text inputs (username, voting sessions, custom rounds) */
+.lobby-input {
+  width: 100%;
+  max-width: 220px;
+  padding: 0.5rem 0.75rem;
+  background: rgba(10, 20, 28, 0.9);
+  border: 1px solid rgba(145, 6, 252, 0.25);
+  border-radius: 8px;
+  color: #e8e8e8;
+  font-size: 0.9rem;
+}
+
+.lobby-input::placeholder {
+  color: #d7bcea;
+}
+
+.lobby-input:focus {
+  outline: none;
+  border-color: rgba(145, 6, 252, 0.25);
+  box-shadow: 0 0 0 2px rgba(145, 6, 252, 0.25);
+}
+
+/* Slider rows for rounds / voting sessions */
+.lobby-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.lobby-slider-track {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.lobby-slider-track .lobby-range {
+  flex: 0 0 auto;
+  width: 100%;
+}
+
+.lobby-range {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(10, 20, 28, 0.9);
+  border: 1px solid rgba(145, 6, 252, 0.25);
+  outline: none;
+}
+
+.lobby-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #d7bcea;
+  border: 1px solid rgba(145, 6, 252, 0.8);
+  cursor: pointer;
+  box-shadow: 0 0 0 3px rgba(145, 6, 252, 0.25);
+}
+
+.lobby-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #d7bcea;
+  border: 1px solid rgba(145, 6, 252, 0.8);
+  cursor: pointer;
+  box-shadow: 0 0 0 3px rgba(145, 6, 252, 0.25);
+}
+
+.lobby-range-value {
+  min-width: 2rem;
+  text-align: right;
+  font-size: 0.85rem;
+  color: #d7bcea;
+}
+
+.lobby-ticks {
+  position: relative;
+  margin-top: 0.25rem;
+  height: 1rem;
+  width: 100%;
+  font-size: 0.7rem;
+  color: #9ca3af;
+}
+
+.lobby-tick {
+  position: absolute;
+  transform: translateX(-50%);
+  top: 0;
+}
+
+.lobby-tick::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: -6px;
+  width: 1px;
+  height: 4px;
+  background: rgba(156, 163, 175, 0.7);
+}
+
+.lobby-tick-active {
+  color: #d7bcea;
+  font-weight: 600;
 }
 
 .lobby-btn-secondary {
@@ -236,8 +436,41 @@
   border-color: rgba(145, 6, 252, 0.25);
 }
 
-.lobby-btn-join {
+/* Join section: username + invite code in one row, button right below */
+.lobby-options-join {
+  margin-bottom: 0;
+}
+
+.lobby-join-row {
+  display: flex;
+  gap: 3rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.lobby-join-row .lobby-label {
+  flex: 1;
+  min-width: 100px;
+}
+
+.lobby-join-row .lobby-label:first-child .lobby-input {
+  max-width: none;
+}
+
+/* Invite code input – narrower so it doesn't overlap panel border */
+.lobby-join-row .lobby-label:last-child .lobby-input {
+  max-width: 140px;
+}
+
+.lobby-options-join .lobby-btn-join {
   align-self: flex-start;
+  margin-top: 0.4rem;
+  width: 100%;
+  max-width: 220px;
+  box-sizing: border-box;
+}
+
+.lobby-btn-join {
   padding: 0.5rem 1rem;
   background: rgba(145, 6, 252, 0.25);
   border: 1px solid rgba(145, 6, 252, 0.25);
@@ -260,6 +493,43 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+/* Players in lobby (listed in chat panel) */
+.lobby-players-in-chat {
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(76, 19, 120, 0.2);
+  border-radius: 8px;
+  border-left: 3px solid rgba(145, 6, 252, 0.4);
+}
+
+.lobby-players-in-chat-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #8c35e8;
+  margin: 0 0 0.35rem;
+  letter-spacing: 0.03em;
+}
+
+.lobby-players-in-chat-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.85rem;
+  color: #d0d8e0;
+}
+
+.lobby-players-in-chat-list li {
+  padding: 0.15rem 0;
+}
+
+.lobby-chat-msg-system .lobby-chat-user {
+  color: #9ca3af;
+}
+
+.lobby-chat-msg-system {
+  border-left-color: rgba(156, 163, 175, 0.5);
 }
 
 .lobby-chat-messages {
@@ -391,17 +661,10 @@
   transform: scale(0.98);
 }
 
-.lobby-btn-back,
-.lobby-btn-invite {
-  background: rgba(146, 6, 253, 0.25);
-  border: 1px solid rgba(145, 6, 252, 0.25);
-  color: #d7bcea;
-}
-
 .lobby-btn-play {
   background: linear-gradient(135deg, #d7bcea 0%, #9001f5 100%);
   border: 1px solid rgba(145, 6, 252, 0.25);
-  color: #d7bcea;
+  color: #1a0a0a;
   padding: 0.75rem 1.75rem;
   margin-left: auto;
 }
