@@ -1,7 +1,7 @@
 import uuid
 from player_claims import claim_player_for_socket, release_player_for_socket
 
-game_id = "8b5404ae-f8c1-4b80-b4f5-18fa08ecdd5e"
+game_id = "01731b8d-0f53-42a2-9172-49674c247858"
 
 print(claim_player_for_socket(game_id, "sid-1"))
 print(claim_player_for_socket(game_id, "sid-2"))
