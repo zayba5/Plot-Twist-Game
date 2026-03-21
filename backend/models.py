@@ -69,3 +69,9 @@ class Story_Part(BaseModel):
     part_content = TextField()
     user_id = ForeignKeyField(User, backref="part")
     story_id = ForeignKeyField(Story, backref="part")
+class Story_Assignment(BaseModel):
+    assignment_id = UUIDField(primary_key=True)
+    game_id = ForeignKeyField(Game, backref="assignments")
+    round_number = IntegerField()
+    user_id = ForeignKeyField(User, backref="assignments")
+    story_id = ForeignKeyField(Story, backref="assignments")
