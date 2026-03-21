@@ -289,6 +289,7 @@ def create_app(test_config: dict | None = None):
             }, 200
     api.add_resource(WhoAmIEndpoint, "/WhoAmI")
 
+    # the new endpoint for getting all stories
     class GetAllStoryEndpoint(Resource):
         ##get the stories and their parts for a given game
         def get(self):
@@ -310,7 +311,55 @@ def create_app(test_config: dict | None = None):
                 })
             return jsonify({"stories" : stories})
     api.add_resource(GetAllStoryEndpoint, "/GetAllStory")
-    # the new endpoint for getting all stories
+  
+    class CreateStoryEndpoint(Resource):
+        def post(self):
+            require_user()
+
+            if not getattr(g, "user", None):
+                return {
+                    "ok": False,
+                    "user_id": None,
+                    "error": "unauthorized"
+                }, 401
+
+            body = request.get_json(silent=True) or {}
+            if body is None:
+                return {
+                    "ok": False,
+                    "error": "invalid or missing JSON body"
+            }, 400
+            
+            game_id = body.get("game_id")
+
+            if not game_id:
+                return {
+                    "ok": False,
+                    "error": "game_id is required"
+                }, 400
+
+            try:
+                game = Game.get(Game.game_id == game_id)
+
+                story = Story.create(
+                    story_id=uuid.uuid4(),
+                    game_id=game,
+                    user_id=g.user
+                )
+
+                return {
+                    "ok": True,
+                    "story_id": str(story.story_id),
+                    "game_id": str(game.game_id),
+                    "user_id": str(g.user)
+                }, 201
+
+            except Game.DoesNotExist:
+                return {
+                    "ok": False,
+                    "error": "game not found"
+                }, 404
+    api.add_resource(CreateStoryEndpoint, "/CreateStory")
 
     class NextStoryPartEndpoint(Resource):
         def get(self):
@@ -318,7 +367,7 @@ def create_app(test_config: dict | None = None):
             if not getattr(g, "user", None):
                 return {"ok": False, "error": "unauthorized"}, 401
 
-            game_id = "01731b8d-0f53-42a2-9172-49674c247858"
+            game_id = request.args.get("game_id")
             round_number = request.args.get("round_number")
 
             if not game_id or round_number is None:
@@ -337,10 +386,11 @@ def create_app(test_config: dict | None = None):
             if not game:
                 return {"ok": False, "error": "game not found"}, 404
 
-            assignment = StoryAssignment.get_or_none(
-                (StoryAssignment.game_id == game) &
-                (StoryAssignment.round_number == round_number) &
-                (StoryAssignment.user_id == g.user)
+            print("entering story Assignment:")
+            assignment = Story_Assignment.get_or_none(
+                (Story_Assignment.game_id == game) &
+                (Story_Assignment.round_number == round_number) &
+                (Story_Assignment.user_id == g.user)
             )
 
             if not assignment:
@@ -364,12 +414,14 @@ def create_app(test_config: dict | None = None):
                 return {
                     "ok": True,
                     "status": "ready",
+                    "round": round_number,
                     "prompt": "There is no story yet. Please think of an initial prompt to begin the story."
                 }, 200
 
             return {
                 "ok": True,
                 "status": "ready",
+                "round": round_number + 1,
                 "prompt": last_part.part_content
             }, 200
     

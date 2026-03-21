@@ -52,6 +52,7 @@ class Voting_Session(BaseModel):
 class Story(BaseModel):
     story_id = UUIDField(primary_key=True) ##primary key
     game_id = ForeignKeyField(Game, backref="story")
+    user_id = ForeignKeyField(User, backref="stories")
     
     
 class Voting(BaseModel):
