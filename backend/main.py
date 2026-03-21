@@ -10,12 +10,107 @@ from functools import wraps
 import uuid
 from flask_socketio import SocketIO, join_room
 from peewee import fn
-from player_claims import claim_player_for_socket, release_player_for_socket
 
 load_dotenv()
 s = TimestampSigner(os.getenv("secretKey"))
 socketio = SocketIO(cors_allowed_origins=[os.getenv("frontHost")])
 FRONTEND_ORIGIN = os.getenv("frontHost")
+
+def httpError(reason, code):
+    return jsonify({
+        "ok": False,
+        "error": reason
+        }), code
+    
+def getActiveVotingSession(game):
+    return (
+        Voting_Session.select().join(Status)
+        .where(
+            (Voting_Session.game_id == game) &
+            (Status.status_type == "ACTIVE")
+            )
+        .get_or_none()
+            )
+
+def calcVotes(game, active_session):    
+    winner = (
+    Voting.select(
+        Voting.story_id,
+        fn.COUNT(Voting.story_id).alias("vote_count")
+        )
+        .where(Voting.voting_session_id == active_session)
+        .group_by(Voting.story_id)
+        .order_by(fn.COUNT(Voting.story_id).desc())
+        .first()
+    )
+                
+    if winner:
+        winning_story = winner.story_id
+        winning_writers = (
+            Story_Part
+            .select(Story_Part.user_id)
+            .where(Story_Part.story_id == winning_story)
+            .distinct()
+        )
+
+        for part in winning_writers:
+            game_player = Game_Players.get_or_none(
+                (Game_Players.game_id == game) &
+                (Game_Players.user_id == part.user_id)
+            )
+    
+            if game_player:
+                game_player.user_score += 1  
+                game_player.save()
+        
+        
+def finishVotingSession(reason, game_id):
+    try:
+        game_uuid = uuid.UUID(str(game_id))
+    except ValueError:
+        return False
+
+    game = Game.get_or_none(Game.game_id == game_uuid)
+    if not game:
+        return False
+
+    active_status = Status.get(Status.status_type == "ACTIVE")
+    finished_status = Status.get(Status.status_type == "FINISHED")
+
+    active_session = getActiveVotingSession(game)
+
+    if not active_session:
+        print(f"round already finished for game {game_id}", flush=True)
+        return False
+
+    rows_updated = (
+        Voting_Session
+        .update(voting_session_status=finished_status)
+        .where(
+            (Voting_Session.voting_session_id == active_session.voting_session_id) &
+            (Voting_Session.voting_session_status == active_status)
+        )
+        ##.execute() <--------------------commented out for testing, add back later
+    )
+
+    if rows_updated == 0:
+        print(f"another request already finished game {game_id}", flush=True)
+        return False
+
+    calcVotes(game, active_session)
+
+    socketio.emit(
+        "round_over",
+        {
+            "game_id": str(game.game_id),
+            "voting_session_id": str(active_session.voting_session_id),
+            "reason": reason,
+        },
+        to=f"game:{game.game_id}"
+    )
+
+    return True
+
 def create_app(test_config: dict | None = None):
     app = Flask(__name__)
     app.config["secretKey"] = os.getenv("secretKey")
@@ -38,6 +133,14 @@ def create_app(test_config: dict | None = None):
         if game_id:
             join_room(f"game:{game_id}")
             print(f"socket joined room game:{game_id}")
+            
+    @socketio.on("voting_round_expired")
+    def handle_expired_voting(data):
+        game_id = data.get("game_id")
+        if game_id:
+            print(f"voting expired for game: {game_id}")
+            finishVotingSession("timer expired", game_id)
+                       
 
     signer = TimestampSigner(os.getenv("secretKey") or "")
 
@@ -262,50 +365,7 @@ def create_app(test_config: dict | None = None):
 ###########################################################
 ##hardcoded voting test until stories work
     class TestVotesEndpoint(Resource):
-        def post(self):
-            user =require_user()
-            data = request.get_json() or {}
-            game_id = data.get("game_id")
-
-            if not game_id:
-                return jsonify({
-                    "ok": False,
-                    "error": "game_id is required"
-                }), 400
-                
-            try:
-                game_uuid = uuid.UUID(game_id)
-            except ValueError:
-                return {
-                    "ok": False,
-                    "error": "invalid game_id format"
-                }, 400
-
-            game = Game.get_or_none(Game.game_id == game_uuid)
-
-            if not game:
-                return {
-                    "ok": False,
-                    "error": "game does not exist"
-                }, 404
-
-            active_session = (
-                Voting_Session
-                .select()
-                .join(Status)
-                .where(
-                    (Voting_Session.game_id == game) &
-                    (Status.status_type == "ACTIVE")
-                )
-                .get_or_none()
-            )
-
-            if not active_session:
-                return {
-                    "ok": False,
-                    "error": "no active voting session found"
-                }, 404
-
+        def checkStatus(self, active_session, game):
             total_votes = Voting.select().where(
                 Voting.voting_session_id == active_session
             ).count()
@@ -314,54 +374,43 @@ def create_app(test_config: dict | None = None):
                 Game_Players.game_id == game
             ).count()
 
-            all_votes_in = total_players > 0 and total_votes >= total_players
+            return total_players > 0 and total_votes >= total_players
+            
+        def post(self):
+            user =require_user()
+            data = request.get_json() or {}
+            game_id = data.get("game_id")
+            
+            if not game_id:
+                return httpError("game_id is required", 400)
+            try:
+                game_uuid = uuid.UUID(game_id)
+            except ValueError:
+                return httpError("Invalid game_id format", 400)
 
-            if all_votes_in:
-                winner = (
-                    Voting
-                    .select(
-                        Voting.story_id,
-                        fn.COUNT(Voting.story_id).alias("vote_count")
-                    )
-                    .where(Voting.voting_session_id == active_session)
-                    .group_by(Voting.story_id)
-                    .order_by(fn.COUNT(Voting.story_id).desc())
-                    .first()
-                )
-                
-                if winner:
-                    winning_story = winner.story_id
-                    winning_writers = (
-                        Story_Part
-                        .select(Story_Part.user_id)
-                        .where(Story_Part.story_id == winning_story)
-                        .distinct()
-                    )
+            game = Game.get_or_none(Game.game_id == game_uuid)
 
-                    for part in winning_writers:
-                        game_player = Game_Players.get_or_none(
-                            (Game_Players.game_id == game) &
-                            (Game_Players.user_id == part.user_id)
-                        )
+            if not game:
+                return httpError("game does not exist", 404)
 
-                        if game_player:
-                            game_player.user_score += 1  
-                            game_player.save()
+            active_session = getActiveVotingSession(game)
 
-                
-                
-                complete_status = Status.get_or_none(Status.status_type == "FINISHED")
-                if complete_status:
-                    active_session.voting_session_status = complete_status
-                    active_session.save()
+            if not active_session:
+                return httpError("no active voting session found", 404)
+            
+            ###submit cur vote to db#####
+            ###waiting on stories and games working for this#####
+            ###does not currently happen, currently only checks status of existing votes#####
 
+            all_votes_in = self.checkStatus(active_session, game)
+
+            if all_votes_in:    
+                finishVotingSession("all votes in", game)           
                 socketio.emit(
                     "all_votes_in",
                     {
                         "game_id": str(game.game_id),
                         "voting_session_id": str(active_session.voting_session_id),
-                        "total_votes": total_votes,
-                        "total_players": total_players,
                     },
                     to=f"game:{game.game_id}"
                 )
@@ -369,8 +418,6 @@ def create_app(test_config: dict | None = None):
             return{
                 "ok": True,
                 "all_votes_in": all_votes_in,
-                "total_votes": total_votes,
-                "total_players": total_players,
             }
     api.add_resource(TestVotesEndpoint, "/TestVote")
     
@@ -400,6 +447,4 @@ def create_app(test_config: dict | None = None):
 
 if __name__ == "__main__":
     app = create_app()
-    print(app.url_map, flush=True)
-
     socketio.run(app, host="0.0.0.0", debug=True, allow_unsafe_werkzeug=True)

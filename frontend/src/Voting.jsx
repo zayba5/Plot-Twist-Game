@@ -60,9 +60,7 @@ const StoryCardList = ({ selectedStoryId, setSelectedStoryId }) => {
   );
 };
 
-const ControlBar = ({ selectedStoryId, gameId }) => {
-  const [submitting, setSubmitting] = useState(false);
-
+const ControlBar = ({ selectedStoryId, gameId, submitting, setSubmitting }) => {
   const handleVoteClick = async () => {
     if (!selectedStoryId || submitting) return;
 
@@ -104,6 +102,8 @@ const Header = ({ handleTimerExpire }) => {
 const VotingPage = () => {
   const navigate = useNavigate();
   const [selectedStoryId, setSelectedStoryId] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+
   const finished = useRef(false)
 
   ///////////////hardcoded beware//////////////////////
@@ -116,10 +116,27 @@ const VotingPage = () => {
     navigate("/score");
   }, [navigate])
 
+  const handleTimerExpire = async () => {
+    if (submitting) {
+      return;
+    }
 
-  function handleTimerExpire() {
-    endRound("timer_expired");
-  }
+    try {
+      setSubmitting(true);
+
+      if (selectedStoryId) {
+        const result = await postVote(gameId, selectedStoryId);
+      } 
+    } catch (error) {
+      console.error("postVote failed:", error);
+    } finally {
+      setSubmitting(false);
+
+      socket.emit("voting_round_expired", {game_id: gameId})
+
+      endRound("timer_expired");
+    }
+  };
 
   useEffect(() => {
     function handleAllVotesIn(payload) {
@@ -145,6 +162,8 @@ const VotingPage = () => {
       <ControlBar
         selectedStoryId={selectedStoryId}
         gameId={gameId}
+        submitting={submitting}
+        setSubmitting={setSubmitting}
       />
     </div>
   );
