@@ -94,7 +94,7 @@ const Header = ({ handleTimerExpire }) => {
   return (
     <div className="game-window-header">
       <h1>Vote for your favorite story</h1>
-      <Timer durationSec={20} onExpire={handleTimerExpire} />
+      <Timer durationSec={200} onExpire={handleTimerExpire} />
     </div>
   );
 };

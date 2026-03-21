@@ -33,19 +33,29 @@ def getActiveVotingSession(game):
             )
 
 def calcVotes(game, active_session):    
-    winner = (
-    Voting.select(
-        Voting.story_id,
-        fn.COUNT(Voting.story_id).alias("vote_count")
+    vote_results = list(
+        Voting.select(
+            Voting.story_id,
+            fn.COUNT(Voting.story_id).alias("vote_count")
         )
         .where(Voting.voting_session_id == active_session)
         .group_by(Voting.story_id)
         .order_by(fn.COUNT(Voting.story_id).desc())
-        .first()
     )
+
+    if not vote_results:
+        return {
+            "winning_story_ids": [],
+            "is_tie": False,
+            "vote_count": 0,
+        }
+
+    max_votes = vote_results[0].vote_count
+    winners = [row.story_id for row in vote_results if row.vote_count == max_votes]
+
+    awarded_users = set()
                 
-    if winner:
-        winning_story = winner.story_id
+    for winning_story in winners:
         winning_writers = (
             Story_Part
             .select(Story_Part.user_id)
@@ -54,14 +64,27 @@ def calcVotes(game, active_session):
         )
 
         for part in winning_writers:
+            user_id = str(part.user_id.user_id if hasattr(part.user_id, "user_id") else part.user_id)
+
+            if user_id in awarded_users:
+                continue
+
+            awarded_users.add(user_id)
+
             game_player = Game_Players.get_or_none(
                 (Game_Players.game_id == game) &
                 (Game_Players.user_id == part.user_id)
             )
-    
+
             if game_player:
-                game_player.user_score += 1  
+                game_player.user_score += 1
                 game_player.save()
+
+    return {
+        "winning_story_ids": [str(story.story_id if hasattr(story, "story_id") else story) for story in winners],
+        "is_tie": len(winners) > 1,
+        "vote_count": int(max_votes),
+    }
         
         
 def finishVotingSession(reason, game_id):

@@ -143,7 +143,7 @@ def testData():
     Voting.create(user_id=host, story_id=story2, voting_session_id=voting_session)
     Voting.create(user_id=user2, story_id=story1, voting_session_id=voting_session)
     Voting.create(user_id=user3, story_id=story1, voting_session_id=voting_session)
-    Voting.create(user_id=user4, story_id=story3, voting_session_id=voting_session)
+    Voting.create(user_id=user4, story_id=story2, voting_session_id=voting_session)
 
     db.close()
 
