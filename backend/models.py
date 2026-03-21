@@ -18,12 +18,14 @@ class Status(BaseModel):
     
     
 class User(BaseModel):
-    user_id = UUIDField(primary_key=True) ##primary key   
+    user_id = UUIDField(primary_key=True) ##primary key  
+    username = CharField(max_length=50, null=True)
     
 class Game(BaseModel):
     game_id = UUIDField(primary_key=True) ##primary key
     game_status = ForeignKeyField(Status, backref="game") ##refers to status type 
     game_host = ForeignKeyField(User, backref="host-game")
+    game_code = CharField(max_length=6, unique=True) ##edit
     
 
 class Game_Settings(BaseModel):

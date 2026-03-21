@@ -10,6 +10,8 @@ from functools import wraps
 import uuid
 from flask_socketio import SocketIO, join_room
 from peewee import fn
+import random
+import string
 
 load_dotenv()
 s = TimestampSigner(os.getenv("secretKey"))
@@ -21,6 +23,9 @@ def httpError(reason, code):
         "ok": False,
         "error": reason
         }), code
+
+def generate_game_code(length=6):
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
     
 def getActiveVotingSession(game):
     return (
@@ -152,10 +157,31 @@ def create_app(test_config: dict | None = None):
     ##websocket handlers
     @socketio.on("join_game")
     def handle_join_game(data):
-        game_id = data.get("game_id")
-        if game_id:
-            join_room(f"game:{game_id}")
-            print(f"socket joined room game:{game_id}")
+        game_code = data.get("game_code")
+        if not game_code:
+            return
+
+        game = Game.get_or_none(Game.game_code == game_code.upper())
+        if game:
+            join_room(f"game:{game.game_id}")
+            print(f"socket joined room game:{game.game_id}")
+
+            # 👇 build player list
+            players_list = [
+                {
+                    "user_id": str(p.user_id.user_id),
+                    "username": p.user_id.username,
+                    "isHost": p.user_id.user_id == game.game_host.user_id
+                }
+                for p in game.player
+            ]
+
+            # 👇 send ONLY to this user
+            socketio.emit(
+                "lobby_snapshot",
+                {"players": players_list},
+                to=request.sid
+            )
             
     @socketio.on("voting_round_expired")
     def handle_expired_voting(data):
@@ -444,24 +470,194 @@ def create_app(test_config: dict | None = None):
             }
     api.add_resource(TestVotesEndpoint, "/TestVote")
     
+        
     class SessionEndpoint(Resource):
         def get(self):
+            username = request.args.get("username") or "Player"  # default name
+
+
             if getattr(g, "user", None):
                 return {
                     "ok": True,
                     "user_id": str(g.user.user_id),
-                    "existing": True
+                    "existing": True,
+                    "username": g.user.username 
                 }, 200
 
-            user = User.create(user_id=uuid.uuid4())
+            user = User.create(
+                user_id=uuid.uuid4(),
+                username=username
+            )
             g.user = user
             g.should_set_uid_cookie = True
 
             return {
                 "ok": True,
                 "user_id": str(user.user_id),
-                "existing": False
+                "existing": False,
+                "username": username
             }, 201
+
+
+    ###########################################################
+    # SIMPLE LOBBY SYSTEM (FOR FRONTEND CONNECTION)
+
+        
+    class CreateLobby(Resource):
+        def post(self):
+            user = require_user()
+
+            data = request.get_json() or {}
+            username = data.get("username", "Player")
+            user.username = username
+            user.save()
+            rounds = data.get("rounds", 5)
+            voting_sessions = data.get("votingSessions", 3)
+            timer = data.get("timer", 60)  # default 60s per round
+            max_players = data.get("maxPlayers", 4)  # default max 4
+
+            # create new game
+            game = Game.create(
+                game_id=uuid.uuid4(),
+                game_status=Status.get_or_none(Status.status_type=="ACTIVE"), 
+                game_host=user,
+                game_code=generate_game_code()
+            )
+
+            # add host as first player
+            Game_Players.create(
+                game_id=game,
+                user_id=user,
+                user_score=0
+            )
+            
+            # emit full lobby to everyone in room
+
+            host_id = getattr(game.game_host, "user_id", game.game_host)  # will be UUID either way
+            players_list = [
+                {
+                    "user_id": str(p.user_id.user_id),
+                    "username": p.user_id.username,
+                    "isHost": p.user_id.user_id == game.game_host.user_id  # compare UUIDs to mark host
+                }
+                for p in game.player
+            ]
+
+            socketio.emit(
+                "lobby_update",
+                {"game_id": str(game.game_id), "players": players_list},
+                to=f"game:{game.game_id}"
+            )
+
+            # emit system message for chat
+
+            socketio.emit(
+                "player_joined_message",
+                {
+                    "username": user.username,
+                    "players": players_list  
+                },
+                to=f"game:{game.game_id}"
+            )
+
+            # save game settings
+            Game_Settings.create(
+                game_id=game,
+                num_rounds=rounds,
+                num_votes=voting_sessions,
+                timer=timer,
+                max_players=max_players
+            )
+
+            return {
+                "ok": True,
+                "game_id": str(game.game_id),
+                "game_code": game.game_code
+            }, 201
+
+
+    class JoinLobby(Resource):
+        def post(self):
+            user = require_user()
+            data = request.get_json() or {}
+            username = data.get("username", "Player")
+            user.username = username
+            user.save()
+
+            game_code = data.get("game_code")
+            if not game_code:
+                return {"ok": False, "error": "game_code required"}, 400
+
+            # find game
+            game = Game.get_or_none(Game.game_code == game_code.upper())
+            if not game:
+                return {"ok": False, "error": "Game not found"}, 404
+
+            # add user to game if not already
+            existing = Game_Players.get_or_none(
+                (Game_Players.game_id == game) & (Game_Players.user_id == user)
+            )
+            if not existing:
+                Game_Players.create(game_id=game, user_id=user, user_score=0)
+
+            # broadcast full updated lobby to everyone in that game room
+            players_list = [
+                {
+                    "user_id": str(p.user_id.user_id),
+                    "username": p.user_id.username,
+                    "isHost": p.user_id.user_id == game.game_host.user_id
+                }
+                for p in game.player
+            ]
+
+            # emit updated lobby to all players in room
+            socketio.emit(
+                "lobby_update",
+                {"game_id": str(game.game_id), "players": players_list},
+                to=f"game:{game.game_id}"
+            )
+
+            # emit system chat join message
+            socketio.emit(
+                "player_joined_message",
+                {"username": user.username},
+                to=f"game:{game.game_id}"
+            )
+
+            return {"ok": True, "game_id": str(game.game_id), "game_code": game.game_code}
+
+
+    class LobbyPlayers(Resource):
+        def get(self):
+            game_id = request.args.get("game_id")
+
+            if not game_id:
+                return {"ok": False, "error": "game_id required"}, 400
+
+            try:
+                game_uuid = uuid.UUID(game_id)
+            except ValueError:
+                return {"ok": False, "error": "invalid game_id"}, 400
+
+            game = Game.get_or_none(Game.game_id == game_uuid)
+            if not game:
+                return {"ok": False, "error": "Game not found"}, 404
+
+            players = []
+            for p in game.player:
+                players.append({
+                    "user_id": str(p.user_id.user_id),
+                    "username": p.user_id.username,
+                    "score": p.user_score
+                })
+
+            return {"players": players}
+
+
+    # REGISTER ROUTES
+    api.add_resource(CreateLobby, "/create-lobby")
+    api.add_resource(JoinLobby, "/join-lobby")
+    api.add_resource(LobbyPlayers, "/lobby-players")
     
     api.add_resource(SessionEndpoint, "/session")
 
