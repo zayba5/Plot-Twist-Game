@@ -10,6 +10,8 @@ from functools import wraps
 import uuid
 from flask_socketio import SocketIO, join_room
 from peewee import fn
+from shuffle_story import assign_next_round_if_ready
+
 
 load_dotenv()
 s = TimestampSigner(os.getenv("secretKey"))
@@ -287,7 +289,8 @@ def create_app(test_config: dict | None = None):
             }, 200
     api.add_resource(WhoAmIEndpoint, "/WhoAmI")
 
-    class StoryEndpoint(Resource):
+    # the new endpoint for getting all stories
+    class GetAllStoryEndpoint(Resource):
         ##get the stories and their parts for a given game
         def get(self):
             user = require_user()
@@ -307,8 +310,122 @@ def create_app(test_config: dict | None = None):
                     "story_parts" : parts
                 })
             return jsonify({"stories" : stories})
+    api.add_resource(GetAllStoryEndpoint, "/GetAllStory")
+  
+    class CreateStoryEndpoint(Resource):
+        def post(self):
+            require_user()
+
+            if not getattr(g, "user", None):
+                return {
+                    "ok": False,
+                    "user_id": None,
+                    "error": "unauthorized"
+                }, 401
+
+            body = request.get_json(silent=True) or {}
+            if body is None:
+                return {
+                    "ok": False,
+                    "error": "invalid or missing JSON body"
+            }, 400
+            
+            game_id = body.get("game_id")
+
+            if not game_id:
+                return {
+                    "ok": False,
+                    "error": "game_id is required"
+                }, 400
+
+            try:
+                game = Game.get(Game.game_id == game_id)
+
+                story = Story.create(
+                    story_id=uuid.uuid4(),
+                    game_id=game,
+                    user_id=g.user
+                )
+
+                return {
+                    "ok": True,
+                    "story_id": str(story.story_id),
+                    "game_id": str(game.game_id),
+                    "user_id": str(g.user)
+                }, 201
+
+            except Game.DoesNotExist:
+                return {
+                    "ok": False,
+                    "error": "game not found"
+                }, 404
+    api.add_resource(CreateStoryEndpoint, "/CreateStory")
+
+    class NextStoryPartEndpoint(Resource):
+        def get(self):
+            user = require_user()
+            if not getattr(g, "user", None):
+                return {"ok": False, "error": "unauthorized"}, 401
+
+            game_id = request.args.get("game_id")
+            round_number = request.args.get("round_number")
+
+            if not game_id or round_number is None:
+                return {"ok": False, "error": "game_id and round_number are required"}, 400
+
+            try:
+                game_uuid = uuid.UUID(str(game_id))
+                round_number = int(round_number)
+            except (ValueError, TypeError):
+                return {"ok": False, "error": "invalid input"}, 400
+
+            if round_number < 1:
+                return {"ok": False, "error": "round_number must be >= 1"}, 400
+
+            game = Game.get_or_none(Game.game_id == game_uuid)
+            if not game:
+                return {"ok": False, "error": "game not found"}, 404
+
+            print("entering story Assignment:")
+            assignment = Story_Assignment.get_or_none(
+                (Story_Assignment.game_id == game) &
+                (Story_Assignment.round_number == round_number) &
+                (Story_Assignment.user_id == g.user)
+            )
+
+            if not assignment:
+                return {
+                    "ok": True,
+                    "status": "waiting",
+                    "prompt": "Waiting for other players to finish this round."
+                }, 200
+
+            story = assignment.story_id
+
+            last_part = (
+                Story_Part
+                .select()
+                .where(Story_Part.story_id == story)
+                .order_by(Story_Part.part_number.desc())
+                .first()
+            )
+
+            if not last_part:
+                return {
+                    "ok": True,
+                    "status": "ready",
+                    "round": round_number,
+                    "prompt": "There is no story yet. Please think of an initial prompt to begin the story."
+                }, 200
+
+            return {
+                "ok": True,
+                "status": "ready",
+                "round": round_number + 1,
+                "prompt": last_part.part_content
+            }, 200
     
-    api.add_resource(StoryEndpoint, "/Story")
+    api.add_resource(NextStoryPartEndpoint, "/NextStoryPart")
 
     class StorySubmissionEndpoint(Resource):
         def post(self):
@@ -363,7 +480,7 @@ def create_app(test_config: dict | None = None):
 
             return {
                 "ok": True,
-                "part_id": str(story_part.part_id)
+                "part_id": str(story_part.part_id),
             }, 201
 
     api.add_resource(StorySubmissionEndpoint, "/StorySubmission")

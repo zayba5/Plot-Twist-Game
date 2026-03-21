@@ -32,7 +32,7 @@ export async function fetchGameStories() {
     };
   }
 
-  return apiJson("Story", {
+  return apiJson("GetAllStory", {
     method: "GET",
     credentials: "include"
   });
@@ -57,6 +57,22 @@ export async function postVote(gameID, storyID) {
   });
 }
 
+export async function fetchInitialPrompt(gameID, roundNumber) {
+  const response = await apiJson("CreateStory", {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: {
+      game_id: gameID,
+      round_number: roundNumber,
+    },
+  });
+
+  return response;
+}
+
 export async function postStory(gameID, roundNumber, content) {
   console.log("stroy POST endpoint called")
   return apiJson("StorySubmission", {
@@ -78,4 +94,16 @@ export async function fetchUserId() {
 
   const data = await res.json();
   return data.user_id;
+}
+
+export async function fetchNextStoryPart(gameId, roundNumber) {
+  const params = new URLSearchParams({
+    game_id: String(gameId),
+    round_number: String(roundNumber),
+  });
+
+  return apiJson(`NextStoryPart?${params.toString()}`, {
+    method: "GET",
+    credentials: "include",
+  });
 }
