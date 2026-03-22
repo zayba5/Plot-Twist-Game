@@ -168,7 +168,7 @@ def create_app(test_config: dict | None = None):
             join_room(f"game:{game.game_id}")
             print(f"socket joined room game:{game.game_id}")
 
-            # 👇 build player list
+            #  build player list
             players_list = [
                 {
                     "user_id": str(p.user_id.user_id),
@@ -178,7 +178,7 @@ def create_app(test_config: dict | None = None):
                 for p in game.player
             ]
 
-            # 👇 send ONLY to this user
+            #  send ONLY to this user
             socketio.emit(
                 "lobby_snapshot",
                 {"players": players_list},
@@ -338,7 +338,6 @@ def create_app(test_config: dict | None = None):
             return jsonify({"stories" : stories})
     api.add_resource(GetAllStoryEndpoint, "/GetAllStory")
   
-    #story creation
     class CreateStoryEndpoint(Resource):
         def post(self):
             require_user()
@@ -351,7 +350,12 @@ def create_app(test_config: dict | None = None):
                 }, 401
 
             body = request.get_json(silent=True) or {}
-
+            if body is None:
+                return {
+                    "ok": False,
+                    "error": "invalid or missing JSON body"
+            }, 400
+            
             game_id = body.get("game_id")
 
             if not game_id:
@@ -363,38 +367,10 @@ def create_app(test_config: dict | None = None):
             try:
                 game = Game.get(Game.game_id == game_id)
 
-                existing_story = (
-                    Story
-                    .select()
-                    .where(
-                        (Story.game_id == game) &
-                        (Story.user_id == g.user)
-                    )
-                    .first()
-                )
-
-                if existing_story:
-                    return {
-                        "ok": False,
-                        "error": "story already exists for this user in this game",
-                        "story_id": str(existing_story.story_id),
-                        "game_id": str(game.game_id),
-                        "user_id": str(g.user)
-                    }, 409
-
                 story = Story.create(
                     story_id=uuid.uuid4(),
                     game_id=game,
                     user_id=g.user
-                )
-
-                #make entry into story assignment
-                assignment = Story_Assignment.create(
-                    assignment_id=uuid.uuid4(),
-                    game_id=game,
-                    round_number=1,
-                    user_id=g.user,
-                    story_id=story.story_id,                    
                 )
 
                 return {
