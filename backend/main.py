@@ -477,17 +477,21 @@ def create_app(test_config: dict | None = None):
             if round_number < 1:
                 return {"ok": False, "error": "round_number must be >= 1"}, 400
 
+            #core logic, check what story is assigned to the user, if any
             game = Game.get_or_none(Game.game_id == game_uuid)
             if not game:
                 return {"ok": False, "error": "game not found"}, 404
-
-            story = Story.get_or_none(Story.game_id == game)
+            
+            assignment = Story_Assignment.get_or_none(
+                (Story_Assignment.game_id == game) &
+                (Story_Assignment.round_number == round_number) &
+                (Story_Assignment.user_id == g.user)
+            )
+            story = assignment.story_id
             if not story:
-                story = Story.create(
-                    story_id=uuid.uuid4(),
-                    game_id=game
-                )
+                return {"ok": False, "error": "no matching assignment to this user"}, 404
 
+            # check for duplicated submission
             existing = Story_Part.get_or_none(
                 (Story_Part.story_id == story) &
                 (Story_Part.part_number == round_number) &
