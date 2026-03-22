@@ -78,3 +78,7 @@ class Story_Assignment(BaseModel):
     round_number = IntegerField()
     user_id = ForeignKeyField(User, backref="assignments")
     story_id = ForeignKeyField(Story, backref="assignments")
+    class Meta:
+        indexes = (
+            (("game_id", "round_number", "user_id"), True),
+        )
