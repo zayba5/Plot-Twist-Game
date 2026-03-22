@@ -1,6 +1,7 @@
 from models import Voting, Voting_Session, Game_Players, Status, Story_Part, Game
 import uuid
 from peewee import fn
+import random
 
 def getActiveVotingSession(game):
     return (
@@ -42,6 +43,9 @@ def calcVotes(game, active_session):
             .where(Story_Part.story_id == winning_story)
             .distinct()
         )
+        
+        winning_story.is_winner = True
+        winning_story.save()
 
         for part in winning_writers:
             user_id = str(part.user_id.user_id if hasattr(part.user_id, "user_id") else part.user_id)
@@ -59,6 +63,9 @@ def calcVotes(game, active_session):
             if game_player:
                 game_player.user_score += 1
                 game_player.save()
+                
+    active_session.continuing_story_id = random.choice(winners)
+    active_session.save()
 
     return {
         "winning_story_ids": [str(story.story_id if hasattr(story, "story_id") else story) for story in winners],
