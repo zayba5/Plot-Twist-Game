@@ -94,6 +94,7 @@ const StorytellingPage = () => {
   const hasClaimedRef = useRef(false);
   const [status, setStatus] = useState("idle"); // idle | submitting | waiting | ready | error
   const [isPolling, setIsPolling] = useState(false);
+  const [fetchNext, setfetchNext] = useState(false);
   const gameIdRef = useRef(gameId);
   const roundRef = useRef(roundNumber);
   const canSubmit = useMemo(() => {
@@ -181,11 +182,10 @@ const StorytellingPage = () => {
         if (cancelled) return;
 
         if (data?.status === "ready") {
-          setPrompt(data.prompt ?? "No prompt available.");
-          setRoundNumber(prev => prev + 1);
           setStatus("idle");
           setSubmitted(false);
-          setIsPolling(false);
+          setIsPolling(false); // stops the polling
+          setfetchNext(true); // trigger the next fetch
           return;
         }
 
@@ -209,6 +209,33 @@ const StorytellingPage = () => {
     };
   }, [isPolling]);
 
+  //fetching the next prompt
+  useEffect(() => {
+    if (!fetchNext) return; //guarding
+    const newPrompt = async () => {
+      try {
+        const res = await fetchNextStoryPart(gameIdRef.current, roundRef.current);
+
+        // if your apiJson already returns parsed JSON:
+        if (!res.ok) {
+          throw new Error(res.error || "Something went wrong");
+        }
+
+        // success case
+        setPrompt(res.prompt);
+        setRoundNumber(res.round_number);
+        setStoryText(""); // clear input box
+        setfetchNext(false); //stop fetching 
+
+      } catch (err) {
+        console.error(`Error fetching prompt after sending round ${roundRef}:`, err);
+        console.error(err.message || "Failed to load subsequent prompt");
+      }
+    }
+    newPrompt();
+
+  }, [fetchNext]);
+
   const handleSubmit = async (isAutoSubmit = false) => {
     if (submitted || submitting) return;
 
@@ -216,6 +243,7 @@ const StorytellingPage = () => {
       setSubmitting(true);
 
       const normStorytext = storyText?.trim() || "someone forgot to type!";
+      console.log(`sending to backend: gameId: ${gameId}, roundNumber: ${roundNumber}, normStorytext: ${normStorytext}`);
       const result = await postStory(gameId, roundNumber, normStorytext);
 
       console.log(isAutoSubmit ? "auto-submitted:" : "manual-submitted:", result);

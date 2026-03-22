@@ -28,7 +28,34 @@ def httpError(reason, code):
 
 def generate_game_code(length=6):
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
-    
+
+def generate_assignments_for_round(game, round_number):
+    previous_round = round_number - 1
+
+    prev_assignments = list(
+        Story_Assignment.select().where(
+            (Story_Assignment.game_id == game) &
+            (Story_Assignment.round_number == previous_round)
+        ).order_by(Story_Assignment.user_id)
+    )
+
+    if len(prev_assignments) < 2:
+        raise ValueError("Need at least 2 assignments to rotate")
+
+    users = [a.user_id for a in prev_assignments]
+    stories = [a.story_id for a in prev_assignments]
+
+    rotated_stories = stories[1:] + stories[:1]
+
+    for user, story in zip(users, rotated_stories):
+        Story_Assignment.create(
+            assignment_id=uuid.uuid4(),
+            game_id=game,
+            round_number=round_number,
+            user_id=user,
+            story_id=story
+        )
+
 def getActiveVotingSession(game):
     return (
         Voting_Session.select().join(Status)
@@ -412,7 +439,8 @@ def create_app(test_config: dict | None = None):
 
     class NextStoryPartEndpoint(Resource):
         def get(self):
-            user = require_user()
+            require_user()
+
             if not getattr(g, "user", None):
                 return {"ok": False, "error": "unauthorized"}, 401
 
@@ -428,52 +456,79 @@ def create_app(test_config: dict | None = None):
             except (ValueError, TypeError):
                 return {"ok": False, "error": "invalid input"}, 400
 
-            if round_number < 1:
-                return {"ok": False, "error": "round_number must be >= 1"}, 400
-
             game = Game.get_or_none(Game.game_id == game_uuid)
             if not game:
                 return {"ok": False, "error": "game not found"}, 404
 
-            print("entering story Assignment:")
+            # 1. verify current round is complete
+            assignments = Story_Assignment.select().where(
+                (Story_Assignment.game_id == game) &
+                (Story_Assignment.round_number == round_number)
+            )
+            total_assignments = assignments.count()
+
+            submitted_count = Story_Part.select().where(
+                (Story_Part.part_number == round_number) &
+                (Story_Part.story_id.in_(
+                    Story_Assignment.select(Story_Assignment.story_id).where(
+                        (Story_Assignment.game_id == game) &
+                        (Story_Assignment.round_number == round_number)
+                    )
+                ))
+            ).count()
+
+            if total_assignments == 0 or submitted_count < total_assignments:
+                return {
+                    "ok": False,
+                    "status": "waiting",
+                    "error": "round not complete yet"
+                }, 409
+
+            next_round = round_number + 1
+
+            # 2. ensure next-round assignments are generated only once
+            with db.atomic(): # start transaction
+                round_state, created = Round_State.get_or_create(
+                    game_id=game,
+                    round_number=next_round,
+                    defaults={
+                        "round_state_id": uuid.uuid4(),
+                        "assignments_generated": False,
+                    }
+                )
+
+                if not round_state.assignments_generated:
+                    generate_assignments_for_round(game, next_round)
+                    round_state.assignments_generated = True
+                    round_state.save()
+
+            # 3. fetch this user's assignment for next round
             assignment = Story_Assignment.get_or_none(
                 (Story_Assignment.game_id == game) &
-                (Story_Assignment.round_number == round_number) &
+                (Story_Assignment.round_number == next_round) &
                 (Story_Assignment.user_id == g.user)
             )
 
             if not assignment:
                 return {
-                    "ok": True,
-                    "status": "waiting",
-                    "prompt": "Waiting for other players to finish this round."
-                }, 200
+                    "ok": False,
+                    "error": "no assignment found for user in next round"
+                }, 404
 
-            story = assignment.story_id
+            # example prompt from previous story part
+            last_part = Story_Part.select().where(
+                Story_Part.story_id == assignment.story_id
+            ).order_by(Story_Part.part_number.desc()).first()
 
-            last_part = (
-                Story_Part
-                .select()
-                .where(Story_Part.story_id == story)
-                .order_by(Story_Part.part_number.desc())
-                .first()
-            )
-
-            if not last_part:
-                return {
-                    "ok": True,
-                    "status": "ready",
-                    "round": round_number,
-                    "prompt": "There is no story yet. Please think of an initial prompt to begin the story."
-                }, 200
+            prompt = last_part.part_content if last_part else "No prompt available."
 
             return {
                 "ok": True,
                 "status": "ready",
-                "round": round_number + 1,
-                "prompt": last_part.part_content
+                "round_number": next_round,
+                "story_id": str(assignment.story_id.story_id),
+                "prompt": prompt,
             }, 200
-    
     api.add_resource(NextStoryPartEndpoint, "/NextStoryPart")
 
     class StorySubmissionEndpoint(Resource):
