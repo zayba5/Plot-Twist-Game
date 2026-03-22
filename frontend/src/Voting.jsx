@@ -94,7 +94,7 @@ const Header = ({ handleTimerExpire }) => {
   return (
     <div className="game-window-header">
       <h1>Vote for your favorite story</h1>
-      <Timer durationSec={200} onExpire={handleTimerExpire} />
+      <Timer durationSec={20} onExpire={handleTimerExpire} />
     </div>
   );
 };
@@ -144,7 +144,7 @@ const VotingPage = () => {
       endRound("all_votes_in", payload)
     }
 
-    socket.emit("join_game", { game_id: gameId });
+    socket.emit("join_game_room", { game_id: gameId });
     socket.on("all_votes_in", handleAllVotesIn);
 
     return () => {

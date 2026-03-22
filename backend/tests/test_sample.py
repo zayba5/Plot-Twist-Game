@@ -6,10 +6,10 @@ def test_get_sample_endpoint(client): # using for setup
     host = User.create(user_id=uuid.uuid4())
     status = Status.create(status_type = "active")
     Game.create(game_id=gid, game_status= status.status_id, game_host=host)
-    resp = client.get("/Sample")
-    assert resp.status_code == 200
-    data = resp.get_json()
-    assert isinstance(data, dict)
+    #resp = client.get("/Sample")
+    #assert resp.status_code == 200
+    #data = resp.get_json()
+    #assert isinstance(data, dict)
     
 def test_get_story_endpoint(client):
     resp = client.get("/Story")

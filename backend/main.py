@@ -212,6 +212,13 @@ def create_app(test_config: dict | None = None):
                 to=request.sid
             )
             
+    @socketio.on("join_game_room")
+    def handle_join_game(data):
+        game_id = data.get("game_id")
+        if game_id:
+            join_room(f"game:{game_id}")
+            print(f"socket joined room game:{game_id}")
+            
     @socketio.on("voting_round_expired")
     def handle_expired_voting(data):
         game_id = data.get("game_id")
@@ -723,7 +730,7 @@ def create_app(test_config: dict | None = None):
             all_votes_in = self.checkStatus(active_session, game)
 
             if all_votes_in:    
-                finishVotingSession("all votes in", game)           
+                finishVotingSession("all votes in", game_id)           
                 socketio.emit(
                     "all_votes_in",
                     {
@@ -738,6 +745,36 @@ def create_app(test_config: dict | None = None):
                 "all_votes_in": all_votes_in,
             }
     api.add_resource(TestVotesEndpoint, "/TestVote")
+    
+    class VotingSessionEndpoint(Resource):
+        def get(self):
+            require_user()
+
+            game_id = request.args.get("game_id")
+            if not game_id:
+                return httpError("game_id required", 400)
+
+            try:
+                game_uuid = uuid.UUID(str(game_id))
+            except ValueError:
+                return httpError("invalid game_id", 400)
+
+            game = Game.get_or_none(Game.game_id == game_uuid)
+            if not game:
+                return httpError("game not found", 404)
+
+            session = getActiveVotingSession(game)
+
+            if not session:
+                return {"ok": True, "active": False}, 200
+
+            return {
+                "ok": True,
+                "active": True,
+                "voting_session_id": str(session.voting_session_id),
+            }, 200
+            
+    api.add_resource(VotingSessionEndpoint, "/VotingSession")
     
         
     class SessionEndpoint(Resource):
