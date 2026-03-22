@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import "./index.css";
 import { fetchItem } from "./Utility.jsx";
-import { fetchGameStories, fetchInitialPrompt, fetchUserId, fetchNextStoryPart } from "./Utility";
+import { fetchInitialPrompt, fetchUserId, fetchPollReady, fetchNextStoryPart } from "./Utility";
 import { postStory } from "./Utility.jsx";
 import { socket } from "./global.jsx";
 import { useNavigate } from "react-router-dom";
@@ -71,7 +71,7 @@ const ControlBar = ({ onSubmit, disabled, submitted, submitting, timeLeft }) => 
         onClick={onSubmit}
         disabled={disabled || submitting}
       >
-        {submitting ? "Submitting..." : "Submit"}
+        {(!submitted && submitting) ? "Submitting..." : (submitted)? "Submitted": "Submit"}
       </button>
     </div>
   );
@@ -94,9 +94,17 @@ const StorytellingPage = () => {
   const hasClaimedRef = useRef(false);
   const [status, setStatus] = useState("idle"); // idle | submitting | waiting | ready | error
   const [isPolling, setIsPolling] = useState(false);
+  const gameIdRef = useRef(gameId);
+  const roundRef = useRef(roundNumber);
   const canSubmit = useMemo(() => {
     return !submitted && storyText.trim().length > 0;
   }, [submitted, storyText]);
+
+  //refs
+  useEffect(() => {
+    gameIdRef.current = gameId;
+    roundRef.current = roundNumber;
+  }, [gameId, roundNumber]);
 
   //initial prompt fetching, should only run once per mount
   useEffect(() => {
@@ -156,15 +164,40 @@ const StorytellingPage = () => {
   useEffect(() => {
     if (!isPolling) return;
 
+    console.log("polling actually started");
+    console.trace("setIsPolling(true)");
     let cancelled = false;
+    let timeoutId = null;
 
     async function check() {
       if (cancelled) return;
 
-      const done = await pollNextStoryPart(gameId, roundNumber + 1);
+      try {
+        const data = await fetchPollReady(
+          gameIdRef.current,
+          roundRef.current
+        );
 
-      if (!done && !cancelled) {
-        setTimeout(check, 2000);
+        if (cancelled) return;
+
+        if (data?.status === "ready") {
+          setPrompt(data.prompt ?? "No prompt available.");
+          setRoundNumber(prev => prev + 1);
+          setStatus("idle");
+          setSubmitted(false);
+          setIsPolling(false);
+          return;
+        }
+
+        setStatus("Waiting for other players...");
+      } catch (err) {
+        if (!cancelled) {
+          console.error("Polling failed:", err);
+        }
+      }
+
+      if (!cancelled) {
+        timeoutId = setTimeout(check, 2000);
       }
     }
 
@@ -172,8 +205,9 @@ const StorytellingPage = () => {
 
     return () => {
       cancelled = true;
+      if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [isPolling, gameId, roundNumber]);
+  }, [isPolling]);
 
   const handleSubmit = async (isAutoSubmit = false) => {
     if (submitted || submitting) return;
@@ -187,31 +221,8 @@ const StorytellingPage = () => {
       console.log(isAutoSubmit ? "auto-submitted:" : "manual-submitted:", result);
 
       setSubmitted(true);
-      setPrompt("Waiting for other players to finish this round...");
-
-      let ready = false;
-
-      while (!ready) {
-        try {
-          const data = await fetchNextStoryPart(gameId, roundNumber + 1);
-
-          if (data?.status === "ready") {
-            setPrompt(data.prompt ?? "No prompt available.");
-            ready = true;
-
-            // optionally move to next round
-            setRoundNumber(prev => prev + 1);
-            setSubmitted(false); // allow next submission
-          } else {
-            setPrompt(data?.prompt ?? "Waiting for other players...");
-            await new Promise(resolve => setTimeout(resolve, 2000)); // wait 2s
-          }
-        } catch (err) {
-          console.error("Polling failed:", err);
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        }
-      }
-
+      setStatus("Waiting for other players to finish this round...");
+      setIsPolling(true); // triggers polling
     } catch (error) {
       console.error("Failed to submit story:", error);
     } finally {
@@ -224,6 +235,7 @@ const StorytellingPage = () => {
       <div>
         <label><strong>Claimed Player: {userId || "Not assigned"}</strong></label> 
         {claimError ? <div>{claimError}</div> : null}
+        <div><label><strong>Status: {status || "no status available"}</strong></label></div>
       </div>
 
       <Header roundNumber={roundNumber} maxRounds={MAX_ROUNDS} />

@@ -97,6 +97,18 @@ export async function fetchUserId() {
   return data.user_id;
 }
 
+export async function fetchPollReady(gameId, roundNumber) {
+  const params = new URLSearchParams({
+    game_id: String(gameId),
+    round_number: String(roundNumber),
+  });
+
+  return apiJson(`PollReady?${params.toString()}`, {
+    method: "GET",
+    credentials: "include",
+  });
+}
+
 export async function fetchNextStoryPart(gameId, roundNumber) {
   const params = new URLSearchParams({
     game_id: String(gameId),

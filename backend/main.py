@@ -338,6 +338,7 @@ def create_app(test_config: dict | None = None):
             return jsonify({"stories" : stories})
     api.add_resource(GetAllStoryEndpoint, "/GetAllStory")
   
+    #story creation
     class CreateStoryEndpoint(Resource):
         def post(self):
             require_user()
@@ -350,11 +351,6 @@ def create_app(test_config: dict | None = None):
                 }, 401
 
             body = request.get_json(silent=True) or {}
-            if body is None:
-                return {
-                    "ok": False,
-                    "error": "invalid or missing JSON body"
-            }, 400
             
             game_id = body.get("game_id")
 
@@ -366,11 +362,38 @@ def create_app(test_config: dict | None = None):
 
             try:
                 game = Game.get(Game.game_id == game_id)
+                existing_story = (
+                    Story
+                    .select()
+                    .where(
+                        (Story.game_id == game) &
+                        (Story.user_id == g.user)
+                    )
+                    .first()
+                )
+
+                if existing_story:
+                    return {
+                        "ok": False,
+                        "error": "story already exists for this user in this game",
+                        "story_id": str(existing_story.story_id),
+                        "game_id": str(game.game_id),
+                        "user_id": str(g.user)
+                    }, 409
 
                 story = Story.create(
                     story_id=uuid.uuid4(),
                     game_id=game,
                     user_id=g.user
+                )
+
+                #make entry into story assignment
+                assignment = Story_Assignment.create(
+                    assignment_id=uuid.uuid4(),
+                    game_id=game,
+                    round_number=1,
+                    user_id=g.user,
+                    story_id=story.story_id,                    
                 )
 
                 return {
@@ -487,10 +510,12 @@ def create_app(test_config: dict | None = None):
                 (Story_Assignment.round_number == round_number) &
                 (Story_Assignment.user_id == g.user)
             )
-            story = assignment.story_id
-            if not story:
+            
+            if not assignment:
                 return {"ok": False, "error": "no matching assignment to this user"}, 404
-
+            
+            story = assignment.story_id
+            
             # check for duplicated submission
             existing = Story_Part.get_or_none(
                 (Story_Part.story_id == story) &
@@ -514,6 +539,68 @@ def create_app(test_config: dict | None = None):
             }, 201
 
     api.add_resource(StorySubmissionEndpoint, "/StorySubmission")
+
+    class PollReadyEndpoint(Resource):
+        def get(self):
+            game_id = request.args.get("game_id")
+            round_number = request.args.get("round_number")
+
+            if not game_id or round_number is None:
+                return {
+                    "ok": False,
+                    "error": "game_id and round_number are required"
+                }, 400
+
+            try:
+                game_uuid = uuid.UUID(str(game_id))
+                round_number = int(round_number)
+            except (ValueError, TypeError):
+                return {
+                    "ok": False,
+                    "error": "invalid input"
+                }, 400
+
+            game = Game.get_or_none(Game.game_id == game_uuid)
+            if not game:
+                return {
+                    "ok": False,
+                    "error": "game not found"
+                }, 404
+
+            assignments = Story_Assignment.select().where(
+                (Story_Assignment.game_id == game) &
+                (Story_Assignment.round_number == round_number)
+            )
+
+            total_assignments = assignments.count()
+
+            if total_assignments == 0:
+                return {
+                    "ok": False,
+                    "error": "no assignments found for this round"
+                }, 404
+
+            submitted_count = Story_Part.select().where(
+                Story_Part.part_number == round_number,
+                Story_Part.story_id.in_(
+                    Story_Assignment.select(Story_Assignment.story_id).where(
+                        (Story_Assignment.game_id == game) &
+                        (Story_Assignment.round_number == round_number)
+                    )
+                )
+            ).count()
+
+            ready = submitted_count >= total_assignments
+
+            return {
+                "ok": True,
+                "game_id": str(game.game_id),
+                "round_number": round_number,
+                "submitted": submitted_count,
+                "total": total_assignments,
+                "status": "ready" if ready else "waiting"
+            }, 200
+    api.add_resource(PollReadyEndpoint, "/PollReady")
 
     class ScoreEndpoint(Resource):
         def get(self):
