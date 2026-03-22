@@ -57,6 +57,13 @@ export async function postVote(gameID, storyID) {
   });
 }
 
+export async function fetchVotingSession(){
+  return apiJson("VotingSession", {
+    method: "GET",
+    credentials: "include"
+  })
+}
+
 export async function fetchInitialPrompt(gameID, roundNumber) {
   console.log("CreateStory endpoint called")
   const response = await apiJson("CreateStory", {
