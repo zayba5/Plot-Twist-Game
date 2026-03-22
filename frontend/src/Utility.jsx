@@ -58,6 +58,7 @@ export async function postVote(gameID, storyID) {
 }
 
 export async function fetchInitialPrompt(gameID, roundNumber) {
+  console.log("CreateStory endpoint called")
   const response = await apiJson("CreateStory", {
     method: "POST",
     credentials: "include",
@@ -94,6 +95,18 @@ export async function fetchUserId() {
 
   const data = await res.json();
   return data.user_id;
+}
+
+export async function fetchPollReady(gameId, roundNumber) {
+  const params = new URLSearchParams({
+    game_id: String(gameId),
+    round_number: String(roundNumber),
+  });
+
+  return apiJson(`PollReady?${params.toString()}`, {
+    method: "GET",
+    credentials: "include",
+  });
 }
 
 export async function fetchNextStoryPart(gameId, roundNumber) {

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import "./index.css";
 import { fetchItem } from "./Utility.jsx";
-import { fetchGameStories, fetchInitialPrompt, fetchUserId, fetchNextStoryPart } from "./Utility";
+import { fetchInitialPrompt, fetchUserId, fetchPollReady, fetchNextStoryPart } from "./Utility";
 import { postStory } from "./Utility.jsx";
 import { socket } from "./global.jsx";
 import { useNavigate } from "react-router-dom";
@@ -71,7 +71,7 @@ const ControlBar = ({ onSubmit, disabled, submitted, submitting, timeLeft }) => 
         onClick={onSubmit}
         disabled={disabled || submitting}
       >
-        {submitting ? "Submitting..." : "Submit"}
+        {(!submitted && submitting) ? "Submitting..." : (submitted)? "Submitted": "Submit"}
       </button>
     </div>
   );
@@ -94,9 +94,18 @@ const StorytellingPage = () => {
   const hasClaimedRef = useRef(false);
   const [status, setStatus] = useState("idle"); // idle | submitting | waiting | ready | error
   const [isPolling, setIsPolling] = useState(false);
+  const [fetchNext, setFetchNext] = useState(false);
+  const gameIdRef = useRef(gameId);
+  const roundRef = useRef(roundNumber);
   const canSubmit = useMemo(() => {
     return !submitted && storyText.trim().length > 0;
   }, [submitted, storyText]);
+
+  //refs
+  useEffect(() => {
+    gameIdRef.current = gameId;
+    roundRef.current = roundNumber;
+  }, [gameId, roundNumber]);
 
   //initial prompt fetching, should only run once per mount
   useEffect(() => {
@@ -141,71 +150,6 @@ const StorytellingPage = () => {
     }
   }, [timeLeft, submitted, submitting]);
 
-  // idk what this part does
-  useEffect(() => {
-    function resetRoundState(nextPrompt, nextRoundNumber, nextTimeLeft) {
-      setRoundNumber(nextRoundNumber);
-      setPrompt(nextPrompt);
-      setStoryText("");
-      setSubmitted(false);
-      setSubmitting(false);
-      setTimeLeft(nextTimeLeft);
-    }
-
-    function handleRoundStarted(payload) {
-      console.log("round_started:", payload);
-
-      resetRoundState(
-        payload?.prompt ?? "",
-        payload?.round_number ?? 1,
-        payload?.round_time_seconds ?? ROUND_TIME_SECONDS
-      );
-    }
-
-    function handleAllStoriesIn(payload) {
-      console.log("all stories in:", payload);
-    }
-
-    function handleRoundEnded(payload) {
-      console.log("round ended:", payload);
-
-      const endedRoundNumber = payload?.round_number ?? 1;
-      if (endedRoundNumber >= MAX_ROUNDS) {
-        navigate("/vote");
-        return;
-      }
-
-      resetRoundState(
-        payload?.next_prompt ?? "",
-        payload?.next_round_number ?? endedRoundNumber + 1,
-        payload?.round_time_seconds ?? ROUND_TIME_SECONDS
-      );
-    }
-
-    function handleGoToVoting(payload) {
-      console.log("go_to_voting:", payload);
-      navigate("/vote");
-    }
-
-    function handleStoriesRotated(payload) {
-      console.log("stories rotated:", payload);
-    }
-
-    socket.on("round_started", handleRoundStarted);
-    socket.on("all_stories_in", handleAllStoriesIn);
-    socket.on("round_ended", handleRoundEnded);
-    socket.on("go_to_voting", handleGoToVoting);
-    socket.on("stories_rotated", handleStoriesRotated);
-
-    return () => {
-      socket.off("round_started", handleRoundStarted);
-      socket.off("all_stories_in", handleAllStoriesIn);
-      socket.off("round_ended", handleRoundEnded);
-      socket.off("go_to_voting", handleGoToVoting);
-      socket.off("stories_rotated", handleStoriesRotated);
-    };
-  }, [navigate]);
-
   //sets and shows UserId on page
   useEffect(() => {
     if (hasClaimedRef.current) return;
@@ -221,15 +165,39 @@ const StorytellingPage = () => {
   useEffect(() => {
     if (!isPolling) return;
 
+    console.log("polling actually started");
+    console.trace("setIsPolling(true)");
     let cancelled = false;
+    let timeoutId = null;
 
     async function check() {
       if (cancelled) return;
 
-      const done = await pollNextStoryPart(gameId, roundNumber + 1);
+      try {
+        const data = await fetchPollReady(
+          gameIdRef.current,
+          roundRef.current
+        );
 
-      if (!done && !cancelled) {
-        setTimeout(check, 2000);
+        if (cancelled) return;
+
+        if (data?.status === "ready") {
+          setStatus("idle");
+          setSubmitted(false);
+          setIsPolling(false); // stops the polling
+          setFetchNext(true); // trigger the next fetch
+          return;
+        }
+
+        setStatus("Waiting for other players...");
+      } catch (err) {
+        if (!cancelled) {
+          console.error("Polling failed:", err);
+        }
+      }
+
+      if (!cancelled) {
+        timeoutId = setTimeout(check, 2000);
       }
     }
 
@@ -237,8 +205,43 @@ const StorytellingPage = () => {
 
     return () => {
       cancelled = true;
+      if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [isPolling, gameId, roundNumber]);
+  }, [isPolling]);
+
+  //fetching the next prompt
+  useEffect(() => {
+    if (!fetchNext) return; //guarding
+    const newPrompt = async () => {
+      try {
+        const res = await fetchNextStoryPart(gameId, roundNumber);
+
+        if (!res.ok) {
+          throw new Error(res.error || "Something went wrong");
+        }
+
+        if (res.status === "voting") {
+          setStoryText("");
+          setFetchNext(false);
+          navigate("/vote");
+          return;
+        }
+
+        if (res.status === "ready") {
+          setPrompt(res.prompt);
+          setRoundNumber(res.round_number);
+          setStoryText("");
+          setFetchNext(false);
+        }
+
+      } catch (err) {
+        console.error(`Error fetching prompt after sending round ${roundRef}:`, err);
+        console.error(err.message || "Failed to load subsequent prompt");
+      }
+    }
+    newPrompt();
+
+  }, [fetchNext]);
 
   const handleSubmit = async (isAutoSubmit = false) => {
     if (submitted || submitting) return;
@@ -247,36 +250,14 @@ const StorytellingPage = () => {
       setSubmitting(true);
 
       const normStorytext = storyText?.trim() || "someone forgot to type!";
+      console.log(`sending to backend: gameId: ${gameId}, roundNumber: ${roundNumber}, normStorytext: ${normStorytext}`);
       const result = await postStory(gameId, roundNumber, normStorytext);
 
       console.log(isAutoSubmit ? "auto-submitted:" : "manual-submitted:", result);
 
       setSubmitted(true);
-      setPrompt("Waiting for other players to finish this round...");
-
-      let ready = false;
-
-      while (!ready) {
-        try {
-          const data = await fetchNextStoryPart(gameId, roundNumber + 1);
-
-          if (data?.status === "ready") {
-            setPrompt(data.prompt ?? "No prompt available.");
-            ready = true;
-
-            // optionally move to next round
-            setRoundNumber(prev => prev + 1);
-            setSubmitted(false); // allow next submission
-          } else {
-            setPrompt(data?.prompt ?? "Waiting for other players...");
-            await new Promise(resolve => setTimeout(resolve, 2000)); // wait 2s
-          }
-        } catch (err) {
-          console.error("Polling failed:", err);
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        }
-      }
-
+      setStatus("Waiting for other players to finish this round...");
+      setIsPolling(true); // triggers polling
     } catch (error) {
       console.error("Failed to submit story:", error);
     } finally {
@@ -289,6 +270,7 @@ const StorytellingPage = () => {
       <div>
         <label><strong>Claimed Player: {userId || "Not assigned"}</strong></label> 
         {claimError ? <div>{claimError}</div> : null}
+        <div><label><strong>Status: {status || "no status available"}</strong></label></div>
       </div>
 
       <Header roundNumber={roundNumber} maxRounds={MAX_ROUNDS} />
