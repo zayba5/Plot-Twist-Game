@@ -443,7 +443,8 @@ def create_app(test_config: dict | None = None):
 
             if not getattr(g, "user", None):
                 return {"ok": False, "error": "unauthorized"}, 401
-
+            #hard coded
+            MAX_ROUNDS = 3 
             game_id = request.args.get("game_id")
             round_number = request.args.get("round_number")
 
@@ -460,12 +461,10 @@ def create_app(test_config: dict | None = None):
             if not game:
                 return {"ok": False, "error": "game not found"}, 404
 
-            # 1. verify current round is complete
-            assignments = Story_Assignment.select().where(
+            total_assignments = Story_Assignment.select().where(
                 (Story_Assignment.game_id == game) &
                 (Story_Assignment.round_number == round_number)
-            )
-            total_assignments = assignments.count()
+            ).count()
 
             submitted_count = Story_Part.select().where(
                 (Story_Part.part_number == round_number) &
@@ -477,17 +476,27 @@ def create_app(test_config: dict | None = None):
                 ))
             ).count()
 
-            if total_assignments == 0 or submitted_count < total_assignments:
+            if total_assignments == 0:
+                return {"ok": False, "error": "no assignments found for this round"}, 404
+
+            if submitted_count < total_assignments:
                 return {
-                    "ok": False,
+                    "ok": True,
                     "status": "waiting",
-                    "error": "round not complete yet"
-                }, 409
+                    "submitted": submitted_count,
+                    "total": total_assignments,
+                }, 200
+
+            if round_number >= MAX_ROUNDS:
+                return {
+                    "ok": True,
+                    "status": "voting",
+                    "round_number": round_number,
+                }, 200
 
             next_round = round_number + 1
 
-            # 2. ensure next-round assignments are generated only once
-            with db.atomic(): # start transaction
+            with db.atomic():
                 round_state, created = Round_State.get_or_create(
                     game_id=game,
                     round_number=next_round,
@@ -502,7 +511,6 @@ def create_app(test_config: dict | None = None):
                     round_state.assignments_generated = True
                     round_state.save()
 
-            # 3. fetch this user's assignment for next round
             assignment = Story_Assignment.get_or_none(
                 (Story_Assignment.game_id == game) &
                 (Story_Assignment.round_number == next_round) &
@@ -510,24 +518,22 @@ def create_app(test_config: dict | None = None):
             )
 
             if not assignment:
-                return {
-                    "ok": False,
-                    "error": "no assignment found for user in next round"
-                }, 404
+                return {"ok": False, "error": "no assignment found for next round"}, 404
 
-            # example prompt from previous story part
-            last_part = Story_Part.select().where(
-                Story_Part.story_id == assignment.story_id
-            ).order_by(Story_Part.part_number.desc()).first()
-
-            prompt = last_part.part_content if last_part else "No prompt available."
+            last_part = (
+                Story_Part
+                .select()
+                .where(Story_Part.story_id == assignment.story_id)
+                .order_by(Story_Part.part_number.desc())
+                .first()
+            )
 
             return {
                 "ok": True,
                 "status": "ready",
                 "round_number": next_round,
                 "story_id": str(assignment.story_id.story_id),
-                "prompt": prompt,
+                "prompt": last_part.part_content if last_part else "No prompt available.",
             }, 200
     api.add_resource(NextStoryPartEndpoint, "/NextStoryPart")
 

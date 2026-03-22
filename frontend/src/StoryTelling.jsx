@@ -94,7 +94,7 @@ const StorytellingPage = () => {
   const hasClaimedRef = useRef(false);
   const [status, setStatus] = useState("idle"); // idle | submitting | waiting | ready | error
   const [isPolling, setIsPolling] = useState(false);
-  const [fetchNext, setfetchNext] = useState(false);
+  const [fetchNext, setFetchNext] = useState(false);
   const gameIdRef = useRef(gameId);
   const roundRef = useRef(roundNumber);
   const canSubmit = useMemo(() => {
@@ -185,7 +185,7 @@ const StorytellingPage = () => {
           setStatus("idle");
           setSubmitted(false);
           setIsPolling(false); // stops the polling
-          setfetchNext(true); // trigger the next fetch
+          setFetchNext(true); // trigger the next fetch
           return;
         }
 
@@ -214,18 +214,25 @@ const StorytellingPage = () => {
     if (!fetchNext) return; //guarding
     const newPrompt = async () => {
       try {
-        const res = await fetchNextStoryPart(gameIdRef.current, roundRef.current);
+        const res = await fetchNextStoryPart(gameId, roundNumber);
 
-        // if your apiJson already returns parsed JSON:
         if (!res.ok) {
           throw new Error(res.error || "Something went wrong");
         }
 
-        // success case
-        setPrompt(res.prompt);
-        setRoundNumber(res.round_number);
-        setStoryText(""); // clear input box
-        setfetchNext(false); //stop fetching 
+        if (res.status === "voting") {
+          setStoryText("");
+          setFetchNext(false);
+          navigate("/vote");
+          return;
+        }
+
+        if (res.status === "ready") {
+          setPrompt(res.prompt);
+          setRoundNumber(res.round_number);
+          setStoryText("");
+          setFetchNext(false);
+        }
 
       } catch (err) {
         console.error(`Error fetching prompt after sending round ${roundRef}:`, err);
