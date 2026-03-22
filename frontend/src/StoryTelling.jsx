@@ -1,99 +1,16 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import "./index.css";
 import { fetchItem } from "./Utility.jsx";
-import { fetchGameStories, fetchUserId } from "./Utility";
+import { fetchGameStories, fetchInitialPrompt, fetchUserId, fetchNextStoryPart } from "./Utility";
 import { postStory } from "./Utility.jsx";
-import { SampleCard } from "./SampleCard.jsx";
 import { socket } from "./global.jsx";
 import { useNavigate } from "react-router-dom";
 
-// display cards
-const DisplayCard = () => {
-  const [userText, setUserText] = useState("");
-
-  const old_handleSubmit = (e) => {
-    e.preventDefault();
-    console.log("User entered:", userText);
-    //submit logic 
-  };
-
-  return (
-    <div className="game-window">
-      <div className="game-window-header"></div>
-
-      <form onSubmit={old_handleSubmit}>
-        <p>Please enter your response:</p>
-
-        <input
-          type="text"
-          value={userText}
-          onChange={(e) => setUserText(e.target.value)}
-          placeholder="Type here..."
-        />
-
-        <button
-        className="button"
-        id="submit-button" 
-        type="submit">Submit</button>
-      </form>
-
-      <div className="game-window-control-bar"></div>
-    </div>
-  );
-};
-
-function LoadCard() {
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    (async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const data = await fetchItem();
-
-        // expect an array in data.text, but guard it
-        const nextItems = Array.isArray(data?.text) ? data.text : [];
-
-        if (!cancelled) setItems(nextItems);
-      } catch (e) {
-        if (!cancelled) setError(e);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  if (loading) return <div className="loader"><div className="loader-bar" /></div>;
-  if (error) return <div>Failed to load</div>;
-
-  return (
-    <div className="game-window">
-      <div className="game-window-header"></div>
-
-      <div className="card-list">
-        {items.map((it, idx) => (
-          <SampleCard key={idx} item={it} />
-        ))}
-      </div>
-
-      <div className="game-window-control-bar"></div>
-    </div>
-  );
-}
-
+// Hardcode game settings
 const ROUND_TIME_SECONDS = 60000; // on deployment change it to 60
 const MAX_ROUNDS = 3;
 
+// UI
 const Header = ({ roundNumber, maxRounds }) => {
   return (
     <div className="game-window-header">
@@ -160,6 +77,7 @@ const ControlBar = ({ onSubmit, disabled, submitted, submitting, timeLeft }) => 
   );
 };
 
+//main component of StoryTelling
 const StorytellingPage = () => {
   const navigate = useNavigate();
 
@@ -174,54 +92,36 @@ const StorytellingPage = () => {
   const [claimError, setClaimError] = useState("");
   const [userId, setUserId] = useState(null);
   const hasClaimedRef = useRef(false);
+  const [status, setStatus] = useState("idle"); // idle | submitting | waiting | ready | error
+  const [isPolling, setIsPolling] = useState(false);
   const canSubmit = useMemo(() => {
     return !submitted && storyText.trim().length > 0;
   }, [submitted, storyText]);
 
+  //initial prompt fetching, should only run once per mount
   useEffect(() => {
-
-    async function fetchPrompt(gameId, roundNumber) {
-      const data = await fetchGameStories();
-      const stories = data?.stories ?? [];
-
-      // Use roundNumber to choose a story from the returned list.
-      // Assumes roundNumber starts at 1.
-      const story = stories[roundNumber - 1];
-
-      if (!story) {
-        return {
-          prompt: "There is no story yet. Please think of an initial prompt to begin the story."
-        };
-      }
-
-      const storyParts = story?.story_parts ?? [];
-
-      if (storyParts.length === 0) {
-        return {
-          prompt: "There is no story yet. Please think of an initial prompt to begin the story."
-        };
-      }
-
-      const lastStoryPart = storyParts[storyParts.length - 1];
-
-      return {
-        prompt: lastStoryPart?.part_content ?? "Please continue the story."
-      };
-    }
-
-    async function loadPrompt() {
+    const loadData = async () => {
       try {
-        const data = await fetchPrompt(gameId, roundNumber);
-        setPrompt(data?.prompt ?? `Write a short story based on this prompt, round ${roundNumber}`);
-      } catch (error) {
-        console.error("Failed to load prompt:", error);
-        setPrompt("Failed to load prompt. Write a short story based on this round.");
+        const res = await fetchInitialPrompt(gameId, roundNumber);
+
+        // if your apiJson already returns parsed JSON:
+        if (!res.ok) {
+          throw new Error(res.error || "Something went wrong");
+        }
+
+        // success case
+        setPrompt("Your Story starts here! Think of an initial prompt for the next player!");
+
+      } catch (err) {
+        console.error("Error fetching initial prompt:", err);
+        console.error(err.message || "Failed to load initial prompt");
       }
-    }
+    };
 
-    loadPrompt();
-  }, [gameId, roundNumber]);
+    loadData();
+  }, []);
 
+  // update the timer, stops when submitted or no time left
   useEffect(() => {
     if (submitted) return;
     if (timeLeft <= 0) return;
@@ -232,7 +132,8 @@ const StorytellingPage = () => {
 
     return () => clearInterval(intervalId);
   }, [timeLeft, submitted]);
-
+  
+  //auto submission when timer runs out
   useEffect(() => {
     if (timeLeft === 0 && !submitted && !submitting) {
       console.log(`timeLeft: ${timeLeft}, submitted: ${submitted}, submitting: ${submitting}`);
@@ -240,6 +141,7 @@ const StorytellingPage = () => {
     }
   }, [timeLeft, submitted, submitting]);
 
+  // idk what this part does
   useEffect(() => {
     function resetRoundState(nextPrompt, nextRoundNumber, nextTimeLeft) {
       setRoundNumber(nextRoundNumber);
@@ -304,26 +206,77 @@ const StorytellingPage = () => {
     };
   }, [navigate]);
 
+  //sets and shows UserId on page
   useEffect(() => {
     if (hasClaimedRef.current) return;
     hasClaimedRef.current = true;
 
     console.log("joining game:", gameId);
-    socket.emit("join_game", { game_id: gameId });
+    //socket.emit("join_game", { game_id: gameId });
     fetchUserId().then(setUserId);
 
   }, [gameId]);
+
+  // frontend polling to check if other players are ready, interval: 2 s
+  useEffect(() => {
+    if (!isPolling) return;
+
+    let cancelled = false;
+
+    async function check() {
+      if (cancelled) return;
+
+      const done = await pollNextStoryPart(gameId, roundNumber + 1);
+
+      if (!done && !cancelled) {
+        setTimeout(check, 2000);
+      }
+    }
+
+    check();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isPolling, gameId, roundNumber]);
 
   const handleSubmit = async (isAutoSubmit = false) => {
     if (submitted || submitting) return;
 
     try {
       setSubmitting(true);
+
       const normStorytext = storyText?.trim() || "someone forgot to type!";
       const result = await postStory(gameId, roundNumber, normStorytext);
+
       console.log(isAutoSubmit ? "auto-submitted:" : "manual-submitted:", result);
 
       setSubmitted(true);
+      setPrompt("Waiting for other players to finish this round...");
+
+      let ready = false;
+
+      while (!ready) {
+        try {
+          const data = await fetchNextStoryPart(gameId, roundNumber + 1);
+
+          if (data?.status === "ready") {
+            setPrompt(data.prompt ?? "No prompt available.");
+            ready = true;
+
+            // optionally move to next round
+            setRoundNumber(prev => prev + 1);
+            setSubmitted(false); // allow next submission
+          } else {
+            setPrompt(data?.prompt ?? "Waiting for other players...");
+            await new Promise(resolve => setTimeout(resolve, 2000)); // wait 2s
+          }
+        } catch (err) {
+          console.error("Polling failed:", err);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      }
+
     } catch (error) {
       console.error("Failed to submit story:", error);
     } finally {
