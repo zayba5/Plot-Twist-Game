@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import './index.css';
 import './Lobby.css';
-
-const generateGameCode = () =>
-  Math.random().toString(36).slice(2, 8).toUpperCase();
+import { io } from "socket.io-client";
+const socket = io("http://localhost:5000", { withCredentials: true });
 
 const Lobby = () => {
+
   const [username, setUsername] = useState('');
   const [rounds, setRounds] = useState(5);
   const [votingSessions, setVotingSessions] = useState(3);
@@ -14,13 +14,134 @@ const Lobby = () => {
 
   const [isLobbyCreated, setIsLobbyCreated] = useState(false);
   const [gameCode, setGameCode] = useState('');
+  const [gameId, setGameId] = useState('');
   const [players, setPlayers] = useState([]);
 
   const [chatMessage, setChatMessage] = useState('');
   const [messages, setMessages] = useState([
-    { id: 1, user: 'Player1', text: 'Welcome to the story!', time: '14:32' },
-    { id: 2, user: 'Player2', text: 'Ready when you are.', time: '14:33' },
+    {
+      id: 1,
+      user: 'StoryBot',
+      text: 'Welcome to Plot Twist! Prepare your story and wait for friends to join!',
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    },
   ]);
+
+  React.useEffect(() => {
+    fetch("http://localhost:5000/session", {
+      credentials: "include",
+    })
+      .then(res => res.json())
+      .then(data => {
+        console.log("SESSION:", data);
+
+        if (data.username) {
+          setUsername(data.username);
+          setJoinUsername(data.username);
+        }
+      });
+
+  }, []);
+
+
+  React.useEffect(() => {
+    if (!gameCode) return;
+
+    const interval = setInterval(() => {
+      fetchPlayers(gameCode);
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [gameCode]);
+
+  
+
+
+  React.useEffect(() => {
+    if (!socket) return;
+
+    socket.on("lobby_update", (data) => {
+      if (data.players) {
+        setPlayers(
+          data.players.map(p => ({
+            name: p.username,
+            user_id: p.user_id,
+            isHost: p.isHost || false,   // <-- key fix
+          }))
+        );
+      }
+    });
+
+    return () => {
+      socket.off("lobby_update");
+    };
+  }, [socket]);
+
+  React.useEffect(() => {
+    if (!socket) return;
+
+    // listen for system join messages from server
+
+    socket.on("player_joined_message", (data) => {
+      const playerNames = data.players
+        ? data.players.map(p => p.username).join(", ")
+        : "";
+
+      setMessages(prev => [
+        ...prev,
+        {
+          id: prev.length + 1,
+          user: "System",
+          text: `${data.username} joined the lobby. Players: ${playerNames}`,
+          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        },
+      ]);
+    });
+
+    return () => socket.off("player_joined_message");
+  }, [socket]);
+
+
+  React.useEffect(() => {
+    socket.on("lobby_snapshot", (data) => {
+      if (data.players) {
+        // update player list UI
+        setPlayers(
+          data.players.map(p => ({
+            name: p.username,
+            user_id: p.user_id,
+            isHost: p.isHost || false
+          }))
+        );
+
+      }
+    });
+
+    return () => socket.off("lobby_snapshot");
+  }, []);
+
+
+  const fetchPlayers = async (gameId) => {
+    try {
+      const res = await fetch(`http://localhost:5000/lobby-players?game_id=${gameId}`, {
+        credentials: "include",
+      });
+
+      const data = await res.json();
+
+      if (data.players) {
+        setPlayers(
+          data.players.map((p) => ({
+            name: p.username,
+            user_id: p.user_id,
+            isHost: p.isHost || false,
+          }))
+        );
+      }
+    } catch (err) {
+      console.error("Failed to fetch players", err);
+    }
+  };
 
   const roundMin = 1;
   const roundMax = 20;
@@ -32,41 +153,84 @@ const Lobby = () => {
   const closestTick = (current, ticks) =>
     ticks.reduce((best, t) => (Math.abs(current - t) < Math.abs(current - best) ? t : best));
 
-  const handleInvite = (e) => {
+
+
+  const handleInvite = async (e) => {
     e.preventDefault();
-    const name = username.trim() || 'Host';
-    const code = generateGameCode();
-    setGameCode(code);
-    setPlayers([{ name, isHost: true }]);
-    setIsLobbyCreated(true);
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: prev.length + 1,
-        user: 'System',
-        text: `${name} created the lobby. Invite code: ${code}`,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      },
-    ]);
+    const name = username.trim() || "Host";
+
+    try {
+      const res = await fetch("http://localhost:5000/create-lobby", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ username: name, rounds, votingSessions }),
+      });
+      const data = await res.json();
+
+      if (data.ok) {
+        setGameCode(data.game_code);
+        setGameId(data.game_id);
+        setIsLobbyCreated(true);
+
+        // join socket room
+        socket.emit("join_game", { game_code: data.game_code });
+
+        // add local lobby message
+        setMessages(prev => [
+          ...prev,
+          {
+            id: prev.length + 1,
+            user: "Lobby",
+            text: `${name} created the lobby and joined as Host.`,
+            time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          },
+        ]);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Could not connect to backend.");
+    }
   };
 
-  const handleJoinGame = (e) => {
+  const handleJoinGame = async (e) => {
     e.preventDefault();
-    if (!joinUsername.trim() || !inviteCode.trim()) return;
-    const code = inviteCode.trim().toUpperCase();
-    if (gameCode && code === gameCode) {
-      setPlayers((p) => [...p, { name: joinUsername.trim(), isHost: false }]);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: prev.length + 1,
-          user: 'System',
-          text: `${joinUsername.trim()} joined the lobby.`,
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        },
-      ]);
+    const name = joinUsername.trim() || "Player";
+
+    try {
+      const res = await fetch("http://localhost:5000/join-lobby", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ game_code: inviteCode, username: name }),
+      });
+      const data = await res.json();
+
+      if (data.ok) {
+        setGameCode(data.game_code);
+        setGameId(data.game_id);
+        setIsLobbyCreated(true);
+
+        // join socket room
+        socket.emit("join_game", { game_code: data.game_code });
+
+        // add local lobby message
+        setMessages(prev => [
+          ...prev,
+          {
+            id: prev.length + 1,
+            user: "Lobby",
+            text: `${name} joined the lobby.`,
+            time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          },
+        ]);
+      } else {
+        alert(data.error);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to join game");
     }
-    // TODO: call api to join with joinUsername and inviteCode when backend exists
   };
 
   const handleStartGame = (e) => {
@@ -100,7 +264,7 @@ const Lobby = () => {
 
       <header className="lobby-header">
         <p className="lobby-status">
-          {isLobbyCreated ? 'Share the code and wait for players.' : 'Create a game or join with a code.'}
+          {isLobbyCreated ? 'Waiting for players...' : 'Create a game or join with a code.'}
         </p>
       </header>
 
