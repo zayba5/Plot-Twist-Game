@@ -33,6 +33,7 @@ class Game_Settings(BaseModel):
     num_rounds = IntegerField()
     num_votes = IntegerField()
     timer = IntegerField() ##intended to be an integer number of seconds but can be changed to a time item
+    vote_timer = IntegerField()
     max_players = IntegerField()
     
 class Game_Players(BaseModel):
@@ -43,18 +44,19 @@ class Game_Players(BaseModel):
     class Meta:
         primary_key = CompositeKey('game_id', 'user_id')
 
-
+class Story(BaseModel):
+    story_id = UUIDField(primary_key=True) ##primary key
+    game_id = ForeignKeyField(Game, backref="story")
+    user_id = ForeignKeyField(User, backref="stories")
+    is_winner = BooleanField(default=False)
+    
 class Voting_Session(BaseModel):
     voting_session_id = UUIDField(primary_key=True) ##primary key
     game_id = ForeignKeyField(Game, backref="vote")
     voting_session_number = IntegerField()
     voting_session_status = ForeignKeyField(Status, backref="vote")
+    continuing_story = ForeignKeyField(Story, backref="voting_session_winner", null=True)
     
-    
-class Story(BaseModel):
-    story_id = UUIDField(primary_key=True) ##primary key
-    game_id = ForeignKeyField(Game, backref="story")
-    user_id = ForeignKeyField(User, backref="stories")
     
     
 class Voting(BaseModel):

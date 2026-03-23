@@ -653,6 +653,11 @@ def create_app(test_config: dict | None = None):
             game = Game.get_or_none(Game.game_id == game_uuid)
             if not game:
                 return httpError("game not found", 404)
+            
+            settings = game.settings.first()
+            
+            if not settings:
+                return httpError("settings not found", 404)
 
             session = getActiveVotingSession(game)
 
@@ -662,8 +667,9 @@ def create_app(test_config: dict | None = None):
             return {
                 "ok": True,
                 "status": session.voting_session_status_id,
-                "voting_session_id": session.voting_session_id,
-                "voting_session_number": session.voting_session_number
+                "voting_session_id": str(session.voting_session_id),
+                "voting_session_number": session.voting_session_number,
+                "num_voting_sessions" : settings.num_votes
             }, 200
             
     api.add_resource(VotingSessionEndpoint, "/VotingSession")
