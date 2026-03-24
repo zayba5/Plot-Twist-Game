@@ -226,7 +226,27 @@ def create_app(test_config: dict | None = None):
         if game_id:
             print(f"voting expired for game: {game_id}")
             finishVotingSession("timer expired", game_id)
-                       
+
+
+    @socketio.on("start_game")
+    def handle_start_game(data):
+        game_code = data.get("game_code")
+        if not game_code:
+            return
+
+        game = Game.get_or_none(Game.game_code == game_code.upper())
+        if not game:
+            return
+
+        # send event to ALL players in that lobby
+        socketio.emit(
+            "game_started",
+            {
+                "game_id": str(game.game_id)
+            },
+            to=f"game:{game.game_id}"  # make sure join_game adds players to this room
+        )
+                        
 
     signer = TimestampSigner(os.getenv("secretKey") or "")
 
