@@ -107,6 +107,7 @@ const StorytellingPage = () => {
     roundRef.current = roundNumber;
   }, [gameId, roundNumber]);
 
+  
   //initial prompt fetching, should only run once per mount
   useEffect(() => {
     const loadData = async () => {

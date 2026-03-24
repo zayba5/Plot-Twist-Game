@@ -66,6 +66,7 @@ def getActiveVotingSession(game):
         .get_or_none()
             )
 
+
 def calcVotes(game, active_session):    
     vote_results = list(
         Voting.select(

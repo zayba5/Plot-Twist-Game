@@ -143,6 +143,7 @@ const Lobby = () => {
     }
   };
 
+  
   const roundMin = 1;
   const roundMax = 20;
   const votingMin = 1;
