@@ -4,7 +4,7 @@ import { fetchItem } from "./Utility.jsx";
 import { fetchInitialPrompt, fetchUserId, fetchPollReady, fetchNextStoryPart } from "./Utility";
 import { postStory } from "./Utility.jsx";
 import { socket } from "./global.jsx";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 // Hardcode game settings
 const ROUND_TIME_SECONDS = 60000; // on deployment change it to 60
@@ -81,7 +81,11 @@ const ControlBar = ({ onSubmit, disabled, submitted, submitting, timeLeft }) => 
 const StorytellingPage = () => {
   const navigate = useNavigate();
 
-  const gameId = "01731b8d-0f53-42a2-9172-49674c247858";
+  //const gameId = "01731b8d-0f53-42a2-9172-49674c247858";
+
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const gameId = queryParams.get("game_id");
 
   const [prompt, setPrompt] = useState("");
   const [storyText, setStoryText] = useState("");
@@ -106,6 +110,7 @@ const StorytellingPage = () => {
     gameIdRef.current = gameId;
     roundRef.current = roundNumber;
   }, [gameId, roundNumber]);
+
 
   //initial prompt fetching, should only run once per mount
   useEffect(() => {
@@ -156,7 +161,7 @@ const StorytellingPage = () => {
     hasClaimedRef.current = true;
 
     console.log("joining game:", gameId);
-    //socket.emit("join_game", { game_id: gameId });
+    socket.emit("join_game", { game_id: gameId });
     fetchUserId().then(setUserId);
 
   }, [gameId]);
@@ -242,6 +247,17 @@ const StorytellingPage = () => {
     newPrompt();
 
   }, [fetchNext]);
+
+  useEffect(() => {
+  socket.on("game_started", (data) => {
+    if (data.game_id === gameId) {
+      console.log("Game started for this lobby!", data);
+      // You can reset prompt or show instructions
+    }
+  });
+
+  return () => socket.off("game_started");
+  }, [gameId]);
 
   const handleSubmit = async (isAutoSubmit = false) => {
     if (submitted || submitting) return;
