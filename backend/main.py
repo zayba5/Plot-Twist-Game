@@ -189,8 +189,7 @@ def create_app(test_config: dict | None = None):
                 "game_id": str(game.game_id)
             },
             to=f"game:{game.game_id}"  # make sure join_game adds players to this room
-        )
-                       
+        )                    
 
     signer = TimestampSigner(os.getenv("secretKey") or "")
 
