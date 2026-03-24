@@ -191,7 +191,7 @@ def create_app(test_config: dict | None = None):
             to=f"game:{game.game_id}"  # make sure join_game adds players to this room
         )
                         
-            finishVotingSession("timer expired", game_id, socketio)
+        finishVotingSession("timer expired", str(game.game_id))
                        
 
     signer = TimestampSigner(os.getenv("secretKey") or "")
