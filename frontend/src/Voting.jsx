@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import "./index.css";
 import { socket } from "./global.jsx";
-import { fetchGameStories, postVote } from "./Utility.jsx";
+import { fetchGameStories, postVote, fetchVotingSession } from "./Utility.jsx";
 import { useNavigate } from "react-router-dom";
 import Timer from "./timer.jsx";
 
@@ -103,18 +103,20 @@ const VotingPage = () => {
   const navigate = useNavigate();
   const [selectedStoryId, setSelectedStoryId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [votingSession, setVotingSession] = useState(null);
+  const [loadingSession, setLoadingSession] = useState(true);
 
   const finished = useRef(false)
 
   ///////////////hardcoded beware//////////////////////
   const gameId = "01731b8d-0f53-42a2-9172-49674c247858";
 
-  const endRound = useCallback((reason, payload = null) => {
+  const endRound = useCallback((reason, path, payload = null) => {
     if (finished.current) return;
     finished.current = true;
     console.log("round finished because:", reason, payload);
-    navigate("/score");
-  }, [navigate])
+    navigate(path);
+  }, [navigate]);
 
   const handleTimerExpire = async () => {
     if (submitting) {
@@ -126,22 +128,51 @@ const VotingPage = () => {
 
       if (selectedStoryId) {
         const result = await postVote(gameId, selectedStoryId);
-      } 
+      }
     } catch (error) {
       console.error("postVote failed:", error);
     } finally {
       setSubmitting(false);
 
-      socket.emit("voting_round_expired", {game_id: gameId})
-
-      endRound("timer_expired");
+      socket.emit("voting_round_expired", { game_id: gameId })
+      if (!votingSession) return;
+      if (votingSession.voting_session_number === votingSession.num_voting_sessions) {
+        endRound("timer_expired", "/score")
+      }
+      else {
+        endRound("timer_expired", "/story");
+      }
     }
   };
 
   useEffect(() => {
+    async function loadVotingSession() {
+      try {
+        setLoadingSession(true);
+        const data = await fetchVotingSession(gameId);
+        setVotingSession(data);
+
+      } catch (error) {
+        console.error("Failed to load voting session:", error);
+        setVotingSession(null);
+      } finally {
+        setLoadingSession(false);
+      }
+    }
+    loadVotingSession();
+  }, [gameId]);
+
+
+  useEffect(() => {
     function handleAllVotesIn(payload) {
       console.log("all votes in:", payload);
-      endRound("all_votes_in", payload)
+      if (!votingSession) return;
+      if (votingSession.voting_session_number === votingSession.num_voting_sessions) {
+        endRound("all_votes_in", "/score", payload)
+      }
+      else {
+        endRound("all_votes_in", "/story", payload)
+      }
     }
 
     socket.emit("join_game_room", { game_id: gameId });
@@ -150,7 +181,7 @@ const VotingPage = () => {
     return () => {
       socket.off("all_votes_in", handleAllVotesIn);
     };
-  }, [gameId, endRound]);
+  }, [gameId, endRound, votingSession]);
 
   return (
     <div className="game-window" id="voting-page">

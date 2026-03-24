@@ -57,8 +57,8 @@ export async function postVote(gameID, storyID) {
   });
 }
 
-export async function fetchVotingSession(){
-  return apiJson("VotingSession", {
+export async function fetchVotingSession(gameID){
+  return apiJson(`VotingSession?game_id=${gameID}`, {
     method: "GET",
     credentials: "include"
   })

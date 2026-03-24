@@ -13,6 +13,7 @@ from peewee import fn
 import random
 import string
 from shuffle_story import assign_next_round_if_ready
+from votingUtil import *
 
 
 load_dotenv()
@@ -111,63 +112,6 @@ def calcVotes(game, active_session):
                 (Game_Players.user_id == part.user_id)
             )
 
-            if game_player:
-                game_player.user_score += 1
-                game_player.save()
-
-    return {
-        "winning_story_ids": [str(story.story_id if hasattr(story, "story_id") else story) for story in winners],
-        "is_tie": len(winners) > 1,
-        "vote_count": int(max_votes),
-    }
-        
-        
-def finishVotingSession(reason, game_id):
-    try:
-        game_uuid = uuid.UUID(str(game_id))
-    except ValueError:
-        return False
-
-    game = Game.get_or_none(Game.game_id == game_uuid)
-    if not game:
-        return False
-
-    active_status = Status.get(Status.status_type == "ACTIVE")
-    finished_status = Status.get(Status.status_type == "FINISHED")
-
-    active_session = getActiveVotingSession(game)
-
-    if not active_session:
-        print(f"round already finished for game {game_id}", flush=True)
-        return False
-
-    rows_updated = (
-        Voting_Session
-        .update(voting_session_status=finished_status)
-        .where(
-            (Voting_Session.voting_session_id == active_session.voting_session_id) &
-            (Voting_Session.voting_session_status == active_status)
-        )
-        ##.execute() <--------------------commented out for testing, add back later
-    )
-
-    if rows_updated == 0:
-        print(f"another request already finished game {game_id}", flush=True)
-        return False
-
-    calcVotes(game, active_session)
-
-    socketio.emit(
-        "round_over",
-        {
-            "game_id": str(game.game_id),
-            "voting_session_id": str(active_session.voting_session_id),
-            "reason": reason,
-        },
-        to=f"game:{game.game_id}"
-    )
-
-    return True
 
 def create_app(test_config: dict | None = None):
     app = Flask(__name__)
@@ -247,6 +191,8 @@ def create_app(test_config: dict | None = None):
             to=f"game:{game.game_id}"  # make sure join_game adds players to this room
         )
                         
+            finishVotingSession("timer expired", game_id, socketio)
+                       
 
     signer = TimestampSigner(os.getenv("secretKey") or "")
 
@@ -751,7 +697,7 @@ def create_app(test_config: dict | None = None):
             all_votes_in = self.checkStatus(active_session, game)
 
             if all_votes_in:    
-                finishVotingSession("all votes in", game_id)           
+                finishVotingSession("all votes in", game_id, socketio)           
                 socketio.emit(
                     "all_votes_in",
                     {
@@ -783,6 +729,11 @@ def create_app(test_config: dict | None = None):
             game = Game.get_or_none(Game.game_id == game_uuid)
             if not game:
                 return httpError("game not found", 404)
+            
+            settings = game.settings.first()
+            
+            if not settings:
+                return httpError("settings not found", 404)
 
             session = getActiveVotingSession(game)
 
@@ -791,8 +742,10 @@ def create_app(test_config: dict | None = None):
 
             return {
                 "ok": True,
-                "active": True,
+                "status": session.voting_session_status_id,
                 "voting_session_id": str(session.voting_session_id),
+                "voting_session_number": session.voting_session_number,
+                "num_voting_sessions" : settings.num_votes
             }, 200
             
     api.add_resource(VotingSessionEndpoint, "/VotingSession")
