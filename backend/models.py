@@ -50,12 +50,19 @@ class Story(BaseModel):
     user_id = ForeignKeyField(User, backref="stories")
     is_winner = BooleanField(default=False)
     
+    
+class Voting_Category(BaseModel):
+    title = TextField()
+    category_id = AutoField(primary_key = True)
+    
 class Voting_Session(BaseModel):
     voting_session_id = UUIDField(primary_key=True) ##primary key
     game_id = ForeignKeyField(Game, backref="vote")
     voting_session_number = IntegerField()
     voting_session_status = ForeignKeyField(Status, backref="vote")
     continuing_story = ForeignKeyField(Story, backref="voting_session_winner", null=True)
+    cat_1 = ForeignKeyField(Voting_Category, backref="session")
+    cat_2 = ForeignKeyField(Voting_Category, backref="session")
     
     
     

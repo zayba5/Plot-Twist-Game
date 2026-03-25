@@ -16,6 +16,31 @@ def testData():
     finished = Status.create(
         status_type="FINISHED"
     )
+    
+    funny = Voting_Category.create(
+        title = "Which story is the funniest?"
+    )
+    
+    serious = Voting_Category.create(
+        title = "Which story is the most serious?"    
+    )
+    
+    unexpected = Voting_Category.create(
+        title = "Which story is the most unexpected?"
+    )
+    
+    plotTwist = Voting_Category.create(
+        title = "Which story had the biggest plot twist?"
+    )
+    
+    character = Voting_Category.create(
+        title = "Which story has the most interesting characters?"
+    )
+    
+    spooky = Voting_Category.create(
+        title = "Which story is the spookiest?"
+    )
+    
 
     # users
     host = User.create(user_id=uuid.uuid4())
@@ -52,7 +77,9 @@ def testData():
         voting_session_id=uuid.uuid4(),
         game_id=game,
         voting_session_number=1,
-        voting_session_status=active
+        voting_session_status=active,
+        cat_1 = spooky,
+        cat_2 = character
     )
 
     # stories
