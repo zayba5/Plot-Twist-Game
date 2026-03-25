@@ -57,62 +57,6 @@ def generate_assignments_for_round(game, round_number):
             story_id=story
         )
 
-def getActiveVotingSession(game):
-    return (
-        Voting_Session.select().join(Status)
-        .where(
-            (Voting_Session.game_id == game) &
-            (Status.status_type == "ACTIVE")
-            )
-        .get_or_none()
-            )
-
-
-def calcVotes(game, active_session):    
-    vote_results = list(
-        Voting.select(
-            Voting.story_id,
-            fn.COUNT(Voting.story_id).alias("vote_count")
-        )
-        .where(Voting.voting_session_id == active_session)
-        .group_by(Voting.story_id)
-        .order_by(fn.COUNT(Voting.story_id).desc())
-    )
-
-    if not vote_results:
-        return {
-            "winning_story_ids": [],
-            "is_tie": False,
-            "vote_count": 0,
-        }
-
-    max_votes = vote_results[0].vote_count
-    winners = [row.story_id for row in vote_results if row.vote_count == max_votes]
-
-    awarded_users = set()
-                
-    for winning_story in winners:
-        winning_writers = (
-            Story_Part
-            .select(Story_Part.user_id)
-            .where(Story_Part.story_id == winning_story)
-            .distinct()
-        )
-
-        for part in winning_writers:
-            user_id = str(part.user_id.user_id if hasattr(part.user_id, "user_id") else part.user_id)
-
-            if user_id in awarded_users:
-                continue
-
-            awarded_users.add(user_id)
-
-            game_player = Game_Players.get_or_none(
-                (Game_Players.game_id == game) &
-                (Game_Players.user_id == part.user_id)
-            )
-
-
 def create_app(test_config: dict | None = None):
     app = Flask(__name__)
     app.config["secretKey"] = os.getenv("secretKey")
@@ -169,7 +113,7 @@ def create_app(test_config: dict | None = None):
         game_id = data.get("game_id")
         if game_id:
             print(f"voting expired for game: {game_id}")
-            finishVotingSession("timer expired", game_id)
+            finishVotingSession("timer expired", game_id, socketio)
 
 
     @socketio.on("start_game")
