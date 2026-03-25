@@ -3,7 +3,7 @@ html {
 }
 
 h1, p, h2, label, span {
-  color: #d3bece;
+  color: rgb(211, 190, 206);
 }
 
 .story-part p {
@@ -14,7 +14,7 @@ body {
   font-family: "Roboto Condensed", sans-serif;
   height: 100%;
   width: 100%;
-  background-color: #242023;
+  background-color: rgb(36, 32, 35);
   overflow-x: hidden;
   margin: 0;
 }
@@ -41,7 +41,7 @@ body {
 #head-wrapper #head #header-title-container {
   display: flex;
   flex-direction: column;
-  color: #d3bece;
+  color: rgb(211, 190, 206);
   padding-left: 30px;
 }
 #head-wrapper #head .fa-bars {
@@ -66,7 +66,7 @@ body {
   cursor: pointer;
   font-size: 1.5em;
   text-decoration: none;
-  color: #d3bece;
+  color: rgb(211, 190, 206);
 }
 #head-wrapper #head #nav-items .nav-item:hover {
   color: gray;
@@ -171,7 +171,7 @@ body {
   fill: #82719d;
 }
 #voting-page #vote-nav .cur-circle .fa-primary {
-  fill: #d3bece;
+  fill: rgb(211, 190, 206);
 }
 #voting-page #story-vote-card-list {
   display: flex;
@@ -271,7 +271,7 @@ body {
   justify-content: center;
   font-size: 28px;
   font-weight: bolder;
-  color: #d3bece;
+  color: rgb(211, 190, 206);
 }
 
 #scoreboard-page #scoreboard {
@@ -287,11 +287,56 @@ body {
   border: thin solid #6c36c3;
   border-radius: 30px;
   padding: 15px;
-  background-color: #242023;
+  background-color: rgb(36, 32, 35);
   margin: 15px;
   min-width: 200px;
   display: flex;
   justify-content: space-between;
+}
+
+.credential-input-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0.6rem 0;
+  width: 100%;
+  max-width: 260px;
+}
+.credential-input-section label {
+  font-size: 1rem;
+  color: rgb(211, 190, 206);
+  letter-spacing: 0.03em;
+}
+.credential-input-section .credential-input {
+  width: 100%;
+  padding: 10px;
+  background: rgb(36, 32, 35);
+  border: 1px solid #6c36c3;
+  border-radius: 8px;
+  color: rgb(211, 190, 206);
+  font-size: 0.9rem;
+  font-family: inherit;
+  box-sizing: border-box;
+  box-shadow: 0px 0px 8px 1px #494141;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+}
+.credential-input-section .credential-input:focus {
+  outline: none;
+  border-color: #82719d;
+}
+.credential-input-section {
+  /* Error state for input */
+}
+.credential-input-section .input-error {
+  border-color: red;
+}
+.credential-input-section {
+  /* Error message text */
+}
+.credential-input-section .credential-error {
+  font-size: 0.75rem;
+  color: red;
+  margin-top: 2px;
 }
 
 /*# sourceMappingURL=index.css.map */
