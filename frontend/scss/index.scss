@@ -128,10 +128,15 @@ body {
 	border: $border-color;
 	box-shadow: 0px 0px 10px 2px $shadow-color;
 	color: whitesmoke;
+	justify-self: end;
 }
 
 .button:hover {
 	background-color: $accent-color-hover;
+}
+
+.clickable{
+	cursor: pointer;
 }
 
 //game window
@@ -151,8 +156,8 @@ body {
 		background-color: $secondary-color;
 		padding: $padding-sm;
 		margin-top: $margin-sm;
-		display: flex;
-		justify-content: end;
+		display: grid;
+		grid-template-columns: 1fr auto 1fr;
 		align-items: center;
 		border-radius: 0 0 $rounded-corners $rounded-corners;
 	}
@@ -170,6 +175,42 @@ body {
 }
 
 #voting-page {
+	#vote-nav{
+		width: 270px;
+		height: 50px;
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-between;
+		justify-self: center;
+
+		.nav-arrow{
+			width: 18%;
+			fill: $accent-color;
+		}
+		.nav-arrow:hover{
+			fill: $accent-color-hover
+		}
+		.nav-circle{
+			width: 13%;
+
+			.fa-secondary{
+				opacity: 0.2;
+				fill: white;
+			}
+
+			.fa-primary{
+				fill: $accent-color;
+			}
+		}
+
+		.cur-circle{
+			.fa-primary{
+				fill: $font-color
+			}
+		}
+	}
+
 	#story-vote-card-list {
 		display: flex;
 		flex-direction: row;
@@ -248,6 +289,7 @@ body {
 	#vote-button {
 		font-size: larger;
 		height: fit-content;
+		justify-self: end;
 	}
 }
 

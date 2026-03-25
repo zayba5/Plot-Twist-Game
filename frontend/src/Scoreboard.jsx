@@ -71,6 +71,8 @@ const ControlBar = () => {
 
   return (
     <div className="game-window-control-bar">
+      <div></div>
+      <div></div>
       <button
         className="button"
         onClick={() => {navigate("/lobby")}}

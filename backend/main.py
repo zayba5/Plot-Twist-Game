@@ -686,7 +686,10 @@ def create_app(test_config: dict | None = None):
                 "status": session.voting_session_status_id,
                 "voting_session_id": str(session.voting_session_id),
                 "voting_session_number": session.voting_session_number,
-                "num_voting_sessions" : settings.num_votes
+                "num_voting_sessions" : settings.num_votes,
+                "cat_1" : session.cat_1.title,
+                "cat_2" : session.cat_2.title,
+                "timer" : settings.vote_timer
             }, 200
             
     api.add_resource(VotingSessionEndpoint, "/VotingSession")

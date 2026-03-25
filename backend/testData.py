@@ -63,7 +63,7 @@ def testData():
         num_votes=2,
         timer=60,
         max_players=6,
-        vote_timer=30
+        vote_timer=300
     )
 
     # players

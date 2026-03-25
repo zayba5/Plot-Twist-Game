@@ -65,6 +65,7 @@ const ControlBar = ({ onSubmit, disabled, submitted, submitting, timeLeft }) => 
             : `Auto-submit in ${timeLeft}s`}
         </span>
       </div>
+      <div></div>
 
       <button
         className="button"
