@@ -586,7 +586,7 @@ def create_app(test_config: dict | None = None):
             scores = []
             for player in game.player:
                 scores.append({
-                    "user" : str(player.user_id),
+                    "user" : str(player.user_id.username),
                     "score" : int(player.user_score)
                 })
             return jsonify({"scores" : scores})
