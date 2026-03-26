@@ -20,6 +20,7 @@ class Status(BaseModel):
 class User(BaseModel):
     user_id = UUIDField(primary_key=True) ##primary key  
     username = CharField(max_length=50, null=True)
+    password_hash = BlobField(null=True)
     
 class Game(BaseModel):
     game_id = UUIDField(primary_key=True) ##primary key

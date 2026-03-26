@@ -3,6 +3,7 @@ import "./index.css";
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from "react-router-dom";
 import { faBars } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import SignUpPage from "./SignUp";
 
 const LobbyPage = lazy(() => import("./Lobby"));
 const StoryPage = lazy(() => import("./StoryTelling"));
@@ -15,7 +16,8 @@ function NavItem({ menuOpen, closeMenu }) {
     { name: "Lobby", key: 1, route: "lobby" },
     { name: "Story Telling", key: 2, route: "story" },
     { name: "Voting", key: 3, route: "vote" },
-    { name: "Scoreboard", key: 4, route: "score" }
+    { name: "Scoreboard", key: 4, route: "score" },
+    { name: "Sign Up", key: 5, route: "signup" },
   ];
 
   const navItems = items.map((item) => (
@@ -84,6 +86,7 @@ function PageState() {
             <Route path="/story" element={<StoryPage />} />
             <Route path="/vote" element={<VotingPage />} />
             <Route path="/score" element={<ScorePage />} />
+            <Route path="/signup" element={<SignUpPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>

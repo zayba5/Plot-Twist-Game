@@ -14,6 +14,7 @@ import random
 import string
 from shuffle_story import assign_next_round_if_ready
 from votingUtil import *
+import bcrypt
 
 
 load_dotenv()
@@ -876,6 +877,34 @@ def create_app(test_config: dict | None = None):
                 })
 
             return {"players": players}
+        
+    class CreateUserEndpoint(Resource):
+        def post(self):
+            data = request.get_json() or {}
+            username = data.get("username")
+            password = data.get("password").encode("utf-8")
+            password_hash = bcrypt.hashpw(password, bcrypt.gensalt())
+
+            if (User.get_or_none(User.username == username)):
+                return {
+                    "ok": False,
+                    "error": "username_taken"
+                }
+
+            user = User.create(
+                user_id=uuid.uuid4(),
+                username=username,
+                password_hash=password_hash
+            )
+
+            return {
+                "ok": True,
+                "user_id": str(user.user_id),
+                "username": str(user.username),
+                "password_hash": str(user.password_hash),
+            }, 201
+    
+    api.add_resource(CreateUserEndpoint, "/CreateUser")
 
 
     # REGISTER ROUTES
