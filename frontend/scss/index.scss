@@ -1,7 +1,7 @@
 $border-color: #6c36c3;
 $shadow-color: #494141;
 $primary-color: rgb(36, 32, 35);
-$secondary-color:rgba(159, 36, 253, 0.25);
+$secondary-color: rgba(159, 36, 253, 0.25);
 $secondary-color-hover: #4c415f;
 $accent-color: #82719d;
 $accent-color-hover: #a778a7;
@@ -16,11 +16,15 @@ html {
 }
 
 
-h1, p, h2, label, span{
+h1,
+p,
+h2,
+label,
+span {
 	color: $font-color;
 }
 
-.story-part p{
+.story-part p {
 	color: whitesmoke;
 }
 
@@ -135,7 +139,7 @@ body {
 	background-color: $accent-color-hover;
 }
 
-.clickable{
+.clickable {
 	cursor: pointer;
 }
 
@@ -175,7 +179,7 @@ body {
 }
 
 #voting-page {
-	#vote-nav{
+	#vote-nav {
 		width: 270px;
 		height: 50px;
 		display: flex;
@@ -184,85 +188,44 @@ body {
 		justify-content: space-between;
 		justify-self: center;
 
-		.nav-arrow{
+		.nav-arrow {
 			width: 18%;
 			fill: $accent-color;
 		}
-		.nav-arrow:hover{
+
+		.nav-arrow:hover {
 			fill: $accent-color-hover
 		}
-		.nav-circle{
+
+		.nav-circle {
 			width: 13%;
 
-			.fa-secondary{
+			.fa-secondary {
 				opacity: 0.2;
 				fill: white;
 			}
 
-			.fa-primary{
+			.fa-primary {
 				fill: $accent-color;
 			}
 		}
 
-		.cur-circle{
-			.fa-primary{
+		.cur-circle {
+			.fa-primary {
 				fill: $font-color
 			}
 		}
 
-		.visited-circle{
-			.fa-primary{
-				fill:#ddb8fb;
+		.visited-circle {
+			.fa-primary {
+				fill: #ddb8fb;
 			}
 		}
 	}
 
 	#story-vote-card-list {
-		display: flex;
-		flex-direction: row;
-		flex-wrap: wrap;
-		justify-content: center;
-		overflow: auto;
-		flex-grow: 1;
 
-		.story-vote-card {
-			border: thin solid $border-color;
-			border-radius: $rounded-corners;
-			padding: $padding-sm;
-			background-color: $secondary-color;
-			margin: $margin-sm;
-			width: 20%;
-			min-width: 200px;
 
-			.story-part {
-				background: $accent-color;
-				padding: 20px;
-				margin: 20px;
-				position: relative;
-				border-radius: 5px;
-			}
-
-			.story-part:nth-of-type(odd):after {
-				border-top: 20px solid transparent;
-				border-bottom: 20px solid transparent;
-				border-right: 20px solid $accent-color;
-				border-left: none;
-				right: auto;
-				left: -20px;
-			}
-
-			.story-part::after {
-				content: "";
-				width: 0;
-				height: 0;
-				border-top: 20px solid transparent;
-				border-bottom: 20px solid transparent;
-				border-left: 20px solid $accent-color;
-				right: -20px;
-				position: absolute;
-				top: 10px;
-			}
-		}
 
 		.story-vote-card:hover {
 			background-color: $secondary-color-hover;
@@ -299,18 +262,21 @@ body {
 	}
 }
 
-.timer_box{
+.timer_box {
 	position: relative;
 	height: 80px;
 	width: 80px;
-	.timer_circle{
+
+	.timer_circle {
 		fill: none;
 		stroke: none;
-		.timer_total{
+
+		.timer_total {
 			stroke-width: 15px;
 			stroke: darkgray;
 		}
-		.timer_remaining{
+
+		.timer_remaining {
 			stroke-width: 15px;
 			stroke-linecap: round;
 			transform: rotate(-90deg);
@@ -319,7 +285,8 @@ body {
 			transition: stroke 0.3s linear, stroke-dashoffset 0.1s linear;
 		}
 	}
-	.timer_counter{
+
+	.timer_counter {
 		position: absolute;
 		height: 100%;
 		width: 100%;
@@ -333,25 +300,74 @@ body {
 	}
 }
 
+.story-card-list {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	justify-content: center;
+	overflow: auto;
+	flex-grow: 1;
+}
+
+
+.story-vote-card {
+	border: thin solid $border-color;
+	border-radius: $rounded-corners;
+	padding: $padding-sm;
+	background-color: $secondary-color;
+	margin: $margin-sm;
+	width: 20%;
+	min-width: 200px;
+
+	.story-part {
+		background: $accent-color;
+		padding: 20px;
+		margin: 20px;
+		position: relative;
+		border-radius: 5px;
+	}
+
+	.story-part:nth-of-type(odd):after {
+		border-top: 20px solid transparent;
+		border-bottom: 20px solid transparent;
+		border-right: 20px solid $accent-color;
+		border-left: none;
+		right: auto;
+		left: -20px;
+	}
+
+	.story-part::after {
+		content: "";
+		width: 0;
+		height: 0;
+		border-top: 20px solid transparent;
+		border-bottom: 20px solid transparent;
+		border-left: 20px solid $accent-color;
+		right: -20px;
+		position: absolute;
+		top: 10px;
+	}
+}
+
 
 #scoreboard-page #scoreboard {
-  display: flex;
-  flex-direction: column;
-  flex-wrap: wrap;
-  justify-content: center;
-  overflow: auto;
-  flex-grow: 1;
+	display: flex;
+	flex-direction: column;
+	flex-wrap: wrap;
+	justify-content: center;
+	overflow: auto;
+	flex-grow: 1;
 }
 
 #scoreboard-page #scoreboard .scoreboard-item {
-  border: thin solid $border-color;
-  border-radius: 30px;
-  padding: 15px;
-  background-color: $primary-color;
-  margin: 15px;
-  min-width: 200px;
-  display: flex;
-  justify-content: space-between;
+	border: thin solid $border-color;
+	border-radius: 30px;
+	padding: 15px;
+	background-color: $primary-color;
+	margin: 15px;
+	min-width: 200px;
+	display: flex;
+	justify-content: space-between;
 }
 
 .credential-input-section {

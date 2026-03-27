@@ -2,7 +2,11 @@ html {
   height: 100%;
 }
 
-h1, p, h2, label, span {
+h1,
+p,
+h2,
+label,
+span {
   color: #d3bece;
 }
 
@@ -176,49 +180,6 @@ body {
 #voting-page #vote-nav .visited-circle .fa-primary {
   fill: #ddb8fb;
 }
-#voting-page #story-vote-card-list {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: center;
-  overflow: auto;
-  flex-grow: 1;
-}
-#voting-page #story-vote-card-list .story-vote-card {
-  border: thin solid #6c36c3;
-  border-radius: 30px;
-  padding: 15px;
-  background-color: rgba(159, 36, 253, 0.25);
-  margin: 15px;
-  width: 20%;
-  min-width: 200px;
-}
-#voting-page #story-vote-card-list .story-vote-card .story-part {
-  background: #82719d;
-  padding: 20px;
-  margin: 20px;
-  position: relative;
-  border-radius: 5px;
-}
-#voting-page #story-vote-card-list .story-vote-card .story-part:nth-of-type(odd):after {
-  border-top: 20px solid transparent;
-  border-bottom: 20px solid transparent;
-  border-right: 20px solid #82719d;
-  border-left: none;
-  right: auto;
-  left: -20px;
-}
-#voting-page #story-vote-card-list .story-vote-card .story-part::after {
-  content: "";
-  width: 0;
-  height: 0;
-  border-top: 20px solid transparent;
-  border-bottom: 20px solid transparent;
-  border-left: 20px solid #82719d;
-  right: -20px;
-  position: absolute;
-  top: 10px;
-}
 #voting-page #story-vote-card-list .story-vote-card:hover {
   background-color: #4c415f;
 }
@@ -275,6 +236,51 @@ body {
   font-size: 28px;
   font-weight: bolder;
   color: #d3bece;
+}
+
+.story-card-list {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  overflow: auto;
+  flex-grow: 1;
+}
+
+.story-vote-card {
+  border: thin solid #6c36c3;
+  border-radius: 30px;
+  padding: 15px;
+  background-color: rgba(159, 36, 253, 0.25);
+  margin: 15px;
+  width: 20%;
+  min-width: 200px;
+}
+.story-vote-card .story-part {
+  background: #82719d;
+  padding: 20px;
+  margin: 20px;
+  position: relative;
+  border-radius: 5px;
+}
+.story-vote-card .story-part:nth-of-type(odd):after {
+  border-top: 20px solid transparent;
+  border-bottom: 20px solid transparent;
+  border-right: 20px solid #82719d;
+  border-left: none;
+  right: auto;
+  left: -20px;
+}
+.story-vote-card .story-part::after {
+  content: "";
+  width: 0;
+  height: 0;
+  border-top: 20px solid transparent;
+  border-bottom: 20px solid transparent;
+  border-left: 20px solid #82719d;
+  right: -20px;
+  position: absolute;
+  top: 10px;
 }
 
 #scoreboard-page #scoreboard {

@@ -102,7 +102,7 @@ const StoryCardList = ({ selectedStoryId, setSelectedStoryId, curPage }) => {
   }, []);
 
   return (
-    <div id="story-vote-card-list">
+    <div id="story-vote-card-list" className="story-card-list">
       {stories.map((story) => (
         <StoryCard
           story={story}

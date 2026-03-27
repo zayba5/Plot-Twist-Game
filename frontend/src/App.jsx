@@ -9,6 +9,7 @@ const LobbyPage = lazy(() => import("./Lobby"));
 const StoryPage = lazy(() => import("./StoryTelling"));
 const VotingPage = lazy(() => import("./Voting"));
 const ScorePage = lazy(() => import("./Scoreboard"));
+const ResultsPage = lazy(() => import("./results"))
 
 // start navigation functions
 function NavItem({ menuOpen, closeMenu }) {
@@ -18,6 +19,7 @@ function NavItem({ menuOpen, closeMenu }) {
     { name: "Voting", key: 3, route: "vote" },
     { name: "Scoreboard", key: 4, route: "score" },
     { name: "Sign Up", key: 5, route: "signup" },
+    {name: "Results", key: 6, route: "results"}
   ];
 
   const navItems = items.map((item) => (
@@ -87,6 +89,7 @@ function PageState() {
             <Route path="/vote" element={<VotingPage />} />
             <Route path="/score" element={<ScorePage />} />
             <Route path="/signup" element={<SignUpPage />} />
+            <Route path="/results" element={<ResultsPage/>}/>
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
