@@ -22,6 +22,16 @@ s = TimestampSigner(os.getenv("secretKey"))
 socketio = SocketIO(cors_allowed_origins=[os.getenv("frontHost")])
 FRONTEND_ORIGIN = os.getenv("frontHost")
 
+DEFAULT_NAMES = [
+    "ToeSnatcher", "GoblinMode", "BreadHeist", "ChairThief",
+    "SpaghettiWizard", "SoggyPickle", "FerretOverlord",
+    "CrustLord", "BananaDealer", "WaffleCrimes",
+    "MilkBandit", "UnstableGoose", "GremlinHours",
+    "SoupEnjoyer", "RatWithHat", "ForkInOutlet",
+    "ChaosPotato", "DumpsterSprite", "WetSockEnergy",
+    "PanicButton"
+]
+
 def httpError(reason, code):
     return jsonify({
         "ok": False,
@@ -698,7 +708,7 @@ def create_app(test_config: dict | None = None):
         
     class SessionEndpoint(Resource):
         def get(self):
-            username = request.args.get("username") or "Player"  # default name
+            username = request.args.get("username") or random.choice(DEFAULT_NAMES)  # default name
 
 
             if getattr(g, "user", None):
