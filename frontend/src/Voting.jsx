@@ -29,31 +29,62 @@ const StoryCard = ({ story, isSelected, onClick }) => {
   );
 };
 
-const VoteNav = () => {
+const VoteNav = ({ curPage, visitedPages, setCurPage, setVisitedPages }) => {
+
+  const totalPages = 3;
+
+  const rightArrowClick = () => {
+    if (curPage >= totalPages) return;
+
+    const nextPage = curPage + 1;
+    setCurPage(nextPage);
+
+    setVisitedPages((prev) =>
+      prev.includes(nextPage) ? prev : [...prev, nextPage]
+    );
+  };
+
+  const leftArrowClick = () => {
+    if (curPage <= 1) return;
+    setCurPage((prev) => prev - 1);
+  };
+
+  const classes = (pageNum) => {
+    const isActive = curPage === pageNum;
+    const isVisited = visitedPages.includes(pageNum);
+
+    if (isVisited) {
+      return isActive
+        ? "nav-circle clickable cur-circle"
+        : "nav-circle clickable visited-circle";
+    }
+
+    return "nav-circle clickable";
+  };
 
   return (
     <div id="vote-nav">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" id="left-arrow" className="nav-arrow clickable">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" onClick={leftArrowClick} id="left-arrow" className="nav-arrow clickable">
         <path d="M448 208v96c0 13.3-10.7 24-24 24H224v103.8c0 21.4-25.8 32.1-41 17L7 273c-9.4-9.4-9.4-24.6 0-34L183 63.3c15.1-15.1 41-4.4 41 17V184h200c13.3 0 24 10.7 24 24z" /></svg>
 
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="nav-circle clickable cur-circle"><defs><style></style></defs>
-        <path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm0 424c-97.06 0-176-79-176-176S158.94 80 256 80s176 79 176 176-78.94 176-176 176z" class="fa-secondary" />
-        <path d="M256 432c-97.06 0-176-79-176-176S158.94 80 256 80s176 79 176 176-78.94 176-176 176z" class="fa-primary" /></svg>
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="nav-circle clickable"><defs><style></style></defs>
-        <path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm0 424c-97.06 0-176-79-176-176S158.94 80 256 80s176 79 176 176-78.94 176-176 176z" class="fa-secondary" />
-        <path d="M256 432c-97.06 0-176-79-176-176S158.94 80 256 80s176 79 176 176-78.94 176-176 176z" class="fa-primary" /></svg>
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="nav-circle clickable"><defs><style></style></defs>
-        <path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm0 424c-97.06 0-176-79-176-176S158.94 80 256 80s176 79 176 176-78.94 176-176 176z" class="fa-secondary" />
-        <path d="M256 432c-97.06 0-176-79-176-176S158.94 80 256 80s176 79 176 176-78.94 176-176 176z" class="fa-primary" /></svg>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" id="1" className={classes(1)}><defs><style></style></defs>
+        <path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm0 424c-97.06 0-176-79-176-176S158.94 80 256 80s176 79 176 176-78.94 176-176 176z" className="fa-secondary" />
+        <path d="M256 432c-97.06 0-176-79-176-176S158.94 80 256 80s176 79 176 176-78.94 176-176 176z" className="fa-primary" /></svg>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" id="2" className={classes(2)}><defs><style></style></defs>
+        <path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm0 424c-97.06 0-176-79-176-176S158.94 80 256 80s176 79 176 176-78.94 176-176 176z" className="fa-secondary" />
+        <path d="M256 432c-97.06 0-176-79-176-176S158.94 80 256 80s176 79 176 176-78.94 176-176 176z" className="fa-primary" /></svg>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" id="3" className={classes(3)}><defs><style></style></defs>
+        <path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm0 424c-97.06 0-176-79-176-176S158.94 80 256 80s176 79 176 176-78.94 176-176 176z" className="fa-secondary" />
+        <path d="M256 432c-97.06 0-176-79-176-176S158.94 80 256 80s176 79 176 176-78.94 176-176 176z" className="fa-primary" /></svg>
 
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" id="right-arrow" className="nav-arrow clickable">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" onClick={rightArrowClick} id="right-arrow" className="nav-arrow clickable">
         <path d="M0 304v-96c0-13.3 10.7-24 24-24h200V80.2c0-21.4 25.8-32.1 41-17L441 239c9.4 9.4 9.4 24.6 0 34L265 448.7c-15.1 15.1-41 4.4-41-17V328H24c-13.3 0-24-10.7-24-24z" /></svg>
 
     </div>
   );
 };
 
-const StoryCardList = ({ selectedStoryId, setSelectedStoryId }) => {
+const StoryCardList = ({ selectedStoryId, setSelectedStoryId, curPage }) => {
   const [stories, setStories] = useState([]);
 
   useEffect(() => {
@@ -76,15 +107,22 @@ const StoryCardList = ({ selectedStoryId, setSelectedStoryId }) => {
         <StoryCard
           story={story}
           key={story.story_id}
-          onClick={setSelectedStoryId}
-          isSelected={story.story_id === selectedStoryId}
+          onClick={(storyId) => {
+            setSelectedStoryId((prev) => {
+              const next = [...prev];
+              next[curPage - 1] = storyId;
+              return next;
+            });
+          }}
+          isSelected={story.story_id === selectedStoryId[curPage - 1]}
         />
       ))}
     </div>
   );
 };
 
-const ControlBar = ({ selectedStoryId, gameId, submitting, setSubmitting }) => {
+const ControlBar = ({ selectedStoryId, gameId, submitting, setSubmitting,
+  curPage, setCurPage, visitedPages, setVisitedPages }) => {
   const handleVoteClick = async () => {
     if (!selectedStoryId || submitting) return;
 
@@ -102,7 +140,8 @@ const ControlBar = ({ selectedStoryId, gameId, submitting, setSubmitting }) => {
   return (
     <div className="game-window-control-bar">
       <div></div>
-      <VoteNav />
+      <VoteNav visitedPages={visitedPages} curPage={curPage}
+        setCurPage={setCurPage} setVisitedPages={setVisitedPages} />
       <button
         className="button clickable"
         id="vote-button"
@@ -115,11 +154,11 @@ const ControlBar = ({ selectedStoryId, gameId, submitting, setSubmitting }) => {
   );
 };
 
-const Header = ({ handleTimerExpire, time, title }) => {
+const Header = ({ handleTimerExpire, time, titles, curPage }) => {
 
   return (
     <div className="game-window-header">
-      <h1>{title}</h1>
+      <h1>{titles[curPage - 1]}</h1>
       <Timer durationSec={time} onExpire={handleTimerExpire} />
     </div>
   );
@@ -127,10 +166,12 @@ const Header = ({ handleTimerExpire, time, title }) => {
 
 const VotingPage = () => {
   const navigate = useNavigate();
-  const [selectedStoryId, setSelectedStoryId] = useState(null);
+  const [selectedStoryId, setSelectedStoryId] = useState([null, null, null]);
   const [submitting, setSubmitting] = useState(false);
   const [votingSession, setVotingSession] = useState(null);
   const [loadingSession, setLoadingSession] = useState(true);
+  const [curPage, setCurPage] = useState(1);
+  const [visitedPages, setVisitedPages] = useState([1])
 
   const finished = useRef(false)
   let prompt1 = "Which story would you like to continue?";
@@ -154,7 +195,7 @@ const VotingPage = () => {
       setSubmitting(true);
 
       if (selectedStoryId) {
-        const result = await postVote(gameId, selectedStoryId);
+        const result = await postVote(gameId, selectedStoryId[0]); //<- change me
       }
     } catch (error) {
       console.error("postVote failed:", error);
@@ -217,18 +258,26 @@ const VotingPage = () => {
     );
   }
 
+  const titles = [prompt1, votingSession.cat_1, votingSession.cat_2]
+
   return (
     <div className="game-window" id="voting-page">
-      <Header handleTimerExpire={handleTimerExpire} time={votingSession.timer} title={prompt1} />
+      <Header handleTimerExpire={handleTimerExpire}
+        time={votingSession.timer} titles={titles} curPage={curPage} />
       <StoryCardList
         selectedStoryId={selectedStoryId}
         setSelectedStoryId={setSelectedStoryId}
+        curPage={curPage}
       />
       <ControlBar
         selectedStoryId={selectedStoryId}
         gameId={gameId}
         submitting={submitting}
         setSubmitting={setSubmitting}
+        curPage={curPage}
+        setCurPage={setCurPage}
+        visitedPages={visitedPages}
+        setVisitedPages={setVisitedPages}
       />
     </div>
   );

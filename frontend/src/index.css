@@ -3,7 +3,7 @@ html {
 }
 
 h1, p, h2, label, span {
-  color: rgb(211, 190, 206);
+  color: #d3bece;
 }
 
 .story-part p {
@@ -14,7 +14,7 @@ body {
   font-family: "Roboto Condensed", sans-serif;
   height: 100%;
   width: 100%;
-  background-color: rgb(36, 32, 35);
+  background-color: #242023;
   overflow-x: hidden;
   margin: 0;
 }
@@ -41,7 +41,7 @@ body {
 #head-wrapper #head #header-title-container {
   display: flex;
   flex-direction: column;
-  color: rgb(211, 190, 206);
+  color: #d3bece;
   padding-left: 30px;
 }
 #head-wrapper #head .fa-bars {
@@ -66,7 +66,7 @@ body {
   cursor: pointer;
   font-size: 1.5em;
   text-decoration: none;
-  color: rgb(211, 190, 206);
+  color: #d3bece;
 }
 #head-wrapper #head #nav-items .nav-item:hover {
   color: gray;
@@ -171,7 +171,10 @@ body {
   fill: #82719d;
 }
 #voting-page #vote-nav .cur-circle .fa-primary {
-  fill: rgb(211, 190, 206);
+  fill: #d3bece;
+}
+#voting-page #vote-nav .visited-circle .fa-primary {
+  fill: #ddb8fb;
 }
 #voting-page #story-vote-card-list {
   display: flex;
@@ -271,7 +274,7 @@ body {
   justify-content: center;
   font-size: 28px;
   font-weight: bolder;
-  color: rgb(211, 190, 206);
+  color: #d3bece;
 }
 
 #scoreboard-page #scoreboard {
@@ -287,7 +290,7 @@ body {
   border: thin solid #6c36c3;
   border-radius: 30px;
   padding: 15px;
-  background-color: rgb(36, 32, 35);
+  background-color: #242023;
   margin: 15px;
   min-width: 200px;
   display: flex;
@@ -301,19 +304,21 @@ body {
   margin: 0.6rem 0;
   width: 100%;
   max-width: 260px;
+  /* Error state for input */
+  /* Error message text */
 }
 .credential-input-section label {
   font-size: 1rem;
-  color: rgb(211, 190, 206);
+  color: #d3bece;
   letter-spacing: 0.03em;
 }
 .credential-input-section .credential-input {
   width: 100%;
   padding: 10px;
-  background: rgb(36, 32, 35);
+  background: #242023;
   border: 1px solid #6c36c3;
   border-radius: 8px;
-  color: rgb(211, 190, 206);
+  color: #d3bece;
   font-size: 0.9rem;
   font-family: inherit;
   box-sizing: border-box;
@@ -324,14 +329,8 @@ body {
   outline: none;
   border-color: #82719d;
 }
-.credential-input-section {
-  /* Error state for input */
-}
 .credential-input-section .input-error {
   border-color: red;
-}
-.credential-input-section {
-  /* Error message text */
 }
 .credential-input-section .credential-error {
   font-size: 0.75rem;
