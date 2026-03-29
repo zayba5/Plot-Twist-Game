@@ -7,6 +7,9 @@ def reset_tables():
                     Story_Assignment, Round_State], safe=True, cascade=True)
     db.create_tables([Status, User, Game, Game_Settings, Game_Players, Voting_Category,
                       Voting_Session, Story, Voting, Story_Part, Story_Assignment, Round_State], safe=True)
+    Status.create(status_type="LOBBY")
+    Status.create(status_type="IN_PROGRESS")
+    Status.create(status_type="FINISHED")
     db.close()
 
 if __name__ == "__main__":

@@ -92,7 +92,7 @@ const Lobby = () => {
         {
           id: prev.length + 1,
           user: "System",
-          text: `${data.username} joined the lobby. Players: ${playerNames}`,
+          text: `${data.username} joined the lobby.`,
           time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         },
       ]);

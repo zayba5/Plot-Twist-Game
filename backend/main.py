@@ -752,9 +752,11 @@ def create_app(test_config: dict | None = None):
             max_players = data.get("maxPlayers", 4)  # default max 4
 
             # create new game
+            status = Status.get(Status.status_type == "LOBBY")
+
             game = Game.create(
                 game_id=uuid.uuid4(),
-                game_status=Status.get_or_none(Status.status_type=="ACTIVE"), 
+                game_status=status,
                 game_host=user,
                 game_code=generate_game_code()
             )
@@ -801,6 +803,7 @@ def create_app(test_config: dict | None = None):
                 num_rounds=rounds,
                 num_votes=voting_sessions,
                 timer=timer,
+                vote_timer=60, 
                 max_players=max_players
             )
 
