@@ -255,6 +255,49 @@ body {
   margin: 15px;
   width: 20%;
   min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+}
+.story-vote-card .story-stack {
+  width: 100%;
+}
+.story-vote-card .badge-stack {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  width: 80%;
+  justify-self: center;
+  justify-items: center;
+}
+.story-vote-card .badge-stack .winner-badge {
+  position: relative;
+  width: 80px;
+  height: 80px;
+}
+.story-vote-card .badge-stack .badge-icon svg {
+  height: 100%;
+  width: 100%;
+  display: block;
+}
+.story-vote-card .badge-stack .badge-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: black;
+  font-size: 0.75rem;
+  font-weight: bold;
+  text-align: center;
+}
+.story-vote-card .badge-stack .badge-cont {
+  fill: #c269eb;
+}
+.story-vote-card .badge-stack .badge-cat-1 {
+  fill: #d3687a;
+}
+.story-vote-card .badge-stack .badge-cat-2 {
+  fill: #c97a45;
 }
 .story-vote-card .story-part {
   background: #82719d;
@@ -262,6 +305,10 @@ body {
   margin: 20px;
   position: relative;
   border-radius: 5px;
+}
+.story-vote-card .story-part .part-username {
+  color: black;
+  margin: 0;
 }
 .story-vote-card .story-part:nth-of-type(odd):after {
   border-top: 20px solid transparent;

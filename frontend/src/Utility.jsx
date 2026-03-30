@@ -137,3 +137,10 @@ export async function postUser(username, password) {
     },
   });
 }
+
+export async function fetchResults(gameID) {
+  return apiJson(`Results?game_id=${gameID}`, {
+    method: "GET",
+    credentials: "include"
+  })
+}

@@ -318,6 +318,58 @@ body {
 	margin: $margin-sm;
 	width: 20%;
 	min-width: 200px;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	align-items: center;
+
+	.story-stack {
+		width: 100%;
+	}
+
+	.badge-stack {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		width: 80%;
+		justify-self: center;
+		justify-items: center;
+
+		.winner-badge{
+			position: relative;
+			width: 80px;
+			height: 80px;
+		}
+
+		.badge-icon svg{
+			height: 100%;
+			width: 100%;
+			display: block;
+		}
+
+		.badge-text {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			color: black;
+			font-size: 0.75rem;
+			font-weight: bold;
+			text-align: center;
+		}
+
+		.badge-cont{
+			fill: rgb(194, 105, 235);
+		}
+
+		.badge-cat-1 {
+			fill: rgb(211, 104, 122);
+		}
+		.badge-cat-2 {
+			fill: rgb(201, 122, 69);	
+		}
+	}
+
+
 
 	.story-part {
 		background: $accent-color;
@@ -325,6 +377,11 @@ body {
 		margin: 20px;
 		position: relative;
 		border-radius: 5px;
+
+		.part-username {
+			color: black;
+			margin: 0;
+		}
 	}
 
 	.story-part:nth-of-type(odd):after {

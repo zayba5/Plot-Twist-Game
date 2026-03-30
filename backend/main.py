@@ -282,7 +282,8 @@ def create_app(test_config: dict | None = None):
                     parts.append({
                         "part_id" : str(part.part_id),
                         "part_content" : str(part.part_content),
-                        "part_number" : int(part.part_number)
+                        "part_number" : int(part.part_number),
+                        "username" : part.user_id.username
                     })
                 stories.append({
                     "story_id" : str(story.story_id),
@@ -704,6 +705,70 @@ def create_app(test_config: dict | None = None):
             }, 200
             
     api.add_resource(VotingSessionEndpoint, "/VotingSession")
+    
+    
+    class ResultsEndpoint(Resource):
+        def get(self):
+            require_user()
+            game_id = request.args.get("game_id")
+            if not game_id:
+                return httpError("game_id required", 400)
+
+            try:
+                game_uuid = uuid.UUID(str(game_id))
+            except ValueError:
+                return httpError("invalid game_id", 400)
+
+            game = Game.get_or_none(Game.game_id == game_uuid)
+            if not game:
+                return httpError("game not found", 404)
+            
+            settings = game.settings.first()
+            
+            if not settings:
+                return httpError("settings not found", 404)
+
+            session = getActiveVotingSession(game)
+
+            if not session:
+                return {"ok": True, "active": False}, 200
+            
+            winning_stories = (
+                Story
+                .select()
+                .join(Voting)
+                .where(
+                    (Voting.voting_session_id == session) &
+                    (
+                        (Story.is_winner_cont == True) |
+                        (Story.is_winner_cat_1 == True) |
+                        (Story.is_winner_cat_2 == True)
+                    )
+                )
+                .distinct()
+            )
+            
+            winners = [
+                {
+                    "story_id": str(s.story_id),
+                    "is_winner_cont": s.is_winner_cont,
+                    "is_winner_cat_1": s.is_winner_cat_1,
+                    "is_winner_cat_2": s.is_winner_cat_2,
+                }
+                for s in winning_stories
+            ]
+
+            return {
+                "ok": True,
+                "voting_session_number": session.voting_session_number,
+                "num_voting_sessions" : settings.num_votes,
+                "cat_1" : session.cat_1.tag,
+                "cat_2" : session.cat_2.tag,
+                "winners": winners
+            }, 200
+            
+            
+    api.add_resource(ResultsEndpoint, "/Results")
     
         
     class SessionEndpoint(Resource):

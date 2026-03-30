@@ -51,11 +51,14 @@ class Story(BaseModel):
     story_id = UUIDField(primary_key=True) ##primary key
     game_id = ForeignKeyField(Game, backref="story")
     user_id = ForeignKeyField(User, backref="stories")
-    is_winner = BooleanField(default=False)
+    is_winner_cont = BooleanField(default=False)
+    is_winner_cat_1 = BooleanField(default=False)
+    is_winner_cat_2 = BooleanField(default=False)
     
     
 class Voting_Category(BaseModel):
     title = TextField()
+    tag = TextField()
     category_id = AutoField(primary_key = True)
     
 class Voting_Session(BaseModel):
@@ -73,9 +76,10 @@ class Voting(BaseModel):
     user_id = ForeignKeyField(User, backref="vote")
     story_id = ForeignKeyField(Story, backref="vote")
     voting_session_id = ForeignKeyField(Voting_Session, backref="story")
+    voting_stage = IntegerField()
     
     class Meta:
-        primary_key = CompositeKey("user_id", "voting_session_id")
+        primary_key = CompositeKey("user_id", "voting_session_id", "voting_stage")
 
 
 class Story_Part(BaseModel):
