@@ -16,12 +16,43 @@ def testData():
     finished = Status.create(
         status_type="FINISHED"
     )
+    
+    funny = Voting_Category.create(
+        title = "Which story is the funniest?",
+        tag = "Funniest"
+    )
+    
+    serious = Voting_Category.create(
+        title = "Which story is the most serious?",
+        tag = "Serious"    
+    )
+    
+    unexpected = Voting_Category.create(
+        title = "Which story is the most unexpected?",
+        tag = "Unexpected"
+    )
+    
+    plotTwist = Voting_Category.create(
+        title = "Which story had the biggest plot twist?",
+        tag = "Plot twist"
+    )
+    
+    character = Voting_Category.create(
+        title = "Which story has the most interesting characters?",
+        tag = "Strong Characters"
+    )
+    
+    spooky = Voting_Category.create(
+        title = "Which story is the spookiest?",
+        tag = "Spooky"
+    )
+    
 
     # users
-    host = User.create(user_id=uuid.uuid4())
-    user2 = User.create(user_id=uuid.uuid4())
-    user3 = User.create(user_id=uuid.uuid4())
-    user4 = User.create(user_id=uuid.uuid4())
+    host = User.create(user_id=uuid.uuid4(), username="Player 1")
+    user2 = User.create(user_id=uuid.uuid4(), username="Player 2" )
+    user3 = User.create(user_id=uuid.uuid4(), username="Player 3")
+    user4 = User.create(user_id=uuid.uuid4(), username="Player 4")
 
     # game
     game = Game.create(
@@ -38,7 +69,7 @@ def testData():
         num_votes=2,
         timer=60,
         max_players=6,
-        vote_timer=30
+        vote_timer=300
     )
 
     # players
@@ -52,7 +83,9 @@ def testData():
         voting_session_id=uuid.uuid4(),
         game_id=game,
         voting_session_number=1,
-        voting_session_status=active
+        voting_session_status=active,
+        cat_1 = spooky,
+        cat_2 = character
     )
 
     # stories
@@ -146,10 +179,23 @@ def testData():
     )
 
     # votes
-    Voting.create(user_id=host, story_id=story2, voting_session_id=voting_session)
-    Voting.create(user_id=user2, story_id=story1, voting_session_id=voting_session)
-    Voting.create(user_id=user3, story_id=story1, voting_session_id=voting_session)
-    Voting.create(user_id=user4, story_id=story2, voting_session_id=voting_session)
+    ##stage 1 - story 1 and 2 ties
+    Voting.create(user_id=host, story_id=story2, voting_session_id=voting_session, voting_stage=1)
+    Voting.create(user_id=user2, story_id=story1, voting_session_id=voting_session, voting_stage=1)
+    Voting.create(user_id=user3, story_id=story1, voting_session_id=voting_session, voting_stage=1)
+    Voting.create(user_id=user4, story_id=story2, voting_session_id=voting_session, voting_stage=1)
+
+    ##stage 2 - story 3 wins
+    Voting.create(user_id=host, story_id=story3, voting_session_id=voting_session, voting_stage=2)
+    Voting.create(user_id=user2, story_id=story3, voting_session_id=voting_session, voting_stage=2)
+    Voting.create(user_id=user3, story_id=story3, voting_session_id=voting_session, voting_stage=2)
+    Voting.create(user_id=user4, story_id=story4, voting_session_id=voting_session, voting_stage=2)
+
+    ##stage 3 - story 2 wins
+    Voting.create(user_id=host, story_id=story2, voting_session_id=voting_session, voting_stage=3)
+    Voting.create(user_id=user2, story_id=story2, voting_session_id=voting_session, voting_stage=3)
+    Voting.create(user_id=user3, story_id=story1, voting_session_id=voting_session, voting_stage=3)
+    Voting.create(user_id=user4, story_id=story2, voting_session_id=voting_session, voting_stage=3)
 
     db.close()
 

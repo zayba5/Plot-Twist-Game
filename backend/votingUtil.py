@@ -19,7 +19,10 @@ def calcVotes(game, active_session):
             Voting.story_id,
             fn.COUNT(Voting.story_id).alias("vote_count")
         )
-        .where(Voting.voting_session_id == active_session)
+        .where(
+            (Voting.voting_session_id == active_session) &
+            (Voting.voting_stage == 1)
+            )
         .group_by(Voting.story_id)
         .order_by(fn.COUNT(Voting.story_id).desc())
     )
@@ -44,7 +47,7 @@ def calcVotes(game, active_session):
             .distinct()
         )
         
-        winning_story.is_winner = True
+        winning_story.is_winner_cont = True
         winning_story.save()
 
         for part in winning_writers:

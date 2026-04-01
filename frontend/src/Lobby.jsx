@@ -45,10 +45,10 @@ const Lobby = () => {
 
 
   React.useEffect(() => {
-    if (!gameCode) return;
+    if (!gameId) return;
 
     const interval = setInterval(() => {
-      fetchPlayers(gameCode);
+      fetchPlayers(gameId);
     }, 2000);
 
     return () => clearInterval(interval);
@@ -92,7 +92,7 @@ const Lobby = () => {
         {
           id: prev.length + 1,
           user: "System",
-          text: `${data.username} joined the lobby. Players: ${playerNames}`,
+          text: `${data.username} joined the lobby.`,
           time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         },
       ]);
@@ -121,6 +121,18 @@ const Lobby = () => {
   }, []);
 
 
+  React.useEffect(() => {
+    socket.on("game_started", (data) => {
+      console.log("Game started!", data);
+
+      // redirect to Storytelling page
+      window.location.href = `/story?game_id=${data.game_id}`;
+    });
+
+    return () => socket.off("game_started");
+  }, []);
+
+
   const fetchPlayers = async (gameId) => {
     try {
       const res = await fetch(`http://localhost:5000/lobby-players?game_id=${gameId}`, {
@@ -142,6 +154,7 @@ const Lobby = () => {
       console.error("Failed to fetch players", err);
     }
   };
+
 
   const roundMin = 1;
   const roundMax = 20;
@@ -234,9 +247,9 @@ const Lobby = () => {
   };
 
   const handleStartGame = (e) => {
-    e.preventDefault();
-    // TODO: call api to start game
-    console.log('Start game');
+  e.preventDefault();
+
+  socket.emit("start_game", { game_code: gameCode });
   };
 
   const handleSendMessage = (e) => {
@@ -434,13 +447,17 @@ const Lobby = () => {
           </form>
         </section>
       </div>
-
       <footer className="lobby-footer">
-        <button type="button" className="lobby-footer-btn lobby-btn-play">
+        <button
+          type="button"
+          className="lobby-footer-btn lobby-btn-play"
+          onClick={handleStartGame}
+        >
           Play Game
         </button>
       </footer>
     </div>
+
   );
 };
 

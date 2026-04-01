@@ -1,7 +1,7 @@
 $border-color: #6c36c3;
 $shadow-color: #494141;
 $primary-color: rgb(36, 32, 35);
-$secondary-color:rgba(159, 36, 253, 0.25);
+$secondary-color: rgba(159, 36, 253, 0.25);
 $secondary-color-hover: #4c415f;
 $accent-color: #82719d;
 $accent-color-hover: #a778a7;
@@ -16,11 +16,15 @@ html {
 }
 
 
-h1, p, h2, label, span{
+h1,
+p,
+h2,
+label,
+span {
 	color: $font-color;
 }
 
-.story-part p{
+.story-part p {
 	color: whitesmoke;
 }
 
@@ -128,10 +132,15 @@ body {
 	border: $border-color;
 	box-shadow: 0px 0px 10px 2px $shadow-color;
 	color: whitesmoke;
+	justify-self: end;
 }
 
 .button:hover {
 	background-color: $accent-color-hover;
+}
+
+.clickable {
+	cursor: pointer;
 }
 
 //game window
@@ -151,8 +160,8 @@ body {
 		background-color: $secondary-color;
 		padding: $padding-sm;
 		margin-top: $margin-sm;
-		display: flex;
-		justify-content: end;
+		display: grid;
+		grid-template-columns: 1fr auto 1fr;
 		align-items: center;
 		border-radius: 0 0 $rounded-corners $rounded-corners;
 	}
@@ -170,52 +179,53 @@ body {
 }
 
 #voting-page {
-	#story-vote-card-list {
+	#vote-nav {
+		width: 270px;
+		height: 50px;
 		display: flex;
 		flex-direction: row;
-		flex-wrap: wrap;
-		justify-content: center;
-		overflow: auto;
-		flex-grow: 1;
+		align-items: center;
+		justify-content: space-between;
+		justify-self: center;
 
-		.story-vote-card {
-			border: thin solid $border-color;
-			border-radius: $rounded-corners;
-			padding: $padding-sm;
-			background-color: $secondary-color;
-			margin: $margin-sm;
-			width: 20%;
-			min-width: 200px;
+		.nav-arrow {
+			width: 18%;
+			fill: $accent-color;
+		}
 
-			.story-part {
-				background: $accent-color;
-				padding: 20px;
-				margin: 20px;
-				position: relative;
-				border-radius: 5px;
+		.nav-arrow:hover {
+			fill: $accent-color-hover
+		}
+
+		.nav-circle {
+			width: 13%;
+
+			.fa-secondary {
+				opacity: 0.2;
+				fill: white;
 			}
 
-			.story-part:nth-of-type(odd):after {
-				border-top: 20px solid transparent;
-				border-bottom: 20px solid transparent;
-				border-right: 20px solid $accent-color;
-				border-left: none;
-				right: auto;
-				left: -20px;
-			}
-
-			.story-part::after {
-				content: "";
-				width: 0;
-				height: 0;
-				border-top: 20px solid transparent;
-				border-bottom: 20px solid transparent;
-				border-left: 20px solid $accent-color;
-				right: -20px;
-				position: absolute;
-				top: 10px;
+			.fa-primary {
+				fill: $accent-color;
 			}
 		}
+
+		.cur-circle {
+			.fa-primary {
+				fill: $font-color
+			}
+		}
+
+		.visited-circle {
+			.fa-primary {
+				fill: #ddb8fb;
+			}
+		}
+	}
+
+	#story-vote-card-list {
+
+
 
 		.story-vote-card:hover {
 			background-color: $secondary-color-hover;
@@ -248,21 +258,25 @@ body {
 	#vote-button {
 		font-size: larger;
 		height: fit-content;
+		justify-self: end;
 	}
 }
 
-.timer_box{
+.timer_box {
 	position: relative;
 	height: 80px;
 	width: 80px;
-	.timer_circle{
+
+	.timer_circle {
 		fill: none;
 		stroke: none;
-		.timer_total{
+
+		.timer_total {
 			stroke-width: 15px;
 			stroke: darkgray;
 		}
-		.timer_remaining{
+
+		.timer_remaining {
 			stroke-width: 15px;
 			stroke-linecap: round;
 			transform: rotate(-90deg);
@@ -271,7 +285,8 @@ body {
 			transition: stroke 0.3s linear, stroke-dashoffset 0.1s linear;
 		}
 	}
-	.timer_counter{
+
+	.timer_counter {
 		position: absolute;
 		height: 100%;
 		width: 100%;
@@ -285,23 +300,176 @@ body {
 	}
 }
 
+.story-card-list {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	justify-content: center;
+	overflow: auto;
+	flex-grow: 1;
+}
+
+
+.story-vote-card {
+	border: thin solid $border-color;
+	border-radius: $rounded-corners;
+	padding: $padding-sm;
+	background-color: $secondary-color;
+	margin: $margin-sm;
+	width: 20%;
+	min-width: 200px;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	align-items: center;
+
+	.story-stack {
+		width: 100%;
+	}
+
+	.badge-stack {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		width: 80%;
+		justify-self: center;
+		justify-items: center;
+
+		.winner-badge{
+			position: relative;
+			width: 80px;
+			height: 80px;
+		}
+
+		.badge-icon svg{
+			height: 100%;
+			width: 100%;
+			display: block;
+		}
+
+		.badge-text {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			color: black;
+			font-size: 0.75rem;
+			font-weight: bold;
+			text-align: center;
+		}
+
+		.badge-cont{
+			fill: rgb(194, 105, 235);
+		}
+
+		.badge-cat-1 {
+			fill: rgb(211, 104, 122);
+		}
+		.badge-cat-2 {
+			fill: rgb(201, 122, 69);	
+		}
+	}
+
+
+
+	.story-part {
+		background: $accent-color;
+		padding: 20px;
+		margin: 20px;
+		position: relative;
+		border-radius: 5px;
+
+		.part-username {
+			color: black;
+			margin: 0;
+		}
+	}
+
+	.story-part:nth-of-type(odd):after {
+		border-top: 20px solid transparent;
+		border-bottom: 20px solid transparent;
+		border-right: 20px solid $accent-color;
+		border-left: none;
+		right: auto;
+		left: -20px;
+	}
+
+	.story-part::after {
+		content: "";
+		width: 0;
+		height: 0;
+		border-top: 20px solid transparent;
+		border-bottom: 20px solid transparent;
+		border-left: 20px solid $accent-color;
+		right: -20px;
+		position: absolute;
+		top: 10px;
+	}
+}
+
 
 #scoreboard-page #scoreboard {
-  display: flex;
-  flex-direction: column;
-  flex-wrap: wrap;
-  justify-content: center;
-  overflow: auto;
-  flex-grow: 1;
+	display: flex;
+	flex-direction: column;
+	flex-wrap: wrap;
+	justify-content: center;
+	overflow: auto;
+	flex-grow: 1;
 }
 
 #scoreboard-page #scoreboard .scoreboard-item {
-  border: thin solid $border-color;
-  border-radius: 30px;
-  padding: 15px;
-  background-color: $primary-color;
-  margin: 15px;
-  min-width: 200px;
-  display: flex;
-  justify-content: space-between;
+	border: thin solid $border-color;
+	border-radius: 30px;
+	padding: 15px;
+	background-color: $primary-color;
+	margin: 15px;
+	min-width: 200px;
+	display: flex;
+	justify-content: space-between;
+}
+
+.credential-input-section {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+	margin: 0.6rem 0;
+	width: 100%;
+	max-width: 260px;
+
+	label {
+		font-size: 1.0rem;
+		color: $font-color;
+		letter-spacing: 0.03em;
+	}
+
+	.credential-input {
+		width: 100%;
+		padding: $padding-xs;
+		background: $primary-color;
+		border: 1px solid $border-color;
+		border-radius: 8px;
+		color: $font-color;
+		font-size: 0.9rem;
+		font-family: inherit;
+		box-sizing: border-box;
+
+		box-shadow: 0px 0px 8px 1px $shadow-color;
+		transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+
+		&:focus {
+			outline: none;
+			border-color: $accent-color;
+		}
+	}
+
+	/* Error state for input */
+	.input-error {
+		border-color: red;
+	}
+
+	/* Error message text */
+	.credential-error {
+		font-size: 0.75rem;
+		color: red;
+		margin-top: 2px;
+	}
 }

@@ -1,11 +1,13 @@
 from peewee import *
 import os
 from dotenv import load_dotenv
+import random
 
 ##initialization
 load_dotenv()
 
 db = PostgresqlDatabase("project", user=os.getenv("user"), password=os.getenv("pass"), host=os.getenv("host"), port=os.getenv("port"), prefer_psycopg3=True)
+
 
 class BaseModel(Model):
     class Meta:
@@ -19,7 +21,8 @@ class Status(BaseModel):
     
 class User(BaseModel):
     user_id = UUIDField(primary_key=True) ##primary key  
-    username = CharField(max_length=50, null=True)
+    username = CharField(max_length=50)
+    password_hash = BlobField(null=True)
     
 class Game(BaseModel):
     game_id = UUIDField(primary_key=True) ##primary key
@@ -48,7 +51,15 @@ class Story(BaseModel):
     story_id = UUIDField(primary_key=True) ##primary key
     game_id = ForeignKeyField(Game, backref="story")
     user_id = ForeignKeyField(User, backref="stories")
-    is_winner = BooleanField(default=False)
+    is_winner_cont = BooleanField(default=False)
+    is_winner_cat_1 = BooleanField(default=False)
+    is_winner_cat_2 = BooleanField(default=False)
+    
+    
+class Voting_Category(BaseModel):
+    title = TextField()
+    tag = TextField()
+    category_id = AutoField(primary_key = True)
     
 class Voting_Session(BaseModel):
     voting_session_id = UUIDField(primary_key=True) ##primary key
@@ -56,6 +67,8 @@ class Voting_Session(BaseModel):
     voting_session_number = IntegerField()
     voting_session_status = ForeignKeyField(Status, backref="vote")
     continuing_story = ForeignKeyField(Story, backref="voting_session_winner", null=True)
+    cat_1 = ForeignKeyField(Voting_Category, backref="session")
+    cat_2 = ForeignKeyField(Voting_Category, backref="session")
     
     
     
@@ -63,9 +76,10 @@ class Voting(BaseModel):
     user_id = ForeignKeyField(User, backref="vote")
     story_id = ForeignKeyField(Story, backref="vote")
     voting_session_id = ForeignKeyField(Voting_Session, backref="story")
+    voting_stage = IntegerField()
     
     class Meta:
-        primary_key = CompositeKey("user_id", "voting_session_id")
+        primary_key = CompositeKey("user_id", "voting_session_id", "voting_stage")
 
 
 class Story_Part(BaseModel):

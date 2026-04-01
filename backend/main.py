@@ -14,12 +14,23 @@ import random
 import string
 from shuffle_story import assign_next_round_if_ready
 from votingUtil import *
+import bcrypt
 
 
 load_dotenv()
 s = TimestampSigner(os.getenv("secretKey"))
 socketio = SocketIO(cors_allowed_origins=[os.getenv("frontHost")])
 FRONTEND_ORIGIN = os.getenv("frontHost")
+
+DEFAULT_NAMES = [
+    "ToeSnatcher", "GoblinMode", "BreadHeist", "ChairThief",
+    "SpaghettiWizard", "SoggyPickle", "FerretOverlord",
+    "CrustLord", "BananaDealer", "WaffleCrimes",
+    "MilkBandit", "UnstableGoose", "GremlinHours",
+    "SoupEnjoyer", "RatWithHat", "ForkInOutlet",
+    "ChaosPotato", "DumpsterSprite", "WetSockEnergy",
+    "PanicButton"
+]
 
 def httpError(reason, code):
     return jsonify({
@@ -56,8 +67,6 @@ def generate_assignments_for_round(game, round_number):
             user_id=user,
             story_id=story
         )
-
-
 
 def create_app(test_config: dict | None = None):
     app = Flask(__name__)
@@ -116,7 +125,26 @@ def create_app(test_config: dict | None = None):
         if game_id:
             print(f"voting expired for game: {game_id}")
             finishVotingSession("timer expired", game_id, socketio)
-                       
+
+
+    @socketio.on("start_game")
+    def handle_start_game(data):
+        game_code = data.get("game_code")
+        if not game_code:
+            return
+
+        game = Game.get_or_none(Game.game_code == game_code.upper())
+        if not game:
+            return
+
+        # send event to ALL players in that lobby
+        socketio.emit(
+            "game_started",
+            {
+                "game_id": str(game.game_id)
+            },
+            to=f"game:{game.game_id}"  # make sure join_game adds players to this room
+        )                    
 
     signer = TimestampSigner(os.getenv("secretKey") or "")
 
@@ -254,7 +282,8 @@ def create_app(test_config: dict | None = None):
                     parts.append({
                         "part_id" : str(part.part_id),
                         "part_content" : str(part.part_content),
-                        "part_number" : int(part.part_number)
+                        "part_number" : int(part.part_number),
+                        "username" : part.user_id.username
                     })
                 stories.append({
                     "story_id" : str(story.story_id),
@@ -569,7 +598,7 @@ def create_app(test_config: dict | None = None):
             scores = []
             for player in game.player:
                 scores.append({
-                    "user" : str(player.user_id),
+                    "user" : str(player.user_id.username),
                     "score" : int(player.user_score)
                 })
             return jsonify({"scores" : scores})
@@ -669,15 +698,82 @@ def create_app(test_config: dict | None = None):
                 "status": session.voting_session_status_id,
                 "voting_session_id": str(session.voting_session_id),
                 "voting_session_number": session.voting_session_number,
-                "num_voting_sessions" : settings.num_votes
+                "num_voting_sessions" : settings.num_votes,
+                "cat_1" : session.cat_1.title,
+                "cat_2" : session.cat_2.title,
+                "timer" : settings.vote_timer
             }, 200
             
     api.add_resource(VotingSessionEndpoint, "/VotingSession")
     
+    
+    class ResultsEndpoint(Resource):
+        def get(self):
+            require_user()
+            game_id = request.args.get("game_id")
+            if not game_id:
+                return httpError("game_id required", 400)
+
+            try:
+                game_uuid = uuid.UUID(str(game_id))
+            except ValueError:
+                return httpError("invalid game_id", 400)
+
+            game = Game.get_or_none(Game.game_id == game_uuid)
+            if not game:
+                return httpError("game not found", 404)
+            
+            settings = game.settings.first()
+            
+            if not settings:
+                return httpError("settings not found", 404)
+
+            session = getActiveVotingSession(game)
+
+            if not session:
+                return {"ok": True, "active": False}, 200
+            
+            winning_stories = (
+                Story
+                .select()
+                .join(Voting)
+                .where(
+                    (Voting.voting_session_id == session) &
+                    (
+                        (Story.is_winner_cont == True) |
+                        (Story.is_winner_cat_1 == True) |
+                        (Story.is_winner_cat_2 == True)
+                    )
+                )
+                .distinct()
+            )
+            
+            winners = [
+                {
+                    "story_id": str(s.story_id),
+                    "is_winner_cont": s.is_winner_cont,
+                    "is_winner_cat_1": s.is_winner_cat_1,
+                    "is_winner_cat_2": s.is_winner_cat_2,
+                }
+                for s in winning_stories
+            ]
+
+            return {
+                "ok": True,
+                "voting_session_number": session.voting_session_number,
+                "num_voting_sessions" : settings.num_votes,
+                "cat_1" : session.cat_1.tag,
+                "cat_2" : session.cat_2.tag,
+                "winners": winners
+            }, 200
+            
+            
+    api.add_resource(ResultsEndpoint, "/Results")
+    
         
     class SessionEndpoint(Resource):
         def get(self):
-            username = request.args.get("username") or "Player"  # default name
+            username = request.args.get("username") or random.choice(DEFAULT_NAMES)  # default name
 
 
             if getattr(g, "user", None):
@@ -721,9 +817,11 @@ def create_app(test_config: dict | None = None):
             max_players = data.get("maxPlayers", 4)  # default max 4
 
             # create new game
+            status = Status.get(Status.status_type == "LOBBY")
+
             game = Game.create(
                 game_id=uuid.uuid4(),
-                game_status=Status.get_or_none(Status.status_type=="ACTIVE"), 
+                game_status=status,
                 game_host=user,
                 game_code=generate_game_code()
             )
@@ -770,6 +868,7 @@ def create_app(test_config: dict | None = None):
                 num_rounds=rounds,
                 num_votes=voting_sessions,
                 timer=timer,
+                vote_timer=60, 
                 max_players=max_players
             )
 
@@ -856,6 +955,34 @@ def create_app(test_config: dict | None = None):
                 })
 
             return {"players": players}
+        
+    class CreateUserEndpoint(Resource):
+        def post(self):
+            data = request.get_json() or {}
+            username = data.get("username")
+            password = data.get("password").encode("utf-8")
+            password_hash = bcrypt.hashpw(password, bcrypt.gensalt())
+
+            if (User.get_or_none(User.username == username)):
+                return {
+                    "ok": False,
+                    "error": "username_taken"
+                }
+
+            user = User.create(
+                user_id=uuid.uuid4(),
+                username=username,
+                password_hash=password_hash
+            )
+
+            return {
+                "ok": True,
+                "user_id": str(user.user_id),
+                "username": str(user.username),
+                "password_hash": str(user.password_hash),
+            }, 201
+    
+    api.add_resource(CreateUserEndpoint, "/CreateUser")
 
 
     # REGISTER ROUTES

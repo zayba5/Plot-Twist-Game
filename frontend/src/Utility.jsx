@@ -130,3 +130,20 @@ export async function fetchNextStoryPart(gameId, roundNumber) {
     credentials: "include",
   });
 }
+
+export async function postUser(username, password) {
+  return apiJson("CreateUser", {
+    method: "POST",
+    body: {
+      username: username.trim(),
+      password: password,
+    },
+  });
+}
+
+export async function fetchResults(gameID) {
+  return apiJson(`Results?game_id=${gameID}`, {
+    method: "GET",
+    credentials: "include"
+  })
+}

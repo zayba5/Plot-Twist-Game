@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './index.css';
 import { api } from "./global.jsx"
 import { fetchScores } from './Utility.jsx';
+import { useNavigate } from "react-router-dom";
 
 
 const Header = () => {
@@ -65,12 +66,30 @@ const Scoreboard = () => {
   );
 };
 
+const ControlBar = () => {
+  const navigate = useNavigate();
+
+  return (
+    <div className="game-window-control-bar">
+      <div></div>
+      <div></div>
+      <button
+        className="button"
+        onClick={() => {navigate("/lobby")}}
+      >
+        {"Return to Lobby"}
+      </button>
+    </div>
+  );
+};
+
 //start display content functions
 const ScoreboardPage = () => {
   return (
     <div className='game-window' id='scoreboard-page'>
       <Header></Header>
       <Scoreboard></Scoreboard>
+      <ControlBar></ControlBar>
     </div>
   )
 }
