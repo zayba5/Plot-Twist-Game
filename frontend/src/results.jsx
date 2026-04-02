@@ -25,9 +25,9 @@ const StoryCard = ({ story, winners, tags }) => {
     return (
         <div className="story-vote-card">
             <div className="story-stack">
-            {story.story_parts?.map((part, idx) => (
-                <StoryPart part={part} key={idx} />
-            ))}
+                {story.story_parts?.map((part, idx) => (
+                    <StoryPart part={part} key={idx} />
+                ))}
             </div>
 
             <div className="badge-stack">
@@ -61,13 +61,13 @@ const WinnerBadge = ({ tag, className }) => {
     );
 }
 
-const StoryCardList = ({ winners, tags }) => {
+const StoryCardList = ({ winners, tags, gameId }) => {
     const [stories, setStories] = useState([]);
 
     useEffect(() => {
         async function loadStories() {
             try {
-                const data = await fetchGameStories();
+                const data = await fetchGameStories(gameId);
                 setStories(data.stories ?? []);
             } catch (error) {
                 console.error("Failed to load stories:", error);
@@ -101,13 +101,14 @@ const ResultsPage = () => {
     const [votingSession, setVotingSession] = useState(null);
     const [loadingSession, setLoadingSession] = useState(true);
     const [results, setResults] = useState(null);
+    const [gameId, setGameId] = useState(null);
     const WAIT_TIME = 600; //<------Edit back to 60 when done testing
 
     const finished = useRef(false)
     let tag1 = "Continue";
 
     ///////////////hardcoded beware//////////////////////
-    const gameId = "01731b8d-0f53-42a2-9172-49674c247858";
+    //const gameId = "01731b8d-0f53-42a2-9172-49674c247858";
 
     const endRound = useCallback((reason, path, payload = null) => {
         if (finished.current) return;
@@ -128,13 +129,25 @@ const ResultsPage = () => {
 
     };
 
+
+
     useEffect(() => {
-        async function loadVotingSession() {
+        async function handleResultsStarted(payload) {
             try {
                 setLoadingSession(true);
-                const data = await fetchVotingSession(gameId);
-                setVotingSession(data);
 
+                const incomingGameId = payload?.game_id;
+                console.log("show_results received with game_id:", incomingGameId);
+                if (!incomingGameId) {
+                    console.error("No game_id in show_results payload");
+                    setVotingSession(null);
+                    return;
+                }
+
+                setGameId(incomingGameId);
+
+                const data = await fetchVotingSession(incomingGameId);
+                setVotingSession(data);
             } catch (error) {
                 console.error("Failed to load voting session:", error);
                 setVotingSession(null);
@@ -142,11 +155,37 @@ const ResultsPage = () => {
                 setLoadingSession(false);
             }
         }
-        loadVotingSession();
-    }, [gameId]);
+
+        socket.on("results_shown", handleResultsStarted);
+
+        return () => {
+            socket.off("results_shown", handleResultsStarted);
+        };
+    }, []);
+
+    useEffect(() => {
+        function showResults() {
+            socket.emit("show_results", {});
+            console.log("emitted show_results");
+        }
+
+        if (socket.connected) {
+            showResults();
+        } else {
+            socket.on("connect", showResults);
+        }
+
+        return () => {
+            socket.off("connect", showResults);
+        };
+    }, []);
+
 
     useEffect(() => {
         async function loadResults() {
+            if (!gameId) return;
+            console.log("loading results for game_id:", gameId);
+
             try {
                 const data = await fetchResults(gameId);
                 setResults(data);
@@ -177,7 +216,7 @@ const ResultsPage = () => {
                 <h1>Your Results</h1>
                 <Timer durationSec={WAIT_TIME} onExpire={handleTimerExpire} />
             </div>
-            <StoryCardList winners={results.winners} tags={tags} />
+            <StoryCardList winners={results.winners} tags={tags} gameId={gameId}/>
             <div className="game-window-control-bar">
                 <div></div>
                 <div></div>
