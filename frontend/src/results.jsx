@@ -118,7 +118,6 @@ const ResultsPage = () => {
     }, [navigate]);
 
     const handleTimerExpire = async () => {
-        socket.emit("voting_round_expired", { game_id: gameId })
         if (!votingSession) return;
         if (votingSession.voting_session_number === votingSession.num_voting_sessions) {
             endRound("timer_expired", "/score")
@@ -129,6 +128,16 @@ const ResultsPage = () => {
 
     };
 
+    const handleButtonClick = () => {
+        if (!votingSession) return;
+        if (votingSession.voting_session_number === votingSession.num_voting_sessions) {
+            endRound("continue", "/score")
+        }
+        else {
+            endRound("continue", "/story");
+        }
+
+    };
 
 
     useEffect(() => {
@@ -220,7 +229,7 @@ const ResultsPage = () => {
             <div className="game-window-control-bar">
                 <div></div>
                 <div></div>
-                <button className="button clickable">Continue</button>
+                <button className="button clickable" onClick={handleButtonClick}>Continue</button>
             </div>
         </div>
     );
