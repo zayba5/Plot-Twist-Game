@@ -37,3 +37,10 @@ export async function apiJson(path, { loginKey, body, ...options } = {}) {
   if (response.status === 204) return null;
   return response.json();
 }
+
+export function getCookie(name) {
+  return document.cookie
+    .split("; ")
+    .find(row => row.startsWith(name + "="))
+    ?.split("=")[1];
+}

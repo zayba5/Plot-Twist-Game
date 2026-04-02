@@ -8,7 +8,7 @@ from models import *
 from itsdangerous import TimestampSigner
 from functools import wraps
 import uuid
-from flask_socketio import SocketIO, join_room
+from flask_socketio import SocketIO, emit, join_room
 from peewee import fn
 import random
 import string
@@ -67,6 +67,8 @@ def generate_assignments_for_round(game, round_number):
             user_id=user,
             story_id=story
         )
+        
+
 
 def create_app(test_config: dict | None = None):
     app = Flask(__name__)
@@ -144,9 +146,60 @@ def create_app(test_config: dict | None = None):
                 "game_id": str(game.game_id)
             },
             to=f"game:{game.game_id}"  # make sure join_game adds players to this room
-        )                    
+        )     
+        
 
     signer = TimestampSigner(os.getenv("secretKey") or "")
+    
+    def get_user_from_cookie():
+        token = request.cookies.get("uid")
+        if not token:
+            return None
+
+        try:
+            raw_user_id = signer.unsign(token, max_age=60 * 60 * 24 * 365)
+
+            if isinstance(raw_user_id, bytes):
+                raw_user_id = raw_user_id.decode("utf-8")
+
+            user_id = uuid.UUID(str(raw_user_id))
+            return User.get_or_none(User.user_id == user_id)
+
+        except (BadSignature, SignatureExpired, ValueError):
+            return None
+        
+    @socketio.on("begin_voting")
+    def handle_begin_voting(data=None):
+        print("begin_voting received:", data, flush=True)
+
+        user = get_user_from_cookie()
+        print("resolved user:", user, flush=True)
+
+        if not user:
+            print("no valid user", flush=True)
+            return
+
+        game = (
+            Game
+            .select(Game, Status)
+            .join(Game_Players, on=(Game_Players.game_id == Game.game_id))
+            .switch(Game)
+            .join(Status, on=(Game.game_status == Status.status_id))
+            .where(
+                (Game_Players.user_id == user.user_id) &
+                (Status.status_type == "ACTIVE")
+            )
+            .get_or_none()
+        )
+
+        print("resolved game:", game, flush=True)
+
+        if not game:
+            print("no active game found", flush=True)
+            return
+
+        emit("voting_started", {"game_id": str(game.game_id)})     
+
 
     API_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -252,7 +305,7 @@ def create_app(test_config: dict | None = None):
         ##get the stories and their parts for a given game
         def get(self):
             user = require_user()
-            game_id = "01731b8d-0f53-42a2-9172-49674c247858"
+            game_id = request.args.get("game_id")
             game = Game.get(Game.game_id == uuid.UUID(game_id))
             stories = []
             for story in game.story:

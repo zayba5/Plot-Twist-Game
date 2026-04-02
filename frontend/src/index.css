@@ -257,7 +257,6 @@ body {
   min-width: 200px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   align-items: center;
 }
 .story-vote-card .story-stack {
@@ -305,6 +304,7 @@ body {
   margin: 20px;
   position: relative;
   border-radius: 5px;
+  width: 70%;
 }
 .story-vote-card .story-part .part-username {
   color: black;

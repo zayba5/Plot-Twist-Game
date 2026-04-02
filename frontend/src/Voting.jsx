@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import "./index.css";
-import { socket } from "./global.jsx";
+import { socket, getCookie } from "./global.jsx";
 import { fetchGameStories, postVote, fetchVotingSession } from "./Utility.jsx";
 import { useNavigate } from "react-router-dom";
 import Timer from "./timer.jsx";
@@ -84,13 +84,13 @@ const VoteNav = ({ curPage, visitedPages, setCurPage, setVisitedPages }) => {
   );
 };
 
-const StoryCardList = ({ selectedStoryId, setSelectedStoryId, curPage }) => {
+const StoryCardList = ({ selectedStoryId, setSelectedStoryId, curPage, gameId }) => {
   const [stories, setStories] = useState([]);
 
   useEffect(() => {
     async function loadStories() {
       try {
-        const data = await fetchGameStories();
+        const data = await fetchGameStories(gameId);
         setStories(data.stories ?? []);
       } catch (error) {
         console.error("Failed to load stories:", error);
@@ -156,10 +156,11 @@ const ControlBar = ({ selectedStoryId, gameId, submitting, setSubmitting,
 
 const Header = ({ handleTimerExpire, time, titles, curPage }) => {
 
+  //replace time with var
   return (
     <div className="game-window-header">
       <h1>{titles[curPage - 1]}</h1>
-      <Timer durationSec={time} onExpire={handleTimerExpire} />
+      <Timer durationSec={6000} onExpire={handleTimerExpire} />
     </div>
   );
 };
@@ -172,12 +173,15 @@ const VotingPage = () => {
   const [loadingSession, setLoadingSession] = useState(true);
   const [curPage, setCurPage] = useState(1);
   const [visitedPages, setVisitedPages] = useState([1])
+  const [gameId, setGameId] = useState(null);
 
   const finished = useRef(false)
   let prompt1 = "Which story would you like to continue?";
 
   ///////////////hardcoded beware//////////////////////
-  const gameId = "01731b8d-0f53-42a2-9172-49674c247858";
+  //const gameId = "01731b8d-0f53-42a2-9172-49674c247858";
+
+
 
   const endRound = useCallback((reason, path, payload = null) => {
     if (finished.current) return;
@@ -214,12 +218,22 @@ const VotingPage = () => {
   };
 
   useEffect(() => {
-    async function loadVotingSession() {
+    async function handleVotingStarted(payload) {
       try {
         setLoadingSession(true);
-        const data = await fetchVotingSession(gameId);
-        setVotingSession(data);
 
+        const incomingGameId = payload?.game_id;
+        console.log("voting_started received with game_id:", incomingGameId);
+        if (!incomingGameId) {
+          console.error("No game_id in voting_started payload");
+          setVotingSession(null);
+          return;
+        }
+
+        setGameId(incomingGameId);
+
+        const data = await fetchVotingSession(incomingGameId);
+        setVotingSession(data);
       } catch (error) {
         console.error("Failed to load voting session:", error);
         setVotingSession(null);
@@ -227,8 +241,30 @@ const VotingPage = () => {
         setLoadingSession(false);
       }
     }
-    loadVotingSession();
-  }, [gameId]);
+
+    socket.on("voting_started", handleVotingStarted);
+
+    return () => {
+      socket.off("voting_started", handleVotingStarted);
+    };
+  }, []);
+
+  useEffect(() => {
+    function beginVoting() {
+      socket.emit("begin_voting", {});
+      console.log("emitted begin_voting");
+    }
+
+    if (socket.connected) {
+      beginVoting();
+    } else {
+      socket.on("connect", beginVoting);
+    }
+
+    return () => {
+      socket.off("connect", beginVoting);
+    };
+  }, []);
 
 
   useEffect(() => {
@@ -268,6 +304,7 @@ const VotingPage = () => {
         selectedStoryId={selectedStoryId}
         setSelectedStoryId={setSelectedStoryId}
         curPage={curPage}
+        gameId={gameId}
       />
       <ControlBar
         selectedStoryId={selectedStoryId}

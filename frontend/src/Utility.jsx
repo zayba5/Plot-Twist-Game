@@ -10,32 +10,8 @@ export async function fetchItem() {
 }
 
 //fetch stories and their parts for a given game
-const USE_MOCK_DATA = false; // for testing, change to false in deployment
-export async function fetchGameStories() {
-  if (USE_MOCK_DATA) {
-    return {
-      stories: [
-        {
-          story_id: "1",
-          story_parts: [
-            { part_content: "Once upon a time, a door appeared in the forest." },
-            { part_content: "A traveler opened it and found a glowing staircase." },
-            { part_content: "At the top was a library floating in the sky." }
-          ]
-        },
-        {
-          story_id: "2",
-          story_parts: [
-            { part_content: "The train stopped at midnight with no station in sight." },
-            { part_content: "Only one passenger stepped off into the fog." },
-            { part_content: "She was holding the same suitcase he had lost years ago." }
-          ]
-        }
-      ]
-    };
-  }
-
-  return apiJson("GetAllStory", {
+export async function fetchGameStories(gameID) {
+  return apiJson(`GetAllStory?game_id=${gameID}`, {
     method: "GET",
     credentials: "include"
   });

@@ -320,7 +320,6 @@ body {
 	min-width: 200px;
 	display: flex;
 	flex-direction: column;
-	justify-content: space-between;
 	align-items: center;
 
 	.story-stack {
@@ -377,6 +376,7 @@ body {
 		margin: 20px;
 		position: relative;
 		border-radius: 5px;
+		width: 70%;
 
 		.part-username {
 			color: black;
