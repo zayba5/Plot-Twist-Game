@@ -215,7 +215,8 @@ const StorytellingPage = () => {
     };
   }, [isPolling]);
 
-  //fetching the next prompt
+  // fetching the next prompt
+  // create a voting entry once max rounds reached
   useEffect(() => {
     if (!fetchNext) return; //guarding
     const newPrompt = async () => {
@@ -229,6 +230,8 @@ const StorytellingPage = () => {
         if (res.status === "voting") {
           setStoryText("");
           setFetchNext(false);
+
+          // create an entry in voting
           navigate("/vote");
           return;
         }
