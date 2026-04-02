@@ -1,5 +1,8 @@
 import { apiJson } from "./global.jsx";
 
+export const api =
+  import.meta.env.VITE_API;
+
 export async function fetchItem() {
   return apiJson("Sample", {
     method: "GET",
@@ -95,7 +98,7 @@ export async function postStory(gameID, roundNumber, content) {
 }
 
 export async function fetchUserId() {
-  const res = await fetch("http://localhost:5000/WhoAmI", {
+  const res = await fetch(`${api}/WhoAmI`, {
     method: "GET",
     credentials: "include"
   });

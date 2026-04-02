@@ -9,6 +9,9 @@ lerna-debug.log*
 #virtual env
 .venv/
 
+# query file
+PlotTwistQuery.sql
+
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 

@@ -150,27 +150,6 @@ def create_app(test_config: dict | None = None):
 
     API_DIR = os.path.dirname(os.path.abspath(__file__))
 
-    # #events for claiming player after room membership
-    # @socketio.on("claim_player")
-    # def handle_claim_player(data):
-    #     game_id = data.get("game_id")
-    #     if not game_id:
-    #         return {"ok": False, "error": "game_id is required"}
-
-    #     sid = request.sid
-    #     return claim_player_for_socket(game_id, sid)
-
-
-    # @socketio.on("release_player")
-    # def handle_release_player():
-    #     sid = request.sid
-    #     released = release_player_for_socket(sid)
-    #     return {"ok": True, "released": released}
-
-    # @socketio.on("disconnect")
-    # def handle_disconnect():
-    #     release_player_for_socket(request.sid)
-
     @app.before_request
     def before_request():
         g.user = None
@@ -414,11 +393,53 @@ def create_app(test_config: dict | None = None):
                     "total": total_assignments,
                 }, 200
 
+            # create an entry in voting session if none is active
             if round_number >= MAX_ROUNDS:
+                #check if an active session for this game exists
+                active_session = getActiveVotingSession(game)
+
+                if not active_session:
+                    # get ACTIVE status
+                    active_status = Status.get(Status.status_type == "ACTIVE")
+
+                    # figure out next voting session number
+                    last_session = (
+                        Voting_Session.select()
+                        .where(Voting_Session.game_id == game)
+                        .order_by(Voting_Session.voting_session_number.desc())
+                        .first()
+                    )
+
+                    next_number = 1 if not last_session else last_session.voting_session_number + 1
+
+                    # pick categories (temporary hardcode is fine)
+                    cat_1 = Voting_Category.get_or_none(Voting_Category.tag == "cat1")  # adjust
+                    cat_2 = Voting_Category.get_or_none(Voting_Category.tag == "cat2")  # adjust
+
+                    # fallback if categories missing
+                    if not cat_1 or not cat_2:
+                        cat_1 = Voting_Category.select().first()
+                        cat_2 = Voting_Category.select().offset(1).first()
+
+                    # create voting session
+                    active_session = Voting_Session.create(
+                        voting_session_id=uuid.uuid4(),
+                        game_id=game,
+                        voting_session_number=next_number,
+                        voting_session_status=active_status,
+                        continuing_story=None,
+                        cat_1=cat_1,
+                        cat_2=cat_2,
+                    )
+
+                    print(f"Created voting session {active_session.voting_session_id}", flush=True)
                 return {
                     "ok": True,
                     "status": "voting",
                     "round_number": round_number,
+                    "game_id": str(game.game_id),
+                    "voting_session_id": str(active_session.voting_session_id),
+                    "voting_session_number": active_session.voting_session_number,
                 }, 200
 
             next_round = round_number + 1
