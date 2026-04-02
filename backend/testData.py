@@ -4,19 +4,6 @@ from models import *
 def testData():
     db.connect(reuse_if_open=True)
 
-    # statuses
-    waiting = Status.create(
-        status_type="WAITING"
-    )
-
-    active = Status.create(
-        status_type="ACTIVE"
-    )
-
-    finished = Status.create(
-        status_type="FINISHED"
-    )
-    
     funny = Voting_Category.create(
         title = "Which story is the funniest?",
         tag = "Funniest"
@@ -57,7 +44,7 @@ def testData():
     # game
     game = Game.create(
         game_id="01731b8d-0f53-42a2-9172-49674c247858",
-        game_status=waiting,
+        game_status=5,
         game_host=host,
         game_code="pants"
     )
@@ -83,7 +70,7 @@ def testData():
         voting_session_id=uuid.uuid4(),
         game_id=game,
         voting_session_number=1,
-        voting_session_status=active,
+        voting_session_status=4,
         cat_1 = spooky,
         cat_2 = character
     )

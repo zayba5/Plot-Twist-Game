@@ -10,6 +10,8 @@ def reset_tables():
     Status.create(status_type="LOBBY")
     Status.create(status_type="IN_PROGRESS")
     Status.create(status_type="FINISHED")
+    Status.create(status_type="ACTIVE")
+    Status.create(status_type="WAITING")
     db.close()
 
 if __name__ == "__main__":
