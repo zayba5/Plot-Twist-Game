@@ -69,6 +69,7 @@ class Voting_Session(BaseModel):
     continuing_story = ForeignKeyField(Story, backref="voting_session_winner", null=True)
     cat_1 = ForeignKeyField(Voting_Category, backref="session")
     cat_2 = ForeignKeyField(Voting_Category, backref="session")
+    timer_ends_at = DateTimeField(null=True)
     
     
     

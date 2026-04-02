@@ -16,6 +16,7 @@ from shuffle_story import assign_next_round_if_ready
 from votingUtil import *
 import bcrypt
 from util import *
+from datetime import datetime, timedelta, timezone
 
 
 load_dotenv()
@@ -435,6 +436,15 @@ def create_app(test_config: dict | None = None):
                     if not cat_1 or not cat_2:
                         cat_1 = Voting_Category.select().first()
                         cat_2 = Voting_Category.select().offset(1).first()
+                        
+                    settings = Game_Settings.get_or_none(Game_Settings.game_id == game)
+
+                    if not settings:
+                        return None
+
+                    now = datetime.now(timezone.utc)
+                    end_time = now + timedelta(seconds=settings.vote_timer)
+                    
 
                     # create voting session
                     active_session = Voting_Session.create(
@@ -445,6 +455,7 @@ def create_app(test_config: dict | None = None):
                         continuing_story=None,
                         cat_1=cat_1,
                         cat_2=cat_2,
+                        timer_ends_at=end_time
                     )
 
                     print(f"Created voting session {active_session.voting_session_id}", flush=True)
@@ -765,7 +776,9 @@ def create_app(test_config: dict | None = None):
                 "num_voting_sessions" : settings.num_votes,
                 "cat_1" : session.cat_1.title,
                 "cat_2" : session.cat_2.title,
-                "timer" : settings.vote_timer
+                "timer" : settings.vote_timer,
+                "timer_ends_at" : session.timer_ends_at.isoformat(),
+                "results_end_at" : (datetime.now(timezone.utc) + timedelta(seconds=60)).isoformat()
             }, 200
             
     api.add_resource(VotingSessionEndpoint, "/VotingSession")

@@ -102,8 +102,7 @@ const ResultsPage = () => {
     const [loadingSession, setLoadingSession] = useState(true);
     const [results, setResults] = useState(null);
     const [gameId, setGameId] = useState(null);
-    const WAIT_TIME = 600; //<------Edit back to 60 when done testing
-
+    const [endTimeMs, setEndTimeMs] = useState(null);
     const finished = useRef(false)
     let tag1 = "Continue";
 
@@ -157,6 +156,16 @@ const ResultsPage = () => {
 
                 const data = await fetchVotingSession(incomingGameId);
                 setVotingSession(data);
+                const parsedEndTimeMs = new Date(data?.results_end_at).getTime();
+                console.log("results_end_at raw:", data?.results_end_at);
+                console.log("results_end_at parsed:", parsedEndTimeMs);
+
+                if (Number.isFinite(parsedEndTimeMs)) {
+                    setEndTimeMs(parsedEndTimeMs);
+                } else {
+                    console.error("Invalid results_end_at:", data?.results_end_at);
+                    setEndTimeMs(null);
+                }
             } catch (error) {
                 console.error("Failed to load voting session:", error);
                 setVotingSession(null);
@@ -223,9 +232,9 @@ const ResultsPage = () => {
         <div className="game-window" id="results-page">
             <div className="game-window-header">
                 <h1>Your Results</h1>
-                <Timer durationSec={WAIT_TIME} onExpire={handleTimerExpire} />
+                <Timer endTimeMs={endTimeMs} onExpire={handleTimerExpire} />
             </div>
-            <StoryCardList winners={results.winners} tags={tags} gameId={gameId}/>
+            <StoryCardList winners={results.winners} tags={tags} gameId={gameId} />
             <div className="game-window-control-bar">
                 <div></div>
                 <div></div>

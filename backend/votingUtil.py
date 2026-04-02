@@ -45,11 +45,11 @@ def calcVotes(game, active_session):
             story_obj = Story.get_or_none(Story.story_id == winning_story)
             if story_obj:
                 if stage == 1:
-                    story_obj.is_winner_cat_1 = True
-                elif stage == 2:
-                    story_obj.is_winner_cat_2 = True
-                elif stage == 3:
                     story_obj.is_winner_cont = True
+                elif stage == 2:
+                    story_obj.is_winner_cat_1 = True
+                elif stage == 3:
+                    story_obj.is_winner_cat_2 = True
                 story_obj.save()
 
             winning_parts = (

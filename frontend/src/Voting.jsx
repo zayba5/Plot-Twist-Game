@@ -159,7 +159,7 @@ const Header = ({ handleTimerExpire, time, titles, curPage }) => {
   return (
     <div className="game-window-header">
       <h1>{titles[curPage - 1]}</h1>
-      <Timer durationSec={300} onExpire={handleTimerExpire} />
+      <Timer endTimeMs={time} onExpire={handleTimerExpire} />
     </div>
   );
 };
@@ -173,6 +173,7 @@ const VotingPage = () => {
   const [curPage, setCurPage] = useState(1);
   const [visitedPages, setVisitedPages] = useState([1])
   const [gameId, setGameId] = useState(null);
+  const [endTimeMs, setEndTimeMs] = useState(null);
 
   const finished = useRef(false)
   let prompt1 = "Which story would you like to continue?";
@@ -232,6 +233,16 @@ const VotingPage = () => {
 
         const data = await fetchVotingSession(incomingGameId);
         setVotingSession(data);
+        const parsedEndTimeMs = new Date(data?.timer_ends_at).getTime();
+        console.log("timer_ends_at raw:", data?.timer_ends_at);
+        console.log("timer_ends_at parsed:", parsedEndTimeMs);
+
+        if (Number.isFinite(parsedEndTimeMs)) {
+          setEndTimeMs(parsedEndTimeMs);
+        } else {
+          console.error("Invalid timer_ends_at:", data?.timer_ends_at);
+          setEndTimeMs(null);
+        }
       } catch (error) {
         console.error("Failed to load voting session:", error);
         setVotingSession(null);
@@ -297,7 +308,7 @@ const VotingPage = () => {
   return (
     <div className="game-window" id="voting-page">
       <Header handleTimerExpire={handleTimerExpire}
-        time={votingSession.timer} titles={titles} curPage={curPage} />
+        time={endTimeMs} titles={titles} curPage={curPage} />
       <StoryCardList
         selectedStoryId={selectedStoryId}
         setSelectedStoryId={setSelectedStoryId}
