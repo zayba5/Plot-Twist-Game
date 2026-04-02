@@ -240,6 +240,7 @@ body {
 
 			.story-part:nth-of-type(odd)::after {
 				border-right: 20px solid $secondary-color;
+				border-left: none;
 
 			}
 

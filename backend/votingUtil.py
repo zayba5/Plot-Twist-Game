@@ -1,4 +1,4 @@
-from models import Voting, Voting_Session, Game_Players, Status, Story_Part, Game
+from models import Voting, Voting_Session, Game_Players, Status, Story_Part, Game, Story
 import uuid
 from peewee import fn
 import random
@@ -13,68 +13,76 @@ def getActiveVotingSession(game):
         .get_or_none()
             )
 
-def calcVotes(game, active_session):    
-    vote_results = list(
-        Voting.select(
-            Voting.story_id,
-            fn.COUNT(Voting.story_id).alias("vote_count")
-        )
-        .where(
-            (Voting.voting_session_id == active_session) &
-            (Voting.voting_stage == 1)
-            )
-        .group_by(Voting.story_id)
-        .order_by(fn.COUNT(Voting.story_id).desc())
-    )
+def calcVotes(game, active_session):
+    stage_results = {}
 
-    if not vote_results:
-        return {
-            "winning_story_ids": [],
-            "is_tie": False,
-            "vote_count": 0,
+    for stage in [1, 2, 3]:
+        vote_results = list(
+            Voting.select(
+                Voting.story_id,
+                fn.COUNT(Voting.story_id).alias("vote_count")
+            )
+            .where(
+                (Voting.voting_session_id == active_session) &
+                (Voting.voting_stage == stage)
+            )
+            .group_by(Voting.story_id)
+            .order_by(fn.COUNT(Voting.story_id).desc())
+        )
+
+        if not vote_results:
+            stage_results[f"stage_{stage}"] = {
+                "winning_story_ids": [],
+                "is_tie": False,
+                "vote_count": 0,
+            }
+            continue
+
+        max_votes = vote_results[0].vote_count
+        winners = [row.story_id for row in vote_results if row.vote_count == max_votes]
+
+        for winning_story in winners:
+            story_obj = Story.get_or_none(Story.story_id == winning_story)
+            if story_obj:
+                if stage == 1:
+                    story_obj.is_winner_cat_1 = True
+                elif stage == 2:
+                    story_obj.is_winner_cat_2 = True
+                elif stage == 3:
+                    story_obj.is_winner_cont = True
+                story_obj.save()
+
+            winning_parts = (
+                Story_Part
+                .select()
+                .where(Story_Part.story_id == winning_story)
+            )
+
+            for part in winning_parts:
+                game_player = Game_Players.get_or_none(
+                    (Game_Players.game_id == game) &
+                    (Game_Players.user_id == part.user_id)
+                )
+
+                if game_player:
+                    game_player.user_score += 1
+                    game_player.save()
+
+        stage_results[f"stage_{stage}"] = {
+            "winning_story_ids": [
+                str(story.story_id) if hasattr(story, "story_id") else str(story)
+                for story in winners
+            ],
+            "is_tie": len(winners) > 1,
+            "vote_count": int(max_votes),
         }
 
-    max_votes = vote_results[0].vote_count
-    winners = [row.story_id for row in vote_results if row.vote_count == max_votes]
+    stage_1_winners = stage_results["stage_1"]["winning_story_ids"]
+    if stage_1_winners:
+        active_session.continuing_story_id = random.choice(stage_1_winners)
+        active_session.save()
 
-    awarded_users = set()
-                
-    for winning_story in winners:
-        winning_writers = (
-            Story_Part
-            .select(Story_Part.user_id)
-            .where(Story_Part.story_id == winning_story)
-            .distinct()
-        )
-        
-        winning_story.is_winner_cont = True
-        winning_story.save()
-
-        for part in winning_writers:
-            user_id = str(part.user_id.user_id if hasattr(part.user_id, "user_id") else part.user_id)
-
-            if user_id in awarded_users:
-                continue
-
-            awarded_users.add(user_id)
-
-            game_player = Game_Players.get_or_none(
-                (Game_Players.game_id == game) &
-                (Game_Players.user_id == part.user_id)
-            )
-
-            if game_player:
-                game_player.user_score += 1
-                game_player.save()
-                
-    active_session.continuing_story_id = random.choice(winners)
-    active_session.save()
-
-    return {
-        "winning_story_ids": [str(story.story_id if hasattr(story, "story_id") else story) for story in winners],
-        "is_tie": len(winners) > 1,
-        "vote_count": int(max_votes),
-    }
+    return stage_results
         
         
 def finishVotingSession(reason, game_id, socketio):
@@ -123,3 +131,14 @@ def finishVotingSession(reason, game_id, socketio):
     )
 
     return True
+
+def checkStatus(active_session, game):
+    total_votes = Voting.select().where(
+        Voting.voting_session_id == active_session
+    ).count()
+
+    total_players = Game_Players.select().where(
+        Game_Players.game_id == game
+    ).count()
+
+    return total_players > 0 and total_votes >= (total_players * 3) 

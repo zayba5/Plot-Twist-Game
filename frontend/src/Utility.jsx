@@ -25,13 +25,15 @@ export async function fetchScores() {
 }
 
 //post vote for a voting session in a game
-export async function postVote(gameID, storyID) {
-  return apiJson("TestVote", { //<---change this to Vote when stories work properly
+export async function postVote(gameID, storyID1=null, storyID2=null, storyID3=null) {
+  return apiJson("Vote", { 
     method: "POST",
     credentials: "include",
     body: {
       game_id: gameID,
-      story_id: storyID,
+      stage_1: storyID1,
+      stage_2: storyID2,
+      stage_3: storyID3,
     },
   });
 }

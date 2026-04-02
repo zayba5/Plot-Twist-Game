@@ -128,8 +128,7 @@ const ControlBar = ({ selectedStoryId, gameId, submitting, setSubmitting,
 
     try {
       setSubmitting(true);
-      const result = await postVote(gameId, selectedStoryId);
-      console.log("vote submitted:", result);
+      const result = await postVote(gameId, selectedStoryId[0], selectedStoryId[1], selectedStoryId[2]); console.log("vote submitted:", result);
     } catch (error) {
       console.error("Failed to submit vote:", error);
     } finally {
@@ -160,7 +159,7 @@ const Header = ({ handleTimerExpire, time, titles, curPage }) => {
   return (
     <div className="game-window-header">
       <h1>{titles[curPage - 1]}</h1>
-      <Timer durationSec={6000} onExpire={handleTimerExpire} />
+      <Timer durationSec={300} onExpire={handleTimerExpire} />
     </div>
   );
 };
@@ -178,7 +177,6 @@ const VotingPage = () => {
   const finished = useRef(false)
   let prompt1 = "Which story would you like to continue?";
 
-  ///////////////hardcoded beware//////////////////////
   //const gameId = "01731b8d-0f53-42a2-9172-49674c247858";
 
 
@@ -199,7 +197,7 @@ const VotingPage = () => {
       setSubmitting(true);
 
       if (selectedStoryId) {
-        const result = await postVote(gameId, selectedStoryId[0]); //<- change me
+        const result = await postVote(gameId, selectedStoryId[0], selectedStoryId[1], selectedStoryId[2]);
       }
     } catch (error) {
       console.error("postVote failed:", error);
@@ -209,10 +207,10 @@ const VotingPage = () => {
       socket.emit("voting_round_expired", { game_id: gameId })
       if (!votingSession) return;
       if (votingSession.voting_session_number === votingSession.num_voting_sessions) {
-        endRound("timer_expired", "/score")
+        endRound("timer_expired", "/results")
       }
       else {
-        endRound("timer_expired", "/story");
+        endRound("timer_expired", "/results");
       }
     }
   };
@@ -272,10 +270,10 @@ const VotingPage = () => {
       console.log("all votes in:", payload);
       if (!votingSession) return;
       if (votingSession.voting_session_number === votingSession.num_voting_sessions) {
-        endRound("all_votes_in", "/score", payload)
+        endRound("all_votes_in", "/results", payload)
       }
       else {
-        endRound("all_votes_in", "/story", payload)
+        endRound("all_votes_in", "/results", payload)
       }
     }
 

@@ -191,6 +191,7 @@ body {
 }
 #voting-page #story-vote-card-list .selected-card .story-part:nth-of-type(odd)::after {
   border-right: 20px solid rgba(159, 36, 253, 0.25);
+  border-left: none;
 }
 #voting-page #story-vote-card-list .selected-card .story-part::after {
   border-left: 20px solid rgba(159, 36, 253, 0.25);

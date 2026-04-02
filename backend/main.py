@@ -642,21 +642,7 @@ def create_app(test_config: dict | None = None):
     api.add_resource(ScoreEndpoint, "/Scores")
     
 
-    
-###########################################################
-##hardcoded voting test until stories work
-    class TestVotesEndpoint(Resource):
-        def checkStatus(self, active_session, game):
-            total_votes = Voting.select().where(
-                Voting.voting_session_id == active_session
-            ).count()
-
-            total_players = Game_Players.select().where(
-                Game_Players.game_id == game
-            ).count()
-
-            return total_players > 0 and total_votes >= total_players
-            
+    class VoteEndpoint(Resource):    
         def post(self):
             user =require_user()
             data = request.get_json() or {}
@@ -679,11 +665,53 @@ def create_app(test_config: dict | None = None):
             if not active_session:
                 return httpError("no active voting session found", 404)
             
-            ###submit cur vote to db#####
-            ###waiting on stories and games working for this#####
-            ###does not currently happen, currently only checks status of existing votes#####
+            votedStory1 = data.get("stage_1")
+            votedStory2 = data.get("stage_2")
+            votedStory3 = data.get("stage_3")
+            if not votedStory1:
+                print("no story selected for stage 1", flush=True)
+                
+            if not votedStory2:
+                print("no story selected for stage 2", flush=True)
+                
+            if not votedStory3:
+                print("no story selected for stage 3", flush=True)
+            
+            story1 = Story.get_or_none(Story.story_id == uuid.UUID(votedStory1)) if votedStory1 else None
+            story2 = Story.get_or_none(Story.story_id == uuid.UUID(votedStory2)) if votedStory2 else None
+            story3 = Story.get_or_none(Story.story_id == uuid.UUID(votedStory3)) if votedStory3 else None
+            if not story1 and votedStory1:
+                return httpError("story not found", 400)
+            if not story2 and votedStory2:
+                return httpError("story not found", 400)
+            if not story3 and votedStory3:
+                return httpError("story not found", 400)
+            
+            if story1:
+                Voting.create(
+                    voting_session_id=active_session,
+                    story_id=story1,
+                    user_id=user,
+                    voting_stage=1
+                )
+                
+            if story2:
+                Voting.create(
+                    voting_session_id=active_session,
+                    story_id=story2,
+                    user_id=user,
+                    voting_stage=2
+                )
+                
+            if story3:
+                Voting.create(
+                    voting_session_id=active_session,
+                    story_id=story3,
+                    user_id=user,
+                    voting_stage=3
+                )
 
-            all_votes_in = self.checkStatus(active_session, game)
+            all_votes_in = checkStatus(active_session, game)
 
             if all_votes_in:    
                 finishVotingSession("all votes in", game_id, socketio)           
@@ -700,7 +728,7 @@ def create_app(test_config: dict | None = None):
                 "ok": True,
                 "all_votes_in": all_votes_in,
             }
-    api.add_resource(TestVotesEndpoint, "/TestVote")
+    api.add_resource(VoteEndpoint, "/Vote")
     
     class VotingSessionEndpoint(Resource):
         def get(self):
