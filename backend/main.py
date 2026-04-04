@@ -62,7 +62,7 @@ def create_app(test_config: dict | None = None):
 
         game = Game.get_or_none(Game.game_code == game_code.upper())
         if game:
-            join_room(f"game:{game.game_id}")
+            join_room(f"game:{game.game_code}")
             print(f"socket joined room game:{game.game_id}")
 
             #  build player list
@@ -107,14 +107,26 @@ def create_app(test_config: dict | None = None):
         if not game:
             return
 
-        # send event to ALL players in that lobby
+        # get current user
+        user = get_user_from_cookie(signer)
+        if not user:
+            return
+
+        # BLOCK if not host
+        if user.user_id != game.game_host.user_id:
+            print("Non-host tried to start game")
+            return
+
+        print("Host started the game")
+
+        # start game for everyone
         socketio.emit(
             "game_started",
             {
                 "game_id": str(game.game_id)
             },
-            to=f"game:{game.game_id}"  # make sure join_game adds players to this room
-        )     
+            to=f"game:{game.game_code}"
+        )    
         
 
     signer = TimestampSigner(os.getenv("secretKey") or "")
@@ -732,7 +744,7 @@ def create_app(test_config: dict | None = None):
                         "game_id": str(game.game_id),
                         "voting_session_id": str(active_session.voting_session_id),
                     },
-                    to=f"game:{game.game_id}"
+                    to=f"game:{game.game_code}"
                 )
 
             return{
@@ -925,7 +937,7 @@ def create_app(test_config: dict | None = None):
             socketio.emit(
                 "lobby_update",
                 {"game_id": str(game.game_id), "players": players_list},
-                to=f"game:{game.game_id}"
+                to=f"game:{game.game_code}"
             )
 
             # emit system message for chat
@@ -936,7 +948,7 @@ def create_app(test_config: dict | None = None):
                     "username": user.username,
                     "players": players_list  
                 },
-                to=f"game:{game.game_id}"
+                to=f"game:{game.game_code}"
             )
 
             # save game settings
@@ -994,14 +1006,14 @@ def create_app(test_config: dict | None = None):
             socketio.emit(
                 "lobby_update",
                 {"game_id": str(game.game_id), "players": players_list},
-                to=f"game:{game.game_id}"
+                to=f"game:{game.game_code}"
             )
 
             # emit system chat join message
             socketio.emit(
                 "player_joined_message",
                 {"username": user.username},
-                to=f"game:{game.game_id}"
+                to=f"game:{game.game_code}"
             )
 
             return {"ok": True, "game_id": str(game.game_id), "game_code": game.game_code}
@@ -1028,7 +1040,8 @@ def create_app(test_config: dict | None = None):
                 players.append({
                     "user_id": str(p.user_id.user_id),
                     "username": p.user_id.username,
-                    "score": p.user_score
+                    "score": p.user_score,
+                    "isHost": p.user_id.user_id == game.game_host.user_id
                 })
 
             return {"players": players}

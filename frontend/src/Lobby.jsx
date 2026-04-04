@@ -11,11 +11,14 @@ const Lobby = () => {
   const [votingSessions, setVotingSessions] = useState(3);
   const [inviteCode, setInviteCode] = useState('');
   const [joinUsername, setJoinUsername] = useState('');
+  const [currentUserId, setCurrentUserId] = useState(null);
 
   const [isLobbyCreated, setIsLobbyCreated] = useState(false);
   const [gameCode, setGameCode] = useState('');
   const [gameId, setGameId] = useState('');
   const [players, setPlayers] = useState([]);
+
+  const isHost = players.find(p => p.user_id === currentUserId)?.isHost;
 
   const [chatMessage, setChatMessage] = useState('');
   const [messages, setMessages] = useState([
@@ -38,6 +41,7 @@ const Lobby = () => {
         if (data.username) {
           setUsername(data.username);
           setJoinUsername(data.username);
+          setCurrentUserId(data.user_id);
         }
       });
 
@@ -102,7 +106,7 @@ const Lobby = () => {
   }, [socket]);
 
 
-  React.useEffect(() => {
+  /*React.useEffect(() => {
     socket.on("lobby_snapshot", (data) => {
       if (data.players) {
         // update player list UI
@@ -118,7 +122,7 @@ const Lobby = () => {
     });
 
     return () => socket.off("lobby_snapshot");
-  }, []);
+  }, []); */
 
 
   React.useEffect(() => {
@@ -452,8 +456,9 @@ const Lobby = () => {
           type="button"
           className="lobby-footer-btn lobby-btn-play"
           onClick={handleStartGame}
+          disabled={!isHost}
         >
-          Play Game
+          {isHost ? "Play Game" : "Waiting for host..."}
         </button>
       </footer>
     </div>
