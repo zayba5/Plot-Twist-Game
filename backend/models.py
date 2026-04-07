@@ -2,6 +2,7 @@ from peewee import *
 import os
 from dotenv import load_dotenv
 import random
+from datetime import *
 
 ##initialization
 load_dotenv()
@@ -49,7 +50,7 @@ class Game_Players(BaseModel):
 
 class Story(BaseModel):
     story_id = UUIDField(primary_key=True) ##primary key
-    parent_story_id = ForeignKeyField("self", null=True) # for storing the parent id, null if fresh head
+    parent_story = ForeignKeyField("self", null=True) # for storing the parent id, null if fresh head
     game_id = ForeignKeyField(Game, backref="story")
     user_id = ForeignKeyField(User, backref="stories")
     outer_round_number = IntegerField() # stores round of voting (outer loop)
@@ -87,6 +88,7 @@ class Voting(BaseModel):
 
 class Story_Part(BaseModel):
     part_id = UUIDField(primary_key=True)
+    created_at = DateTimeField(default=lambda: datetime.now(timezone.utc))
     part_number = IntegerField()
     part_content = TextField()
     user_id = ForeignKeyField(User, backref="part")
