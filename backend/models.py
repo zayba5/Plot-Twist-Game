@@ -49,8 +49,10 @@ class Game_Players(BaseModel):
 
 class Story(BaseModel):
     story_id = UUIDField(primary_key=True) ##primary key
+    parent_story_id = ForeignKeyField("self", null=True) # for storing the parent id, null if fresh head
     game_id = ForeignKeyField(Game, backref="story")
     user_id = ForeignKeyField(User, backref="stories")
+    outer_round_number = IntegerField() # stores round of voting (outer loop)
     is_winner_cont = BooleanField(default=False)
     is_winner_cat_1 = BooleanField(default=False)
     is_winner_cat_2 = BooleanField(default=False)
@@ -92,21 +94,21 @@ class Story_Part(BaseModel):
 class Story_Assignment(BaseModel):
     assignment_id = UUIDField(primary_key=True)
     game_id = ForeignKeyField(Game, backref="assignments")
-    round_number = IntegerField()
+    inner_round_number = IntegerField()
     user_id = ForeignKeyField(User, backref="assignments")
     story_id = ForeignKeyField(Story, backref="assignments")
     class Meta:
         indexes = (
-            (("game_id", "round_number", "user_id"), True),
+            (("game_id", "inner_round_number", "user_id"), True),
         )
 
 class Round_State(BaseModel):
     round_state_id = UUIDField(primary_key=True)
     game_id = ForeignKeyField(Game, backref="round_states")
-    round_number = IntegerField()
+    inner_round_number = IntegerField()
     assignments_generated = BooleanField(default=False)
 
     class Meta:
         indexes = (
-            (("game_id", "round_number"), True),
+            (("game_id", "inner_round_number"), True),
         )
