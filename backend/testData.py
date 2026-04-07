@@ -79,25 +79,29 @@ def testData():
     story1 = Story.create(
         story_id=uuid.uuid4(),
         game_id=game,
-        user_id=host
+        user_id=host,
+        outer_round_number=1
     )
 
     story2 = Story.create(
         story_id=uuid.uuid4(),
         game_id=game,
-        user_id=user2
+        user_id=user2,
+        outer_round_number=1
     )
     
     story3 = Story.create(
         story_id=uuid.uuid4(),
         game_id=game,
-        user_id=user3
+        user_id=user3,
+        outer_round_number=1
     )
     
     story4 = Story.create(
         story_id=uuid.uuid4(),
         game_id=game,
-        user_id=user4
+        user_id=user4,
+        outer_round_number=1
     )
 
     # story parts
