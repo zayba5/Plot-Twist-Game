@@ -90,6 +90,7 @@ const StorytellingPage = () => {
 
   const [gameId, setGameId] = useState(null);
   const [storyId, setStoryId] = useState(null);
+  const [maxRound, setMaxRound] = useState(-1);
   const [prompt, setPrompt] = useState("");
   const [storyText, setStoryText] = useState("");
 
@@ -118,6 +119,7 @@ const StorytellingPage = () => {
   const debugData = useMemo(() => ({
     gameId,
     storyId,
+    maxRound,
     innerRoundNumber,
     outerRoundNumber,
     userId,
@@ -138,6 +140,7 @@ const StorytellingPage = () => {
   }), [
     gameId,
     storyId,
+    maxRound,
     innerRoundNumber,
     outerRoundNumber,
     userId,
@@ -177,6 +180,7 @@ const StorytellingPage = () => {
         setStoryId(res.story_id);
         setInnerRoundNumber(res.inner_round_number);
         setOuterRoundNumber(res.outer_round_number);
+        setMaxRound(res.max_round)
         setUserId(res.user_id);
 
         if (res.parent_story_last_part) {
@@ -359,7 +363,7 @@ const StorytellingPage = () => {
         <div><label><strong>Status: {status || "no status available"}</strong></label></div>
       </div>
 
-      <Header innerRoundNumber={innerRoundNumber} maxRounds={MAX_ROUNDS} />
+      <Header innerRoundNumber={innerRoundNumber} maxRounds={maxRound} />
       <PromptBox prompt={prompt} />
       <TimerBar timeLeft={timeLeft} />
       <StoryInput

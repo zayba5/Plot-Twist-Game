@@ -317,7 +317,6 @@ def create_app(test_config: dict | None = None):
             try:
                 # 1) Resolve game
                 game = None
-
                 if requested_game_id:
                     game = Game.get_or_none(Game.game_id == requested_game_id)
                     if not game:
@@ -333,6 +332,14 @@ def create_app(test_config: dict | None = None):
                         "ok": False,
                         "error": "no active game found"
                     }, 404
+                
+                # 1-2) resolve max round from game settings
+                game_setting = Game_Settings.get_or_none(Game_Settings.game_id == game)
+
+                if not game_setting:
+                    print("No Game Setting found for" + game)
+                else:
+                    max_round = game_setting.num_rounds
 
                 # 2) Find latest voting session for this game
                 latest_session = (
@@ -394,6 +401,7 @@ def create_app(test_config: dict | None = None):
                         "user_id": str(g.user),
                         "outer_round_number": outer_round_number,
                         "inner_round_number": int(1),
+                        "max_round": max_round,
                         "parent_story_id": str(existing_story.parent_story.story_id) if existing_story.parent_story else None,
                         "parent_story_last_part": parent_story_last_part
                     }, 200
@@ -428,6 +436,7 @@ def create_app(test_config: dict | None = None):
                     "user_id": str(g.user),
                     "outer_round_number": outer_round_number,
                     "inner_round_number": int(1),
+                    "max_round": max_round,
                     "parent_story_id": str(parent_story.story_id) if parent_story else None,
                     "parent_story_last_part": parent_story_last_part
                 }, 201
