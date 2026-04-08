@@ -108,6 +108,7 @@ class Story_Assignment(BaseModel):
 class Round_State(BaseModel):
     round_state_id = UUIDField(primary_key=True)
     game_id = ForeignKeyField(Game, backref="round_states")
+    outer_round_number = IntegerField()
     inner_round_number = IntegerField()
     assignments_generated = BooleanField(default=False)
 
