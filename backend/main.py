@@ -119,6 +119,10 @@ def create_app(test_config: dict | None = None):
 
         print("Host started the game")
 
+        active_status = Status.get(Status.status_type == "ACTIVE")
+        game.game_status = active_status
+        game.save()
+
         # start game for everyone
         socketio.emit(
             "game_started",
