@@ -25,13 +25,14 @@ def httpError(reason, code):
 def generate_game_code(length=6):
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
-def generate_assignments_for_round(game, round_number):
-    previous_round = round_number - 1
+def generate_assignments_for_round(game, outer_round_number, inner_round_number):
+    previous_round = inner_round_number - 1
 
     prev_assignments = list(
         Story_Assignment.select().where(
             (Story_Assignment.game_id == game) &
-            (Story_Assignment.round_number == previous_round)
+            (Story_Assignment.outer_round_number == outer_round_number) &
+            (Story_Assignment.inner_round_number == previous_round)
         ).order_by(Story_Assignment.user_id)
     )
 
@@ -47,7 +48,8 @@ def generate_assignments_for_round(game, round_number):
         Story_Assignment.create(
             assignment_id=uuid.uuid4(),
             game_id=game,
-            round_number=round_number,
+            outer_round_number=outer_round_number,
+            inner_round_number=inner_round_number,
             user_id=user,
             story_id=story
         )

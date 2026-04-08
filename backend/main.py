@@ -258,10 +258,6 @@ def create_app(test_config: dict | None = None):
 
     api.add_resource(SampleEndpoint, "/Sample")
 
-##start with arbitrary game for now
-##once story telling is implemented switch to active game
-##easier for now since i can't create story in browser
-##to test replace the game id with one in your DB
     class WhoAmIEndpoint(Resource): #expose uder Id w/o reading cookie directly
         def get(self):
             user = require_user()
@@ -316,63 +312,132 @@ def create_app(test_config: dict | None = None):
                 }, 401
 
             body = request.get_json(silent=True) or {}
-            
-            game_id = body.get("game_id")
-
-            if not game_id:
-                return {
-                    "ok": False,
-                    "error": "game_id is required"
-                }, 400
+            requested_game_id = body.get("game_id")
 
             try:
-                game = Game.get(Game.game_id == game_id)
-                existing_story = (
-                    Story
+                # 1) Resolve game
+                game = None
+
+                if requested_game_id:
+                    game = Game.get_or_none(Game.game_id == requested_game_id)
+                    if not game:
+                        return {
+                            "ok": False,
+                            "error": "game not found"
+                        }, 404
+                else:
+                    game = get_active_game_from_user(g.user)
+
+                if not game:
+                    return {
+                        "ok": False,
+                        "error": "no active game found"
+                    }, 404
+
+                # 2) Find latest voting session for this game
+                latest_session = (
+                    Voting_Session
                     .select()
+                    .where(Voting_Session.game_id == game)
+                    .order_by(Voting_Session.voting_session_number.desc())
+                    .first()
+                )
+
+                # 3) Determine current storytelling round + parent story
+                # Outer Round 1: no parent story, representing current outer round
+                # Later rounds: parent is previous session's continuing_story
+                outer_round_number = 1
+                parent_story = None
+
+                if latest_session:
+                    outer_round_number = latest_session.voting_session_number + 1
+                    parent_story = latest_session.continuing_story
+
+                # 4) Check whether this user already has a story assignment for this round
+                existing_assignment = (
+                    Story_Assignment
+                    .select(Story_Assignment, Story)
+                    .join(Story, on=(Story_Assignment.story_id == Story.story_id))
                     .where(
-                        (Story.game_id == game) &
-                        (Story.user_id == g.user)
+                        (Story_Assignment.game_id == game) &
+                        (Story_Assignment.user_id == g.user) &
+                        (Story_Assignment.inner_round_number == 1) & #inner round should be always 1 when story is created
+                        (Story_Assignment.outer_round_number == outer_round_number) 
                     )
                     .first()
                 )
 
-                if existing_story:
-                    return {
-                        "ok": False,
-                        "error": "story already exists for this user in this game",
-                        "story_id": str(existing_story.story_id),
-                        "game_id": str(game.game_id),
-                        "user_id": str(g.user)
-                    }, 409
+                # Helper: fetch last part of parent story, if any
+                def get_parent_story_last_part_content(parent):
+                    if not parent:
+                        return None
 
+                    last_part = (
+                        Story_Part
+                        .select()
+                        .where(Story_Part.story_id == parent)
+                        .order_by(Story_Part.created_at.desc())
+                        .first()
+                    )
+                    return last_part.part_content if last_part else None
+
+                if existing_assignment:
+                    existing_story = existing_assignment.story_id
+                    parent_story_last_part = get_parent_story_last_part_content(existing_story.parent_story)
+
+                    return {
+                        "ok": True,
+                        "created": False,
+                        "story_id": str(existing_story.story_id),
+                        "assignment_id": str(existing_assignment.assignment_id),
+                        "game_id": str(game.game_id),
+                        "user_id": str(g.user),
+                        "outer_round_number": outer_round_number,
+                        "inner_round_number": int(1),
+                        "parent_story_id": str(existing_story.parent_story.story_id) if existing_story.parent_story else None,
+                        "parent_story_last_part": parent_story_last_part
+                    }, 200
+
+                # 5) Create new story for this round, if no parent
                 story = Story.create(
                     story_id=uuid.uuid4(),
+                    parent_story=parent_story,
                     game_id=game,
-                    user_id=g.user
+                    user_id=g.user,
+                    outer_round_number=outer_round_number
                 )
 
-                #make entry into story assignment
                 assignment = Story_Assignment.create(
                     assignment_id=uuid.uuid4(),
                     game_id=game,
-                    round_number=1,
+                    inner_round_number=1, #first assigned is always 1
+                    outer_round_number=outer_round_number,
                     user_id=g.user,
-                    story_id=story.story_id,                    
+                    story_id=story #assign self to the newly created story
                 )
+
+                #this might return None
+                parent_story_last_part = get_parent_story_last_part_content(parent_story)
 
                 return {
                     "ok": True,
+                    "created": True,
                     "story_id": str(story.story_id),
+                    "assignment_id": str(assignment.assignment_id),
                     "game_id": str(game.game_id),
-                    "user_id": str(g.user)
+                    "user_id": str(g.user),
+                    "outer_round_number": outer_round_number,
+                    "inner_round_number": int(1),
+                    "parent_story_id": str(parent_story.story_id) if parent_story else None,
+                    "parent_story_last_part": parent_story_last_part
                 }, 201
 
-            except Game.DoesNotExist:
+            except Exception as e:
                 return {
                     "ok": False,
-                    "error": "game not found"
-                }, 404
+                    "error": f"unexpected error: {str(e)}"
+                }, 500
+
     api.add_resource(CreateStoryEndpoint, "/CreateStory")
 
     class NextStoryPartEndpoint(Resource):

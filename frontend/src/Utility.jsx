@@ -45,21 +45,12 @@ export async function fetchVotingSession(gameID){
   })
 }
 
-export async function fetchInitialPrompt(gameID, roundNumber) {
-  console.log("CreateStory endpoint called")
-  const response = await apiJson("CreateStory", {
+export async function fetchCurrentStory(gameID = null) {
+  return await apiJson("CreateStory", {
     method: "POST",
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: {
-      game_id: gameID,
-      round_number: roundNumber,
-    },
+    body: gameID ? { game_id: gameID } : {},
   });
-
-  return response;
 }
 
 export async function postStory(gameID, roundNumber, content) {

@@ -96,6 +96,7 @@ class Story_Part(BaseModel):
 class Story_Assignment(BaseModel):
     assignment_id = UUIDField(primary_key=True)
     game_id = ForeignKeyField(Game, backref="assignments")
+    outer_round_number = IntegerField()
     inner_round_number = IntegerField()
     user_id = ForeignKeyField(User, backref="assignments")
     story_id = ForeignKeyField(Story, backref="assignments")
