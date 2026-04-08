@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import "./index.css";
-import { fetchItem } from "./Utility.jsx";
 import { fetchCurrentStory, fetchUserId, fetchPollReady, fetchNextStoryPart } from "./Utility";
 import { postStory } from "./Utility.jsx";
 import { socket } from "./global.jsx";
@@ -9,14 +8,13 @@ import DebugPanel from "./DebugPanel.jsx";
 
 // Hardcode game settings
 const ROUND_TIME_SECONDS = 60000; // on deployment change it to 60
-const MAX_ROUNDS = 3;
 
 // UI
-const Header = ({ roundNumber, maxRounds }) => {
+const Header = ({ innerRoundNumber, maxRounds }) => {
   return (
     <div className="game-window-header">
       <h1>Write your story</h1>
-      <p>Round {roundNumber} / {maxRounds}</p>
+      <p>Round {innerRoundNumber} / {maxRounds}</p>
     </div>
   );
 };
@@ -221,13 +219,12 @@ const StorytellingPage = () => {
 
   //sets and shows UserId on page
   useEffect(() => {
+    if (!gameId) return;
     if (hasClaimedRef.current) return;
-    hasClaimedRef.current = true;
 
-    console.log("joining game:", gameId);
+    hasClaimedRef.current = true;
     socket.emit("join_game", { game_id: gameId });
     fetchUserId().then(setUserId);
-
   }, [gameId]);
 
   // frontend polling to check if other players are ready, interval: 2 s
@@ -245,7 +242,8 @@ const StorytellingPage = () => {
       try {
         const data = await fetchPollReady(
           gameIdRef.current,
-          roundRef.current
+          outerRoundRef.current,
+          innerRoundRef.current
         );
 
         if (cancelled) return;
@@ -255,6 +253,7 @@ const StorytellingPage = () => {
           setSubmitted(false);
           setIsPolling(false); // stops the polling
           setFetchNext(true); // trigger the next fetch
+          setTimeLeft(ROUND_TIME_SECONDS); // reset the timer
           return;
         }
 
@@ -284,30 +283,33 @@ const StorytellingPage = () => {
     if (!fetchNext) return; //guarding
     const newPrompt = async () => {
       try {
-        const res = await fetchNextStoryPart(gameId, roundNumber);
+        const res = await fetchNextStoryPart(gameId, outerRoundNumber, innerRoundNumber);
 
         if (!res.ok) {
           throw new Error(res.error || "Something went wrong");
         }
 
-        if (res.status === "voting") {
+        if (res.status === "voting") { // at this point we already created an entry in voting
           setStoryText("");
           setFetchNext(false);
 
-          // create an entry in voting
+          
           navigate("/vote");
           return;
         }
 
         if (res.status === "ready") {
           setPrompt(res.prompt);
-          setRoundNumber(res.round_number);
+          setInnerRoundNumber(res.inner_round_number);
           setStoryText("");
           setFetchNext(false);
         }
 
       } catch (err) {
-        console.error(`Error fetching prompt after sending round ${roundRef}:`, err);
+        console.error(
+          `Error fetching prompt after sending outer ${outerRoundNumber}, inner ${innerRoundNumber}:`,
+          err
+        );
         console.error(err.message || "Failed to load subsequent prompt");
       }
     }
@@ -333,8 +335,8 @@ const StorytellingPage = () => {
       setSubmitting(true);
 
       const normStorytext = storyText?.trim() || "someone forgot to type!";
-      console.log(`sending to backend: gameId: ${gameId}, roundNumber: ${roundNumber}, normStorytext: ${normStorytext}`);
-      const result = await postStory(gameId, roundNumber, normStorytext);
+      console.log(`sending to backend: gameId: ${gameId}, innerRoundNumber: ${innerRoundNumber}, normStorytext: ${normStorytext}`);
+      const result = await postStory(gameId, outerRoundNumber, innerRoundNumber, normStorytext);
 
       console.log(isAutoSubmit ? "auto-submitted:" : "manual-submitted:", result);
 

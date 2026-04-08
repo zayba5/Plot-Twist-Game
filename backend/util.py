@@ -53,7 +53,30 @@ def generate_assignments_for_round(game, outer_round_number, inner_round_number)
             user_id=user,
             story_id=story
         )
-        
+def build_flattened_parts(story):
+    lineage = []
+    current = story
+
+    while current is not None:
+        lineage.append(current)
+        current = current.parent_story
+
+    lineage.reverse()
+
+    all_parts = []
+    for node in lineage:
+        for part in node.part.order_by(Story_Part.part_number):
+            all_parts.append({
+                "story_id": str(node.story_id),
+                "part_id": str(part.part_id),
+                "part_content": str(part.part_content),
+                "part_number": int(part.part_number),
+                "username": part.user_id.username,
+                "outer_round_number": node.outer_round_number,
+            })
+
+    return all_parts
+       
 def get_user_from_cookie(signer):
     token = request.cookies.get("uid")
     if not token:

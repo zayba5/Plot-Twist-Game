@@ -102,7 +102,7 @@ class Story_Assignment(BaseModel):
     story_id = ForeignKeyField(Story, backref="assignments")
     class Meta:
         indexes = (
-            (("game_id", "inner_round_number", "user_id"), True),
+            (("game_id", "outer_round_number", "inner_round_number", "user_id"), True),
         )
 
 class Round_State(BaseModel):
@@ -114,5 +114,5 @@ class Round_State(BaseModel):
 
     class Meta:
         indexes = (
-            (("game_id", "inner_round_number"), True),
+            (("game_id", "outer_round_number", "inner_round_number"), True),
         )
