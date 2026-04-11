@@ -73,9 +73,13 @@ class Voting_Session(BaseModel):
     cat_1 = ForeignKeyField(Voting_Category, backref="session")
     cat_2 = ForeignKeyField(Voting_Category, backref="session")
     timer_ends_at = DateTimeField(null=True)
+    class Meta:
+        indexes = (
+            (('game_id', 'voting_session_number'), True),
+        )
     
     
-    
+    (game_id, voting_session_number)
 class Voting(BaseModel):
     user_id = ForeignKeyField(App_User, backref="vote")
     story_id = ForeignKeyField(Story, backref="vote")
