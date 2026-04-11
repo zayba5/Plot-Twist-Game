@@ -258,10 +258,6 @@ def create_app(test_config: dict | None = None):
 
     api.add_resource(SampleEndpoint, "/Sample")
 
-##start with arbitrary game for now
-##once story telling is implemented switch to active game
-##easier for now since i can't create story in browser
-##to test replace the game id with one in your DB
     class WhoAmIEndpoint(Resource): #expose uder Id w/o reading cookie directly
         def get(self):
             user = require_user()
@@ -281,26 +277,35 @@ def create_app(test_config: dict | None = None):
 
     # the new endpoint for getting all stories
     class GetAllStoryEndpoint(Resource):
-        ##get the stories and their parts for a given game
         def get(self):
-            user = require_user()
+            require_user()
+
             game_id = request.args.get("game_id")
-            game = Game.get(Game.game_id == uuid.UUID(game_id))
+            if not game_id:
+                return {"ok": False, "error": "game_id is required"}, 400
+
+            try:
+                game_uuid = uuid.UUID(str(game_id))
+            except (ValueError, TypeError):
+                return {"ok": False, "error": "invalid game_id"}, 400
+
+            game = Game.get_or_none(Game.game_id == game_uuid)
+            if not game:
+                return {"ok": False, "error": "game not found"}, 404
+
             stories = []
-            for story in game.story:
-                parts = []
-                for part in story.part:
-                    parts.append({
-                        "part_id" : str(part.part_id),
-                        "part_content" : str(part.part_content),
-                        "part_number" : int(part.part_number),
-                        "username" : part.user_id.username
-                    })
+            for story in Story.select().where(Story.game_id == game):
                 stories.append({
-                    "story_id" : str(story.story_id),
-                    "story_parts" : parts
+                    "story_id": str(story.story_id),
+                    "story_parts": build_flattened_parts(story),
                 })
-            return jsonify({"stories" : stories})
+
+            return jsonify({
+                "ok": True,
+                "game_id": str(game.game_id),
+                "stories": stories
+            })
+
     api.add_resource(GetAllStoryEndpoint, "/GetAllStory")
   
     #story creation
@@ -316,63 +321,141 @@ def create_app(test_config: dict | None = None):
                 }, 401
 
             body = request.get_json(silent=True) or {}
-            
-            game_id = body.get("game_id")
-
-            if not game_id:
-                return {
-                    "ok": False,
-                    "error": "game_id is required"
-                }, 400
+            requested_game_id = body.get("game_id")
 
             try:
-                game = Game.get(Game.game_id == game_id)
-                existing_story = (
-                    Story
+                # 1) Resolve game
+                game = None
+                if requested_game_id:
+                    game = Game.get_or_none(Game.game_id == requested_game_id)
+                    if not game:
+                        return {
+                            "ok": False,
+                            "error": "game not found"
+                        }, 404
+                else:
+                    game = get_active_game_from_user(g.user)
+
+                if not game:
+                    return {
+                        "ok": False,
+                        "error": "no active game found"
+                    }, 404
+                
+                # 1-2) resolve max round from game settings
+                game_setting = Game_Settings.get_or_none(Game_Settings.game_id == game)
+
+                if not game_setting:
+                    return {"ok": False, "error": "game settings not found"}, 404
+                else:
+                    max_round = game_setting.num_rounds
+
+                # 2) Find latest voting session for this game
+                latest_session = (
+                    Voting_Session
                     .select()
+                    .where(Voting_Session.game_id == game)
+                    .order_by(Voting_Session.voting_session_number.desc())
+                    .first()
+                )
+
+                # 3) Determine current storytelling round + parent story
+                # Outer Round 1: no parent story, representing current outer round
+                # Later rounds: parent is previous session's continuing_story
+                outer_round_number = 1
+                parent_story = None
+
+                if latest_session:
+                    outer_round_number = latest_session.voting_session_number + 1
+                    parent_story = latest_session.continuing_story
+
+                # 4) Check whether this user already has a story assignment for this round
+                existing_assignment = (
+                    Story_Assignment
+                    .select(Story_Assignment, Story)
+                    .join(Story, on=(Story_Assignment.story_id == Story.story_id))
                     .where(
-                        (Story.game_id == game) &
-                        (Story.user_id == g.user)
+                        (Story_Assignment.game_id == game) &
+                        (Story_Assignment.user_id == g.user) &
+                        (Story_Assignment.inner_round_number == 1) & #inner round should be always 1 when story is created
+                        (Story_Assignment.outer_round_number == outer_round_number) 
                     )
                     .first()
                 )
 
-                if existing_story:
-                    return {
-                        "ok": False,
-                        "error": "story already exists for this user in this game",
-                        "story_id": str(existing_story.story_id),
-                        "game_id": str(game.game_id),
-                        "user_id": str(g.user)
-                    }, 409
+                # Helper: fetch last part of parent story, if any
+                def get_parent_story_last_part_content(parent):
+                    if not parent:
+                        return None
 
+                    last_part = (
+                        Story_Part
+                        .select()
+                        .where(Story_Part.story_id == parent)
+                        .order_by(Story_Part.created_at.desc())
+                        .first()
+                    )
+                    return last_part.part_content if last_part else None
+
+                if existing_assignment:
+                    existing_story = existing_assignment.story_id
+                    parent_story_last_part = get_parent_story_last_part_content(existing_story.parent_story)
+
+                    return {
+                        "ok": True,
+                        "created": False,
+                        "story_id": str(existing_story.story_id),
+                        "assignment_id": str(existing_assignment.assignment_id),
+                        "game_id": str(game.game_id),
+                        "user_id": str(g.user),
+                        "outer_round_number": outer_round_number,
+                        "inner_round_number": int(1),
+                        "max_round": max_round,
+                        "parent_story_id": str(existing_story.parent_story.story_id) if existing_story.parent_story else None,
+                        "parent_story_last_part": parent_story_last_part
+                    }, 200
+
+                # 5) Create new story for this round, if no parent
                 story = Story.create(
                     story_id=uuid.uuid4(),
+                    parent_story=parent_story,
                     game_id=game,
-                    user_id=g.user
+                    user_id=g.user,
+                    outer_round_number=outer_round_number
                 )
 
-                #make entry into story assignment
                 assignment = Story_Assignment.create(
                     assignment_id=uuid.uuid4(),
                     game_id=game,
-                    round_number=1,
+                    inner_round_number=1, #first assigned is always 1
+                    outer_round_number=outer_round_number,
                     user_id=g.user,
-                    story_id=story.story_id,                    
+                    story_id=story #assign self to the newly created story
                 )
+
+                #this might return None
+                parent_story_last_part = get_parent_story_last_part_content(parent_story)
 
                 return {
                     "ok": True,
+                    "created": True,
                     "story_id": str(story.story_id),
+                    "assignment_id": str(assignment.assignment_id),
                     "game_id": str(game.game_id),
-                    "user_id": str(g.user)
+                    "user_id": str(g.user),
+                    "outer_round_number": outer_round_number,
+                    "inner_round_number": int(1),
+                    "max_round": max_round,
+                    "parent_story_id": str(parent_story.story_id) if parent_story else None,
+                    "parent_story_last_part": parent_story_last_part
                 }, 201
 
-            except Game.DoesNotExist:
+            except Exception as e:
                 return {
                     "ok": False,
-                    "error": "game not found"
-                }, 404
+                    "error": f"unexpected error: {str(e)}"
+                }, 500
+
     api.add_resource(CreateStoryEndpoint, "/CreateStory")
 
     class NextStoryPartEndpoint(Resource):
@@ -381,35 +464,52 @@ def create_app(test_config: dict | None = None):
 
             if not getattr(g, "user", None):
                 return {"ok": False, "error": "unauthorized"}, 401
-            #hard coded
-            MAX_ROUNDS = 3 
+                         
             game_id = request.args.get("game_id")
-            round_number = request.args.get("round_number")
+            outer_round_number = request.args.get("outer_round_number")
+            inner_round_number = request.args.get("inner_round_number")
 
-            if not game_id or round_number is None:
-                return {"ok": False, "error": "game_id and round_number are required"}, 400
-
-            try:
+           
+            if not game_id:
+                return {"ok": False, "error": "game_id is required"}, 400
+            elif outer_round_number is None:
+                return {"ok": False, "error": "outer_round_number is required"}, 400
+            elif inner_round_number is None:
+                return {"ok": False, "error": "inner_round_number is required"}, 400
+            
+            try: # input validation
                 game_uuid = uuid.UUID(str(game_id))
-                round_number = int(round_number)
+                inner_round_number = int(inner_round_number)
+                outer_round_number = int(outer_round_number)
             except (ValueError, TypeError):
                 return {"ok": False, "error": "invalid input"}, 400
 
+            # resolve game
             game = Game.get_or_none(Game.game_id == game_uuid)
             if not game:
-                return {"ok": False, "error": "game not found"}, 404
+                return {"ok": False, "error": "game not found"}, 404     
+              
+            game_setting = Game_Settings.get_or_none(Game_Settings.game_id == game)
 
+            if not game_setting:
+                return {"ok": False, "error": "game settings not found"}, 404
+            else:
+                max_round = game_setting.num_rounds
+            
             total_assignments = Story_Assignment.select().where(
                 (Story_Assignment.game_id == game) &
-                (Story_Assignment.round_number == round_number)
+                (Story_Assignment.outer_round_number == outer_round_number) &
+                (Story_Assignment.inner_round_number == inner_round_number)
+
             ).count()
 
             submitted_count = Story_Part.select().where(
-                (Story_Part.part_number == round_number) &
+                (Story_Part.part_number == inner_round_number) &
                 (Story_Part.story_id.in_(
                     Story_Assignment.select(Story_Assignment.story_id).where(
                         (Story_Assignment.game_id == game) &
-                        (Story_Assignment.round_number == round_number)
+                        (Story_Assignment.outer_round_number == outer_round_number) &
+                        (Story_Assignment.inner_round_number == inner_round_number)
                     )
                 ))
             ).count()
@@ -426,13 +526,14 @@ def create_app(test_config: dict | None = None):
                 }, 200
 
             # create an entry in voting session if none is active
-            if round_number >= MAX_ROUNDS:
+            if inner_round_number >= max_round:
                 #check if an active session for this game exists
                 active_session = getActiveVotingSession(game)
 
                 if not active_session:
-                    # get ACTIVE status
+                    # get ACTIVE & FINISHED status
                     active_status = Status.get(Status.status_type == "ACTIVE")
+                    finished_status = Status.get(Status.status_type == "FINISHED")
 
                     # figure out next voting session number
                     last_session = (
@@ -441,27 +542,27 @@ def create_app(test_config: dict | None = None):
                         .order_by(Voting_Session.voting_session_number.desc())
                         .first()
                     )
+                    if last_session is not None: # change the status of last voting session to FINISHED
+                        last_session.voting_session_status = finished_status
+                        last_session.save()
 
                     next_number = 1 if not last_session else last_session.voting_session_number + 1
 
-                    # pick categories (temporary hardcode is fine)
-                    cat_1 = Voting_Category.get_or_none(Voting_Category.tag == "cat1")  # adjust
-                    cat_2 = Voting_Category.get_or_none(Voting_Category.tag == "cat2")  # adjust
+                    # pick categories
+                    categories = list(Voting_Category.select().limit(2))
 
-                    # fallback if categories missing
-                    if not cat_1 or not cat_2:
-                        cat_1 = Voting_Category.select().first()
-                        cat_2 = Voting_Category.select().offset(1).first()
-                        
-                    settings = Game_Settings.get_or_none(Game_Settings.game_id == game)
+                    # error if categories missing
+                    if len(categories) < 2:
+                        return {"ok": False, "error": "not enough voting categories configured"}, 500
 
-                    if not settings:
-                        return None
+                    cat_1, cat_2 = categories
+                    # if not cat_1 or not cat_2:
+                    #     cat_1 = Voting_Category.select().first()
+                    #     cat_2 = Voting_Category.select().offset(1).first()
 
                     now = datetime.now(timezone.utc)
-                    end_time = now + timedelta(seconds=settings.vote_timer)
+                    end_time = now + timedelta(seconds=game_setting.vote_timer)
                     
-
                     # create voting session
                     active_session = Voting_Session.create(
                         voting_session_id=uuid.uuid4(),
@@ -478,18 +579,18 @@ def create_app(test_config: dict | None = None):
                 return {
                     "ok": True,
                     "status": "voting",
-                    "round_number": round_number,
+                    "inner_round_number": inner_round_number,
                     "game_id": str(game.game_id),
                     "voting_session_id": str(active_session.voting_session_id),
                     "voting_session_number": active_session.voting_session_number,
                 }, 200
 
-            next_round = round_number + 1
-
+            next_inner_round = inner_round_number + 1
             with db.atomic():
                 round_state, created = Round_State.get_or_create(
                     game_id=game,
-                    round_number=next_round,
+                    outer_round_number=outer_round_number,
+                    inner_round_number=next_inner_round,
                     defaults={
                         "round_state_id": uuid.uuid4(),
                         "assignments_generated": False,
@@ -497,13 +598,14 @@ def create_app(test_config: dict | None = None):
                 )
 
                 if not round_state.assignments_generated:
-                    generate_assignments_for_round(game, next_round)
+                    generate_assignments_for_round(game, outer_round_number, next_inner_round)
                     round_state.assignments_generated = True
                     round_state.save()
 
             assignment = Story_Assignment.get_or_none(
                 (Story_Assignment.game_id == game) &
-                (Story_Assignment.round_number == next_round) &
+                (Story_Assignment.outer_round_number == outer_round_number) &
+                (Story_Assignment.inner_round_number == next_inner_round) &
                 (Story_Assignment.user_id == g.user)
             )
 
@@ -521,7 +623,7 @@ def create_app(test_config: dict | None = None):
             return {
                 "ok": True,
                 "status": "ready",
-                "round_number": next_round,
+                "inner_round_number": next_inner_round,
                 "story_id": str(assignment.story_id.story_id),
                 "prompt": last_part.part_content if last_part else "No prompt available.",
             }, 200
@@ -536,20 +638,21 @@ def create_app(test_config: dict | None = None):
             data = request.get_json() or {}
 
             game_id = data.get("game_id")
-            round_number = data.get("round_number")
+            outer_round_number = data.get("outer_round_number")
+            inner_round_number = data.get("inner_round_number")
             content = data.get("content")
 
-            if not game_id or round_number is None or content is None or not str(content).strip():
-                return {"ok": False, "error": "game_id, round_number, and content are required"}, 400
+            if not game_id or outer_round_number is None or inner_round_number is None or content is None or not str(content).strip():
+                return {"ok": False, "error": "game_id, outer_round_number, inner_round_number, and content are required"}, 400
 
             try:
                 game_uuid = uuid.UUID(str(game_id))
-                round_number = int(round_number)
+                inner_round_number = int(inner_round_number)
             except (ValueError, TypeError):
                 return {"ok": False, "error": "invalid input"}, 400
 
-            if round_number < 1:
-                return {"ok": False, "error": "round_number must be >= 1"}, 400
+            if inner_round_number < 1:
+                return {"ok": False, "error": "inner_round_number must be >= 1"}, 400
 
             #core logic, check what story is assigned to the user, if any
             game = Game.get_or_none(Game.game_id == game_uuid)
@@ -558,7 +661,8 @@ def create_app(test_config: dict | None = None):
             
             assignment = Story_Assignment.get_or_none(
                 (Story_Assignment.game_id == game) &
-                (Story_Assignment.round_number == round_number) &
+                (Story_Assignment.outer_round_number == outer_round_number) &
+                (Story_Assignment.inner_round_number == inner_round_number) &
                 (Story_Assignment.user_id == g.user)
             )
             
@@ -570,7 +674,7 @@ def create_app(test_config: dict | None = None):
             # check for duplicated submission
             existing = Story_Part.get_or_none(
                 (Story_Part.story_id == story) &
-                (Story_Part.part_number == round_number) &
+                (Story_Part.part_number == inner_round_number) &
                 (Story_Part.user_id == g.user)
             )
             if existing:
@@ -578,7 +682,7 @@ def create_app(test_config: dict | None = None):
 
             story_part = Story_Part.create(
                 part_id=uuid.uuid4(),
-                part_number=round_number,
+                part_number=inner_round_number,
                 part_content=str(content).strip(),
                 user_id=g.user,
                 story_id=story
@@ -593,18 +697,40 @@ def create_app(test_config: dict | None = None):
 
     class PollReadyEndpoint(Resource):
         def get(self):
-            game_id = request.args.get("game_id")
-            round_number = request.args.get("round_number")
+            require_user()
 
-            if not game_id or round_number is None:
+            if not getattr(g, "user", None):
                 return {
                     "ok": False,
-                    "error": "game_id and round_number are required"
+                    "error": "unauthorized"
+                }, 401
+
+            game_id = request.args.get("game_id")
+            outer_round_number = request.args.get("outer_round_number")
+            inner_round_number = request.args.get("inner_round_number")
+
+            if not game_id:
+                return {
+                    "ok": False,
+                    "error": "game_id is required"
+                }, 400
+
+            if outer_round_number is None:
+                return {
+                    "ok": False,
+                    "error": "outer_round_number is required"
+                }, 400
+
+            if inner_round_number is None:
+                return {
+                    "ok": False,
+                    "error": "inner_round_number is required"
                 }, 400
 
             try:
                 game_uuid = uuid.UUID(str(game_id))
-                round_number = int(round_number)
+                outer_round_number = int(outer_round_number)
+                inner_round_number = int(inner_round_number)
             except (ValueError, TypeError):
                 return {
                     "ok": False,
@@ -618,12 +744,13 @@ def create_app(test_config: dict | None = None):
                     "error": "game not found"
                 }, 404
 
-            assignments = Story_Assignment.select().where(
+            assignments_query = Story_Assignment.select().where(
                 (Story_Assignment.game_id == game) &
-                (Story_Assignment.round_number == round_number)
+                (Story_Assignment.outer_round_number == outer_round_number) &
+                (Story_Assignment.inner_round_number == inner_round_number)
             )
 
-            total_assignments = assignments.count()
+            total_assignments = assignments_query.count()
 
             if total_assignments == 0:
                 return {
@@ -631,14 +758,15 @@ def create_app(test_config: dict | None = None):
                     "error": "no assignments found for this round"
                 }, 404
 
+            assigned_story_ids = Story_Assignment.select(Story_Assignment.story_id).where(
+                (Story_Assignment.game_id == game) &
+                (Story_Assignment.outer_round_number == outer_round_number) &
+                (Story_Assignment.inner_round_number == inner_round_number)
+            )
+
             submitted_count = Story_Part.select().where(
-                Story_Part.part_number == round_number,
-                Story_Part.story_id.in_(
-                    Story_Assignment.select(Story_Assignment.story_id).where(
-                        (Story_Assignment.game_id == game) &
-                        (Story_Assignment.round_number == round_number)
-                    )
-                )
+                (Story_Part.part_number == inner_round_number) &
+                (Story_Part.story_id.in_(assigned_story_ids))
             ).count()
 
             ready = submitted_count >= total_assignments
@@ -646,11 +774,13 @@ def create_app(test_config: dict | None = None):
             return {
                 "ok": True,
                 "game_id": str(game.game_id),
-                "round_number": round_number,
+                "outer_round_number": outer_round_number,
+                "inner_round_number": inner_round_number,
                 "submitted": submitted_count,
                 "total": total_assignments,
                 "status": "ready" if ready else "waiting"
             }, 200
+
     api.add_resource(PollReadyEndpoint, "/PollReady")
 
     class ScoreEndpoint(Resource):

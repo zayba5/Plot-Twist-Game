@@ -45,31 +45,23 @@ export async function fetchVotingSession(gameID){
   })
 }
 
-export async function fetchInitialPrompt(gameID, roundNumber) {
-  console.log("CreateStory endpoint called")
-  const response = await apiJson("CreateStory", {
+export async function fetchCurrentStory(gameID = null) {
+  return await apiJson("CreateStory", {
     method: "POST",
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: {
-      game_id: gameID,
-      round_number: roundNumber,
-    },
+    body: gameID ? { game_id: gameID } : {},
   });
-
-  return response;
 }
 
-export async function postStory(gameID, roundNumber, content) {
+export async function postStory(gameID, outerRoundNumber, innerRoundNumber, content) {
   console.log("stroy POST endpoint called")
   return apiJson("StorySubmission", {
     method: "POST",
     credentials: "include",
     body: {
       game_id: gameID,
-      round_number: roundNumber,
+      outer_round_number: outerRoundNumber,
+      inner_round_number: innerRoundNumber,
       content: content?.trim(),
     },
   });
@@ -85,10 +77,11 @@ export async function fetchUserId() {
   return data.user_id;
 }
 
-export async function fetchPollReady(gameId, roundNumber) {
+export async function fetchPollReady(gameId, outerRoundNumber, innerRoundNumber) {
   const params = new URLSearchParams({
     game_id: String(gameId),
-    round_number: String(roundNumber),
+    outer_round_number: String(outerRoundNumber),
+    inner_round_number: String(innerRoundNumber),
   });
 
   return apiJson(`PollReady?${params.toString()}`, {
@@ -97,10 +90,11 @@ export async function fetchPollReady(gameId, roundNumber) {
   });
 }
 
-export async function fetchNextStoryPart(gameId, roundNumber) {
+export async function fetchNextStoryPart(gameId, outerRoundNumber, innerRoundNumber) {
   const params = new URLSearchParams({
     game_id: String(gameId),
-    round_number: String(roundNumber),
+    outer_round_number: String(outerRoundNumber),
+    inner_round_number: String(innerRoundNumber),
   });
 
   return apiJson(`NextStoryPart?${params.toString()}`, {

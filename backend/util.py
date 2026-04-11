@@ -25,13 +25,14 @@ def httpError(reason, code):
 def generate_game_code(length=6):
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
-def generate_assignments_for_round(game, round_number):
-    previous_round = round_number - 1
+def generate_assignments_for_round(game, outer_round_number, inner_round_number):
+    previous_round = inner_round_number - 1
 
     prev_assignments = list(
         Story_Assignment.select().where(
             (Story_Assignment.game_id == game) &
-            (Story_Assignment.round_number == previous_round)
+            (Story_Assignment.outer_round_number == outer_round_number) &
+            (Story_Assignment.inner_round_number == previous_round)
         ).order_by(Story_Assignment.user_id)
     )
 
@@ -47,11 +48,40 @@ def generate_assignments_for_round(game, round_number):
         Story_Assignment.create(
             assignment_id=uuid.uuid4(),
             game_id=game,
-            round_number=round_number,
+            outer_round_number=outer_round_number,
+            inner_round_number=inner_round_number,
             user_id=user,
             story_id=story
         )
-        
+def build_flattened_parts(story):
+    lineage = []
+    current = story
+
+    while current is not None:
+        lineage.append(current)
+        current = current.parent_story
+
+    lineage.reverse()  # oldest ancestor first
+
+    flattened_parts = []
+    for node in lineage:
+        parts = (
+            Story_Part
+            .select()
+            .where(Story_Part.story_id == node)
+            .order_by(Story_Part.part_number.asc(), Story_Part.created_at.asc())
+        )
+
+        for part in parts:
+            flattened_parts.append({
+                "part_id": str(part.part_id),
+                "part_content": str(part.part_content),
+                "part_number": int(part.part_number),
+                "username": part.user_id.username,
+            })
+
+    return flattened_parts
+       
 def get_user_from_cookie(signer):
     token = request.cookies.get("uid")
     if not token:

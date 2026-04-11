@@ -13,7 +13,7 @@ def get_players_for_game(game):
     raise NotImplementedError("Implement player lookup for this game")
 
 
-def all_players_submitted(game, round_number, players):
+def all_players_submitted(game, inner_round_number, players):
     submitted_user_ids = set(
         part.user_id.user_id
         for part in (
@@ -22,7 +22,7 @@ def all_players_submitted(game, round_number, players):
             .join(Story)
             .where(
                 (Story.game_id == game) &
-                (Story_Part.part_number == round_number)
+                (Story_Part.part_number == inner_round_number)
             )
         )
     )
@@ -60,14 +60,14 @@ def build_non_self_assignment(players, stories):
 
     raise ValueError("Could not build a valid non-self assignment")
 
-def save_assignments(game, round_number, assignment_map):
+def save_assignments(game, inner_round_number, assignment_map):
     from models import StoryAssignment
 
     for user_id, story in assignment_map.items():
         StoryAssignment.create(
             assignment_id=uuid.uuid4(),
             game_id=game,
-            round_number=round_number,
+            inner_round_number=inner_round_number,
             user_id=user_id,
             story_id=story
         )
