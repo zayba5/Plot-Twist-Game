@@ -122,3 +122,10 @@ def get_active_game_from_user(user):
         )
 
     return game
+
+def get_player_count(game):
+    if not game:
+        return 0
+    return Game_Players.select().where(
+        Game_Players.game_id == game
+    ).count()

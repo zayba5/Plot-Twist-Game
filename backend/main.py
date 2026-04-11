@@ -34,6 +34,8 @@ DEFAULT_NAMES = [
     "PanicButton"
 ]
 
+results_ready = {}
+
 
         
 
@@ -177,7 +179,88 @@ def create_app(test_config: dict | None = None):
             return
         
         print("raw game_id:", repr(game.game_id), flush=True)
-        emit("results_shown", {"game_id": str(game.game_id)})     
+        emit("results_shown", {"game_id": str(game.game_id)})    
+        
+    @socketio.on("results_continue")
+    def handle_results_continue(data):
+        user = get_user_from_cookie(signer)
+        if not user:
+            return
+
+        game_id = data.get("game_id")
+        if not game_id:
+            return
+
+        try:
+            game_uuid = uuid.UUID(str(game_id))
+        except ValueError:
+            return
+
+        game = Game.get_or_none(Game.game_id == game_uuid)
+        if not game:
+            return
+
+        game_key = str(game.game_id)
+
+        if game_key not in results_ready:
+            results_ready[game_key] = set()
+
+        results_ready[game_key].add(str(user.user_id))
+
+        ready_count = len(results_ready[game_key])
+        total_players = game.player.count()
+
+        socketio.emit(
+            "results_ready_update",
+            {
+                "game_id": game_key,
+                "ready_count": ready_count,
+                "total_players": total_players,
+            },
+            to=f"game:{game.game_id}"
+        )
+
+        if ready_count >= total_players:
+            final_path = "/score" if isFinalSession(getLastVotingSession(game)) else "/story"
+
+            socketio.emit(
+                "results_continue_all",
+                {
+                    "game_id": game_key,
+                    "path": final_path,
+                },
+                to=f"game:{game.game_id}"
+            )
+
+            results_ready.pop(game_key, None) 
+            
+        @socketio.on("get_results_ready_status")
+        def handle_get_results_ready_status(data):
+            game_id = data.get("game_id")
+            if not game_id:
+                return
+
+            try:
+                game_uuid = uuid.UUID(str(game_id))
+            except ValueError:
+                return
+
+            game = Game.get_or_none(Game.game_id == game_uuid)
+            if not game:
+                return
+
+            game_key = str(game.game_id)
+            ready_count = len(results_ready.get(game_key, set()))
+            total_players = game.player.count()
+
+            emit(
+                "results_ready_update",
+                {
+                    "game_id": game_key,
+                    "ready_count": ready_count,
+                    "total_players": total_players,
+                }
+            )
 
 
     API_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -1043,7 +1126,8 @@ def create_app(test_config: dict | None = None):
                 "num_voting_sessions" : settings.num_votes,
                 "cat_1" : session.cat_1.tag,
                 "cat_2" : session.cat_2.tag,
-                "winners": winners
+                "winners": winners,
+                "total_players": get_player_count(game) 
             }, 200
             
             
