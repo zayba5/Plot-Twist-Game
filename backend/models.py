@@ -79,7 +79,6 @@ class Voting_Session(BaseModel):
         )
     
     
-    (game_id, voting_session_number)
 class Voting(BaseModel):
     user_id = ForeignKeyField(App_User, backref="vote")
     story_id = ForeignKeyField(Story, backref="vote")
