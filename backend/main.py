@@ -330,9 +330,16 @@ def create_app(test_config: dict | None = None):
             game = Game.get_or_none(Game.game_id == game_uuid)
             if not game:
                 return {"ok": False, "error": "game not found"}, 404
+            
+            curOuterRound = (
+                Story
+                .select(fn.MAX(Story.outer_round_number).alias("max_outer_round"))
+                .where(Story.game_id == game)
+                .scalar()
+            )
 
             stories = []
-            for story in Story.select().where(Story.game_id == game):
+            for story in Story.select().where((Story.game_id == game) & (Story.outer_round_number == curOuterRound)):
                 stories.append({
                     "story_id": str(story.story_id),
                     "story_parts": build_flattened_parts(story),
