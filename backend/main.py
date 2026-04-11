@@ -293,39 +293,11 @@ def create_app(test_config: dict | None = None):
             if not game:
                 return {"ok": False, "error": "game not found"}, 404
 
-            def build_story_chain(story):
-                chain = []
-                current = story
-
-                while current is not None:
-                    parts = []
-                    for part in current.part.order_by(Story_Part.part_number):
-                        parts.append({
-                            "part_id": str(part.part_id),
-                            "part_content": str(part.part_content),
-                            "part_number": int(part.part_number),
-                            "username": part.user_id.username,
-                        })
-
-                    chain.append({
-                        "story_id": str(current.story_id),
-                        "outer_round_number": current.outer_round_number,
-                        "is_winner_cont": current.is_winner_cont,
-                        "is_winner_cat_1": current.is_winner_cat_1,
-                        "is_winner_cat_2": current.is_winner_cat_2,
-                        "story_parts": parts,
-                    })
-
-                    current = current.parent_story
-
-                chain.reverse()  # oldest ancestor first
-                return chain
-
             stories = []
-            for story in game.story:
+            for story in Story.select().where(Story.game_id == game):
                 stories.append({
                     "story_id": str(story.story_id),
-                    "full_story_parts": build_flattened_parts(story),
+                    "story_parts": build_flattened_parts(story),
                 })
 
             return jsonify({

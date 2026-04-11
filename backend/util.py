@@ -61,21 +61,26 @@ def build_flattened_parts(story):
         lineage.append(current)
         current = current.parent_story
 
-    lineage.reverse()
+    lineage.reverse()  # oldest ancestor first
 
-    all_parts = []
+    flattened_parts = []
     for node in lineage:
-        for part in node.part.order_by(Story_Part.part_number):
-            all_parts.append({
-                "story_id": str(node.story_id),
+        parts = (
+            Story_Part
+            .select()
+            .where(Story_Part.story_id == node)
+            .order_by(Story_Part.part_number.asc(), Story_Part.created_at.asc())
+        )
+
+        for part in parts:
+            flattened_parts.append({
                 "part_id": str(part.part_id),
                 "part_content": str(part.part_content),
                 "part_number": int(part.part_number),
                 "username": part.user_id.username,
-                "outer_round_number": node.outer_round_number,
             })
 
-    return all_parts
+    return flattened_parts
        
 def get_user_from_cookie(signer):
     token = request.cookies.get("uid")
