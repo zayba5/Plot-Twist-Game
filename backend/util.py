@@ -94,7 +94,7 @@ def get_user_from_cookie(signer):
             raw_user_id = raw_user_id.decode("utf-8")
 
         user_id = uuid.UUID(str(raw_user_id))
-        return User.get_or_none(User.user_id == user_id)
+        return App_User.get_or_none(App_User.user_id == user_id)
 
     except (BadSignature, SignatureExpired, ValueError):
         return None
