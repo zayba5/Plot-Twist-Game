@@ -59,9 +59,9 @@ const SignUpPage = () => {
       return;
     }
 
-      console.log("User created:", result)
+      console.log("User created:", result);
       
-      navigate("/lobby") // replace with login once available
+      navigate("/login");
     } catch (error) {
       console.error("Failed to create user:", error);
     } finally {
