@@ -112,6 +112,11 @@ body {
   background-color: #a778a7;
 }
 
+.button:disabled {
+  background-color: gray;
+  cursor: not-allowed;
+}
+
 .clickable {
   cursor: pointer;
 }

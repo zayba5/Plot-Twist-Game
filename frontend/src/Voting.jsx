@@ -122,13 +122,20 @@ const StoryCardList = ({ selectedStoryId, setSelectedStoryId, curPage, gameId })
 };
 
 const ControlBar = ({ selectedStoryId, gameId, submitting, setSubmitting,
-  curPage, setCurPage, visitedPages, setVisitedPages }) => {
+  curPage, setCurPage, visitedPages, setVisitedPages, hasSubmittedVote, setHasSubmittedVote }) => {
   const handleVoteClick = async () => {
-    if (!selectedStoryId || submitting) return;
+    if (submitting || hasSubmittedVote || selectedStoryId.some((id) => !id)) return;
 
     try {
       setSubmitting(true);
-      const result = await postVote(gameId, selectedStoryId[0], selectedStoryId[1], selectedStoryId[2]); console.log("vote submitted:", result);
+      const result = await postVote(
+        gameId,
+        selectedStoryId[0],
+        selectedStoryId[1],
+        selectedStoryId[2]
+      );
+      setHasSubmittedVote(true);
+      console.log("vote submitted:", result);
     } catch (error) {
       console.error("Failed to submit vote:", error);
     } finally {
@@ -145,7 +152,7 @@ const ControlBar = ({ selectedStoryId, gameId, submitting, setSubmitting,
         className="button clickable"
         id="vote-button"
         onClick={handleVoteClick}
-        disabled={!selectedStoryId || submitting}
+        disabled={selectedStoryId.some((id) => !id) || submitting || hasSubmittedVote}
       >
         {submitting ? "Voting..." : "Vote"}
       </button>
@@ -174,6 +181,7 @@ const VotingPage = () => {
   const [visitedPages, setVisitedPages] = useState([1])
   const [gameId, setGameId] = useState(null);
   const [endTimeMs, setEndTimeMs] = useState(null);
+  const [hasSubmittedVote, setHasSubmittedVote] = useState(false);
 
   const finished = useRef(false)
   let prompt1 = "Which story would you like to continue?";
@@ -197,8 +205,11 @@ const VotingPage = () => {
     try {
       setSubmitting(true);
 
-      if (selectedStoryId) {
-        const result = await postVote(gameId, selectedStoryId[0], selectedStoryId[1], selectedStoryId[2]);
+      const hasAnyVote = selectedStoryId.some((id) => id);
+
+      if (hasAnyVote && !hasSubmittedVote) {
+        await postVote(gameId, selectedStoryId[0], selectedStoryId[1], selectedStoryId[2]);
+        setHasSubmittedVote(true);
       }
     } catch (error) {
       console.error("postVote failed:", error);
@@ -324,6 +335,8 @@ const VotingPage = () => {
         setCurPage={setCurPage}
         visitedPages={visitedPages}
         setVisitedPages={setVisitedPages}
+        hasSubmittedVote={hasSubmittedVote}
+        setHasSubmittedVote={setHasSubmittedVote}
       />
     </div>
   );

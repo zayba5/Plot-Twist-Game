@@ -1,4 +1,4 @@
-from models import Voting, Voting_Session, Game_Players, Status, Story_Part, Game, Story
+from models import Game_Players, Voting, Voting_Session,Game_Settings, Game_Players, Status, Story_Part, Game, Story
 import uuid
 from peewee import fn
 import random
@@ -12,6 +12,12 @@ def getActiveVotingSession(game):
             )
         .get_or_none()
             )
+    
+def isFinalSession(voting_session):
+    total_sessions = Game_Settings.get(
+        Game_Settings.game_id == voting_session.game_id
+    ).num_votes
+    return voting_session.voting_session_number >= total_sessions
 
 def calcVotes(game, active_session):
     stage_results = {}
@@ -84,7 +90,7 @@ def calcVotes(game, active_session):
         ).where(
             Voting_Session.voting_session_id == active_session.voting_session_id
         ).execute()
-
+                
     return stage_results
         
         
@@ -138,6 +144,7 @@ def finishVotingSession(reason, game_id, socketio):
 
     return True
 
+##checks if all votes are in for the active_session
 def checkStatus(active_session, game):
     total_votes = Voting.select().where(
         Voting.voting_session_id == active_session

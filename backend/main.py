@@ -845,6 +845,18 @@ def create_app(test_config: dict | None = None):
                 return httpError("game does not exist", 404)
 
             active_session = getActiveVotingSession(game)
+            
+            already_voted = Voting.select().where(
+                (Voting.voting_session_id == active_session) &
+                (Voting.user_id == user)
+            ).exists()
+
+            if already_voted:
+                return {
+                    "ok": True,
+                    "all_votes_in": checkStatus(active_session, game),
+                    "duplicate": True
+                }, 200
 
             if not active_session:
                 return httpError("no active voting session found", 404)
@@ -981,6 +993,14 @@ def create_app(test_config: dict | None = None):
                 return httpError("settings not found", 404)
 
             session = getLastVotingSession(game)
+                        
+            isFinal = isFinalSession(session)
+            if isFinal:
+                finished_status = Status.get(Status.status_type == "FINISHED")
+
+                Game.update(game_status=finished_status).where(
+                    Game.game_id == game.game_id
+                ).execute()
 
             if not session:
                 return {"ok": True, "active": False}, 200
