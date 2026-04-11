@@ -111,7 +111,7 @@ def finishVotingSession(reason, game_id, socketio):
             (Voting_Session.voting_session_id == active_session.voting_session_id) &
             (Voting_Session.voting_session_status == active_status)
         )
-        ##.execute() <--------------------commented out for testing, add back later
+        .execute() 
     )
 
     if rows_updated == 0:

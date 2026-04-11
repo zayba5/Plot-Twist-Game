@@ -916,7 +916,7 @@ def create_app(test_config: dict | None = None):
                         "game_id": str(game.game_id),
                         "voting_session_id": str(active_session.voting_session_id),
                     },
-                    to=f"game:{game.game_code}"
+                    to=f"game:{game.game_id}"
                 )
 
             return{
