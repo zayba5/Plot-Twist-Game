@@ -1,7 +1,7 @@
 import random
 import uuid
 
-from models import Game, Story, Story_Part, User
+from models import Game, Story, Story_Part, App_User
 from models import Story_Assignment
 
 

@@ -201,7 +201,7 @@ def create_app(test_config: dict | None = None):
                 raw_user_id = raw_user_id.decode("utf8")
 
             user_id = uuid.UUID(str(raw_user_id))
-            g.user = User.get_or_none(User.user_id == user_id)
+            g.user = App_User.get_or_none(App_User.user_id == user_id)
             print("loaded user:", g.user, flush=True)
 
         except (BadSignature, SignatureExpired, ValueError) as e:
@@ -1007,7 +1007,7 @@ def create_app(test_config: dict | None = None):
                     "username": g.user.username 
                 }, 200
 
-            user = User.create(
+            user = App_User.create(
                 user_id=uuid.uuid4(),
                 username=username
             )
@@ -1187,13 +1187,13 @@ def create_app(test_config: dict | None = None):
             password = data.get("password").encode("utf-8")
             password_hash = bcrypt.hashpw(password, bcrypt.gensalt())
 
-            if (User.get_or_none(User.username == username)):
+            if (App_User.get_or_none(App_User.username == username)):
                 return {
                     "ok": False,
                     "error": "username_taken"
                 }
 
-            user = User.create(
+            user = App_User.create(
                 user_id=uuid.uuid4(),
                 username=username,
                 password_hash=password_hash

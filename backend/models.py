@@ -20,7 +20,7 @@ class Status(BaseModel):
     status_type = CharField(max_length=20)
     
     
-class User(BaseModel):
+class App_User(BaseModel):
     user_id = UUIDField(primary_key=True) ##primary key  
     username = CharField(max_length=50)
     password_hash = BlobField(null=True)
@@ -28,7 +28,7 @@ class User(BaseModel):
 class Game(BaseModel):
     game_id = UUIDField(primary_key=True) ##primary key
     game_status = ForeignKeyField(Status, backref="game") ##refers to status type 
-    game_host = ForeignKeyField(User, backref="host-game")
+    game_host = ForeignKeyField(App_User, backref="host-game")
     game_code = CharField(max_length=6, unique=True) ##edit
     
 
@@ -42,7 +42,7 @@ class Game_Settings(BaseModel):
     
 class Game_Players(BaseModel):
     game_id = ForeignKeyField(Game, backref="player")
-    user_id = ForeignKeyField(User, backref="player")
+    user_id = ForeignKeyField(App_User, backref="player")
     user_score = IntegerField(default=0)
     
     class Meta:
@@ -52,7 +52,7 @@ class Story(BaseModel):
     story_id = UUIDField(primary_key=True) ##primary key
     parent_story = ForeignKeyField("self", null=True) # for storing the parent id, null if fresh head
     game_id = ForeignKeyField(Game, backref="story")
-    user_id = ForeignKeyField(User, backref="stories")
+    user_id = ForeignKeyField(App_User, backref="stories")
     outer_round_number = IntegerField() # stores round of voting (outer loop)
     is_winner_cont = BooleanField(default=False)
     is_winner_cat_1 = BooleanField(default=False)
@@ -77,7 +77,7 @@ class Voting_Session(BaseModel):
     
     
 class Voting(BaseModel):
-    user_id = ForeignKeyField(User, backref="vote")
+    user_id = ForeignKeyField(App_User, backref="vote")
     story_id = ForeignKeyField(Story, backref="vote")
     voting_session_id = ForeignKeyField(Voting_Session, backref="story")
     voting_stage = IntegerField()
@@ -91,14 +91,14 @@ class Story_Part(BaseModel):
     created_at = DateTimeField(default=lambda: datetime.now(timezone.utc))
     part_number = IntegerField()
     part_content = TextField()
-    user_id = ForeignKeyField(User, backref="part")
+    user_id = ForeignKeyField(App_User, backref="part")
     story_id = ForeignKeyField(Story, backref="part")
 class Story_Assignment(BaseModel):
     assignment_id = UUIDField(primary_key=True)
     game_id = ForeignKeyField(Game, backref="assignments")
     outer_round_number = IntegerField()
     inner_round_number = IntegerField()
-    user_id = ForeignKeyField(User, backref="assignments")
+    user_id = ForeignKeyField(App_User, backref="assignments")
     story_id = ForeignKeyField(Story, backref="assignments")
     class Meta:
         indexes = (
