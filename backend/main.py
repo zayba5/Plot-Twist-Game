@@ -9,7 +9,7 @@ from itsdangerous import TimestampSigner
 from functools import wraps
 import uuid
 from flask_socketio import SocketIO, emit, join_room
-from peewee import fn
+from peewee import fn, IntegrityError
 import random
 import string
 from shuffle_story import assign_next_round_if_ready
@@ -313,7 +313,7 @@ def create_app(test_config: dict | None = None):
     
     api.add_resource(LoginEndpoint, "/login")
 
-    # the new endpoint for getting all stories
+    # endpoint for getting all stories
     class GetAllStoryEndpoint(Resource):
         def get(self):
             require_user()
@@ -558,56 +558,51 @@ def create_app(test_config: dict | None = None):
                 }, 200
 
             # create an entry in voting session if none is active
-            if inner_round_number >= max_round:
-                #check if an active session for this game exists
-                active_session = getActiveVotingSession(game)
+            if inner_round_number == max_round:
+                active_status = Status.get(Status.status_type == "ACTIVE")
 
-                if not active_session:
-                    # get ACTIVE & FINISHED status
-                    active_status = Status.get(Status.status_type == "ACTIVE")
-                    finished_status = Status.get(Status.status_type == "FINISHED")
+                categories = list(Voting_Category.select().limit(2))
+                if len(categories) < 2:
+                    return {"ok": False, "error": "not enough voting categories configured"}, 500
 
-                    # figure out next voting session number
-                    last_session = (
-                        Voting_Session.select()
-                        .where(Voting_Session.game_id == game)
-                        .order_by(Voting_Session.voting_session_number.desc())
-                        .first()
-                    )
-                    if last_session is not None: # change the status of last voting session to FINISHED
-                        last_session.voting_session_status = finished_status
-                        last_session.save()
+                cat_1, cat_2 = categories
+                now = datetime.now(timezone.utc)
+                end_time = now + timedelta(seconds=game_setting.vote_timer)
 
-                    next_number = 1 if not last_session else last_session.voting_session_number + 1
+                with db.atomic():
+                    active_session = getActiveVotingSession(game)
+                    if not active_session:
+                        last_session = (
+                            Voting_Session.select()
+                            .where(Voting_Session.game_id == game)
+                            .order_by(Voting_Session.voting_session_number.desc())
+                            .first()
+                        )
+                        next_number = 1 if not last_session else last_session.voting_session_number + 1
 
-                    # pick categories
-                    categories = list(Voting_Category.select().limit(2))
+                        try:
+                            active_session = Voting_Session.create(
+                                voting_session_id=uuid.uuid4(),
+                                game_id=game,
+                                voting_session_number=next_number,
+                                voting_session_status=active_status,
+                                continuing_story=None,
+                                cat_1=cat_1,
+                                cat_2=cat_2,
+                                timer_ends_at=end_time
+                            )
+                        except IntegrityError:
+                            active_session = (
+                                Voting_Session
+                                .select()
+                                .where(
+                                    (Voting_Session.game_id == game) &
+                                    (Voting_Session.voting_session_number == next_number)
+                                )
+                                .get()
+                            )
 
-                    # error if categories missing
-                    if len(categories) < 2:
-                        return {"ok": False, "error": "not enough voting categories configured"}, 500
-
-                    cat_1, cat_2 = categories
-                    # if not cat_1 or not cat_2:
-                    #     cat_1 = Voting_Category.select().first()
-                    #     cat_2 = Voting_Category.select().offset(1).first()
-
-                    now = datetime.now(timezone.utc)
-                    end_time = now + timedelta(seconds=game_setting.vote_timer)
-                    
-                    # create voting session
-                    active_session = Voting_Session.create(
-                        voting_session_id=uuid.uuid4(),
-                        game_id=game,
-                        voting_session_number=next_number,
-                        voting_session_status=active_status,
-                        continuing_story=None,
-                        cat_1=cat_1,
-                        cat_2=cat_2,
-                        timer_ends_at=end_time
-                    )
-
-                    print(f"Created voting session {active_session.voting_session_id}", flush=True)
+                print(f"Using voting session {active_session.voting_session_id}", flush=True)
                 return {
                     "ok": True,
                     "status": "voting",
