@@ -36,10 +36,10 @@ def testData():
     
 
     # users
-    host = User.create(user_id=uuid.uuid4(), username="Player 1")
-    user2 = User.create(user_id=uuid.uuid4(), username="Player 2" )
-    user3 = User.create(user_id=uuid.uuid4(), username="Player 3")
-    user4 = User.create(user_id=uuid.uuid4(), username="Player 4")
+    host = App_User.create(user_id=uuid.uuid4(), username="Player 1")
+    user2 = App_User.create(user_id=uuid.uuid4(), username="Player 2" )
+    user3 = App_User.create(user_id=uuid.uuid4(), username="Player 3")
+    user4 = App_User.create(user_id=uuid.uuid4(), username="Player 4")
 
     # game
     game = Game.create(

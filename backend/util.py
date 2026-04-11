@@ -22,6 +22,12 @@ def httpError(reason, code):
         "error": reason
         }), code
 
+def hash_password(password: str) -> bytes:
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+
+def check_password(password: str, password_hash: bytes) -> bool:
+    return bcrypt.checkpw(password.encode('utf-8'), password_hash)
+
 def generate_game_code(length=6):
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
@@ -94,7 +100,7 @@ def get_user_from_cookie(signer):
             raw_user_id = raw_user_id.decode("utf-8")
 
         user_id = uuid.UUID(str(raw_user_id))
-        return User.get_or_none(User.user_id == user_id)
+        return App_User.get_or_none(App_User.user_id == user_id)
 
     except (BadSignature, SignatureExpired, ValueError):
         return None

@@ -113,6 +113,27 @@ export async function postUser(username, password) {
   });
 }
 
+export const loginUser = async (username, password) => {
+  const response = await fetch(`${api}/login`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      username,
+      password,
+    }),
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.error || "Login failed");
+  }
+
+  return result;
+};
+
 export async function fetchResults(gameID) {
   return apiJson(`Results?game_id=${gameID}`, {
     method: "GET",

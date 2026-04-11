@@ -5,6 +5,7 @@ import { faBars } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import SignUpPage from "./SignUp";
 
+const LoginPage = lazy(() => import("./Login"));
 const LobbyPage = lazy(() => import("./Lobby"));
 const StoryPage = lazy(() => import("./StoryTelling"));
 const VotingPage = lazy(() => import("./Voting"));
@@ -19,7 +20,8 @@ function NavItem({ menuOpen, closeMenu }) {
     { name: "Voting", key: 3, route: "vote" },
     { name: "Scoreboard", key: 4, route: "score" },
     { name: "Sign Up", key: 5, route: "signup" },
-    {name: "Results", key: 6, route: "results"}
+    { name: "Log In", key: 6, route: "login" },
+    {name: "Results", key: 7, route: "results"}
   ];
 
   const navItems = items.map((item) => (
@@ -89,6 +91,7 @@ function PageState() {
             <Route path="/vote" element={<VotingPage />} />
             <Route path="/score" element={<ScorePage />} />
             <Route path="/signup" element={<SignUpPage />} />
+            <Route path="/login" element={<LoginPage />} />
             <Route path="/results" element={<ResultsPage/>}/>
             <Route path="*" element={<NotFound />} />
           </Routes>

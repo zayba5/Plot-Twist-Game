@@ -201,7 +201,7 @@ def create_app(test_config: dict | None = None):
                 raw_user_id = raw_user_id.decode("utf8")
 
             user_id = uuid.UUID(str(raw_user_id))
-            g.user = User.get_or_none(User.user_id == user_id)
+            g.user = App_User.get_or_none(App_User.user_id == user_id)
             print("loaded user:", g.user, flush=True)
 
         except (BadSignature, SignatureExpired, ValueError) as e:
@@ -274,6 +274,44 @@ def create_app(test_config: dict | None = None):
                 "user_id": str(g.user)
             }, 200
     api.add_resource(WhoAmIEndpoint, "/WhoAmI")
+
+    class LoginEndpoint(Resource):
+        def post(self):
+            data = request.get_json()
+
+            username = data.get("username")
+            password = data.get("password")
+
+            # Basic validation
+            if not username or not password:
+                return jsonify({"error": "missing_fields"})
+
+            try:
+                user = App_User.get_or_none(App_User.username == username)
+                stored_hash = bytes(user.password_hash)
+
+                # Invalid username
+                if not user:
+                    return {"error": "invalid_credentials"}, 401
+
+                # Check password
+                if not bcrypt.checkpw(password.encode("utf-8"), stored_hash):
+                    return {"error": "invalid_credentials"}, 401
+
+                # Success login
+                return {
+                    "message": "login_success",
+                    "user": {
+                        "user_id": str(user.user_id),
+                        "username": user.username
+                    }
+                }, 200
+
+            except Exception as e:
+                print("Login error:", e)
+                return {"error": "server_error"}, 500
+    
+    api.add_resource(LoginEndpoint, "/login")
 
     # the new endpoint for getting all stories
     class GetAllStoryEndpoint(Resource):
@@ -1007,7 +1045,7 @@ def create_app(test_config: dict | None = None):
                     "username": g.user.username 
                 }, 200
 
-            user = User.create(
+            user = App_User.create(
                 user_id=uuid.uuid4(),
                 username=username
             )
@@ -1187,13 +1225,13 @@ def create_app(test_config: dict | None = None):
             password = data.get("password").encode("utf-8")
             password_hash = bcrypt.hashpw(password, bcrypt.gensalt())
 
-            if (User.get_or_none(User.username == username)):
+            if (App_User.get_or_none(App_User.username == username)):
                 return {
                     "ok": False,
                     "error": "username_taken"
                 }
 
-            user = User.create(
+            user = App_User.create(
                 user_id=uuid.uuid4(),
                 username=username,
                 password_hash=password_hash
