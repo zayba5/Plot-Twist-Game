@@ -389,13 +389,7 @@ def create_app(test_config: dict | None = None):
                     max_round = game_setting.num_rounds
 
                 # 2) Find latest voting session for this game
-                latest_session = (
-                    Voting_Session
-                    .select()
-                    .where(Voting_Session.game_id == game)
-                    .order_by(Voting_Session.voting_session_number.desc())
-                    .first()
-                )
+                latest_session = getLastVotingSession(game)
 
                 # 3) Determine current storytelling round + parent story
                 # Outer Round 1: no parent story, representing current outer round
@@ -950,7 +944,9 @@ def create_app(test_config: dict | None = None):
             session = getActiveVotingSession(game)
 
             if not session:
-                return {"ok": True, "active": False}, 200
+                session = getLastVotingSession(game)
+                if not session:
+                    return {"ok": True, "active": False}, 200
 
             return {
                 "ok": True,
@@ -989,7 +985,7 @@ def create_app(test_config: dict | None = None):
             if not settings:
                 return httpError("settings not found", 404)
 
-            session = getActiveVotingSession(game)
+            session = getLastVotingSession(game)
 
             if not session:
                 return {"ok": True, "active": False}, 200

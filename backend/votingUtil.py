@@ -79,8 +79,11 @@ def calcVotes(game, active_session):
 
     stage_1_winners = stage_results["stage_1"]["winning_story_ids"]
     if stage_1_winners:
-        active_session.continuing_story_id = random.choice(stage_1_winners)
-        active_session.save()
+        Voting_Session.update(
+            continuing_story=random.choice(stage_1_winners)
+        ).where(
+            Voting_Session.voting_session_id == active_session.voting_session_id
+        ).execute()
 
     return stage_results
         
@@ -113,6 +116,9 @@ def finishVotingSession(reason, game_id, socketio):
         )
         .execute() 
     )
+    
+    print(f"Rows updated for voting session {active_session.voting_session_id}: {rows_updated}", flush=True)
+    print(f"voting session status after update: {Voting_Session.get(Voting_Session.voting_session_id == active_session.voting_session_id).voting_session_status}", flush=True)
 
     if rows_updated == 0:
         print(f"another request already finished game {game_id}", flush=True)
@@ -142,3 +148,12 @@ def checkStatus(active_session, game):
     ).count()
 
     return total_players > 0 and total_votes >= (total_players * 3) 
+
+def getLastVotingSession(game):
+    return (
+        Voting_Session
+            .select()
+            .where(Voting_Session.game_id == game)
+            .order_by(Voting_Session.voting_session_number.desc())
+            .first()
+        )
