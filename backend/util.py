@@ -22,6 +22,12 @@ def httpError(reason, code):
         "error": reason
         }), code
 
+def hash_password(password: str) -> bytes:
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+
+def check_password(password: str, password_hash: bytes) -> bool:
+    return bcrypt.checkpw(password.encode('utf-8'), password_hash)
+
 def generate_game_code(length=6):
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
 

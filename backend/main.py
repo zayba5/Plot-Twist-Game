@@ -275,6 +275,44 @@ def create_app(test_config: dict | None = None):
             }, 200
     api.add_resource(WhoAmIEndpoint, "/WhoAmI")
 
+    class LoginEndpoint(Resource):
+        def post(self):
+            data = request.get_json()
+
+            username = data.get("username")
+            password = data.get("password")
+
+            # Basic validation
+            if not username or not password:
+                return jsonify({"error": "missing_fields"})
+
+            try:
+                user = App_User.get_or_none(App_User.username == username)
+                stored_hash = bytes(user.password_hash)
+
+                # Invalid username
+                if not user:
+                    return {"error": "invalid_credentials"}, 401
+
+                # Check password
+                if not bcrypt.checkpw(password.encode("utf-8"), stored_hash):
+                    return {"error": "invalid_credentials"}, 401
+
+                # Success login
+                return {
+                    "message": "login_success",
+                    "user": {
+                        "user_id": str(user.user_id),
+                        "username": user.username
+                    }
+                }, 200
+
+            except Exception as e:
+                print("Login error:", e)
+                return {"error": "server_error"}, 500
+    
+    api.add_resource(LoginEndpoint, "/login")
+
     # the new endpoint for getting all stories
     class GetAllStoryEndpoint(Resource):
         def get(self):
