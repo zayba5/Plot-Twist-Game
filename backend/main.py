@@ -136,6 +136,28 @@ def create_app(test_config: dict | None = None):
         
 
     signer = TimestampSigner(os.getenv("secretKey") or "")
+
+    @socketio.on("show_scoreboard")
+    def handle_show_scoreboard(data=None):
+        print("show_scoreboard received:", data, flush=True)
+
+        user = get_user_from_cookie(signer)
+        print("resolved user:", user, flush=True)
+
+        if not user:
+            print("no valid user", flush=True)
+            return
+
+        game = get_active_game_from_user(user)
+
+        print("resolved game:", game, flush=True)
+
+        if not game:
+            print("no active game found", flush=True)
+            return
+        
+        print("raw game_id:", repr(game.game_id), flush=True)
+        emit("scoreboard_shown", {"game_id": str(game.game_id)})   
             
     @socketio.on("begin_voting")
     def handle_begin_voting(data=None):
@@ -902,9 +924,26 @@ def create_app(test_config: dict | None = None):
 
     class ScoreEndpoint(Resource):
         def get(self):
-            user = require_user()
-            game_id = "01731b8d-0f53-42a2-9172-49674c247858"
-            game = Game.get(Game.game_id == uuid.UUID(game_id))
+            require_user()
+
+            game_id = request.args.get("game_id")
+            if not game_id:
+                return {"ok": False, "error": "game_id is required"}, 400
+
+            try:
+                game_uuid = uuid.UUID(str(game_id))
+            except (ValueError, TypeError):
+                return {"ok": False, "error": "invalid game_id"}, 400
+
+            game = Game.get_or_none(Game.game_id == game_uuid)
+            if not game:
+                return {"ok": False, "error": "game not found"}, 404
+            
+            finished_status = Status.get(Status.status_type == "FINISHED")
+            Game.update(game_status=finished_status).where(
+                Game.game_id == game.game_id
+            ).execute()
+            
             scores = []
             for player in game.player:
                 scores.append({
@@ -1083,15 +1122,7 @@ def create_app(test_config: dict | None = None):
                 return httpError("settings not found", 404)
 
             session = getLastVotingSession(game)
-                        
-            isFinal = isFinalSession(session)
-            if isFinal:
-                finished_status = Status.get(Status.status_type == "FINISHED")
-
-                Game.update(game_status=finished_status).where(
-                    Game.game_id == game.game_id
-                ).execute()
-
+                
             if not session:
                 return {"ok": True, "active": False}, 200
             

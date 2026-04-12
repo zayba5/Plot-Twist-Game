@@ -17,8 +17,8 @@ export async function fetchGameStories(gameID) {
   });
 }
 
-export async function fetchScores() {
-  return apiJson("Scores", {
+export async function fetchScores(gameID) {
+  return apiJson(`Scores?game_id=${gameID}`, {
     method: "GET",
     credentials: "include"
   });
