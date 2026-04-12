@@ -651,7 +651,7 @@ def create_app(test_config: dict | None = None):
             if inner_round_number == max_round:
                 active_status = Status.get(Status.status_type == "ACTIVE")
 
-                categories = list(Voting_Category.select().limit(2))
+                categories = list(Voting_Category.select().order_by(db.random()).limit(2))
                 if len(categories) < 2:
                     return {"ok": False, "error": "not enough voting categories configured"}, 500
 
