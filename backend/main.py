@@ -134,6 +134,26 @@ def create_app(test_config: dict | None = None):
             to=f"game:{game.game_code}"
         )    
         
+    @socketio.on("send_message")
+    def handle_send_message(data):
+        game_code = data.get("game_code")
+        username = data.get("username")
+        text = data.get("text")
+        time = data.get("time")
+
+        if not game_code or not text:
+            return
+
+        # broadcast to everyone in the same room
+        socketio.emit(
+            "receive_message",
+            {
+                "username": username,
+                "text": text,
+                "time": time,
+            },
+            to=f"game:{game_code}"
+        )
 
     signer = TimestampSigner(os.getenv("secretKey") or "")
 

@@ -136,6 +136,24 @@ const Lobby = () => {
     return () => socket.off("game_started");
   }, []);
 
+  React.useEffect(() => {
+    if (!socket) return;
+
+    socket.on("receive_message", (data) => {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          user: data.username === username ? "You" : data.username,
+          text: data.text,
+          time: data.time,
+        },
+      ]);
+    });
+
+    return () => socket.off("receive_message");
+  }, [socket, username]);
+
 
   const fetchPlayers = async (gameId) => {
     try {
@@ -256,20 +274,26 @@ const Lobby = () => {
   socket.emit("start_game", { game_code: gameCode });
   };
 
+
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (!chatMessage.trim()) return;
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: prev.length + 1,
-        user: 'You',
-        text: chatMessage.trim(),
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      },
-    ]);
+
+    const messageData = {
+      text: chatMessage.trim(),
+      username: username,
+      time: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      game_code: gameCode,
+    };
+
+    // send to server
+    socket.emit("send_message", messageData);
+
     setChatMessage('');
-  };
+};
 
   return (
     <div className="lobby">
