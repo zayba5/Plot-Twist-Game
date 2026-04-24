@@ -1,12 +1,318 @@
-$border-color: #6c36c3;
-$shadow-color: #494141;
-$primary-color: rgb(36, 32, 35);
-$secondary-color: rgba(159, 36, 253, 0.25);
-$secondary-color-hover: #4c415f;
-$accent-color: #82719d;
-$accent-color-hover: #a778a7;
+@use "sass:color";
+// ===== Theme tokens =====
+$bg-0: #060912;
+$bg-1: #0c1220;
+$bg-2: #161326;
+
+$surface-0: rgba(18, 20, 34, 0.78);
+$surface-1: rgba(29, 34, 56, 0.88);
+$surface-2: #2a2942;
+
+$dust-pink: #d787ab;
+$dust-rose: #b96d94;
+$dust-lilac: #a993d1;
+$dust-violet: #7b5fa8;
+$dust-plum: #5a3f67;
+
+$star-white: #f6f7ff;
+$star-blue: #b9dfff;
+$glow-cyan: #8cc7e8;
+$accent-magenta: #d96acb;
+
+$text-primary: #eef2ff;
+$text-secondary: #bcc5de;
+$text-muted: #8892ad;
+
+$border-soft: rgba(190, 170, 255, 0.16);
+$border-strong: rgba(217, 106, 203, 0.28);
+
+$shadow-soft: rgba(0, 0, 0, 0.35);
+$shadow-glow: rgba(169, 147, 209, 0.16);
+
+// ===== Backward-compatible aliases =====
+$border-color: $border-soft;
+$shadow-color: $shadow-soft;
+$primary-color: $bg-0;
+$secondary-color: rgba(123, 95, 168, 0.18);
+$secondary-color-hover: rgba(169, 147, 209, 0.20);
+$accent-color: $dust-lilac;
+$accent-color-hover: $dust-pink;
+$font-color: $text-secondary;
+
 $rounded-corners: 30px;
-$font-color: rgb(211, 190, 206);
+$padding-sm: 15px;
+$padding-xs: 10px;
+$margin-sm: 15px;
+
+$nebula-background:
+  radial-gradient(circle at 20% 30%, rgba(215, 135, 171, 0.18), transparent 28%),
+  radial-gradient(circle at 75% 35%, rgba(169, 147, 209, 0.16), transparent 30%),
+  radial-gradient(circle at 55% 70%, rgba(140, 199, 232, 0.10), transparent 24%),
+  radial-gradient(circle at 50% 50%, rgba(94, 65, 104, 0.18), transparent 45%),
+  linear-gradient(180deg, #070b14 0%, #0b1020 45%, #141427 100%);
+
+// body {
+// 	font-family: 'Roboto Condensed', sans-serif;
+// 	height: 100%;
+// 	width: 100%;
+// 	background: $nebula-background;
+// 	background-attachment: fixed;
+// 	color: $text-primary;
+// 	overflow-x: hidden;
+// 	margin: 0;
+// }
+
+// #head {
+// 	background: rgba(19, 23, 40, 0.72);
+// 	border-bottom: 1px solid $border-color;
+// 	backdrop-filter: blur(10px);
+// 	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+// }
+
+// .game-window {
+// 	background: $surface-0;
+// 	border: 1px solid $border-color;
+// 	box-shadow:
+// 		0 16px 40px $shadow-soft,
+// 		0 0 24px $shadow-glow;
+// 	backdrop-filter: blur(10px);
+// }
+
+// .game-window-control-bar,
+// .game-window-header {
+// 	background: rgba(123, 95, 168, 0.14);
+// 	border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+// }
+
+// .button {
+// 	background: linear-gradient(135deg, $dust-pink 0%, $dust-lilac 55%, $dust-violet 100%);
+// 	padding: $padding-xs;
+// 	border-radius: 10px;
+// 	border: 1px solid $border-strong;
+// 	box-shadow:
+// 		0 8px 20px rgba(0, 0, 0, 0.25),
+// 		0 0 18px rgba(217, 106, 203, 0.16);
+// 	color: #0b0f18;
+// 	font-weight: 600;
+// 	justify-self: end;
+// 	transition: transform 0.15s, filter 0.2s, box-shadow 0.2s;
+// }
+
+// .button:hover {
+// 	filter: brightness(1.06);
+// 	box-shadow:
+// 		0 10px 24px rgba(0, 0, 0, 0.28),
+// 		0 0 22px rgba(217, 106, 203, 0.24);
+// }
+
+// .button:disabled {
+// 	background: rgba(255, 255, 255, 0.12);
+// 	color: $text-muted;
+// 	cursor: not-allowed;
+// 	box-shadow: none;
+// }
+
+// .credential-input-section {
+// 	label {
+// 		font-size: 1rem;
+// 		color: $text-secondary;
+// 		letter-spacing: 0.03em;
+// 	}
+
+// 	.credential-input {
+// 		width: 100%;
+// 		padding: $padding-xs;
+// 		background: rgba(10, 16, 28, 0.86);
+// 		border: 1px solid $border-soft;
+// 		border-radius: 10px;
+// 		color: $text-primary;
+// 		font-size: 0.9rem;
+// 		font-family: inherit;
+// 		box-sizing: border-box;
+// 		box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+// 		transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+
+// 		&:focus {
+// 			outline: none;
+// 			border-color: rgba(140, 199, 232, 0.45);
+// 			box-shadow:
+// 				0 0 0 3px rgba(140, 199, 232, 0.12),
+// 				0 0 16px rgba(140, 199, 232, 0.12);
+// 		}
+
+// 		&::placeholder {
+// 			color: $text-muted;
+// 		}
+// 	}
+
+// 	.input-error {
+// 		border-color: rgba(255, 110, 140, 0.8);
+// 	}
+
+// 	.credential-error {
+// 		font-size: 0.75rem;
+// 		color: #ff93b1;
+// 		margin-top: 2px;
+// 	}
+// }
+
+// .story-vote-card {
+// 	border: 1px solid $border-color;
+// 	border-radius: $rounded-corners;
+// 	padding: $padding-sm;
+// 	background: $surface-0;
+// 	margin: $margin-sm;
+// 	width: 20%;
+// 	min-width: 200px;
+// 	display: flex;
+// 	flex-direction: column;
+// 	align-items: center;
+// 	backdrop-filter: blur(8px);
+// 	box-shadow:
+// 		0 12px 28px rgba(0, 0, 0, 0.28),
+// 		inset 0 1px 0 rgba(255, 255, 255, 0.03);
+// 	transition: transform 0.15s, background 0.2s, border-color 0.2s, box-shadow 0.2s;
+// }
+
+// .story-vote-card:hover {
+// 	transform: translateY(-2px);
+// 	background: rgba(34, 38, 60, 0.92);
+// 	border-color: rgba(190, 170, 255, 0.28);
+// }
+
+// .selected-card {
+// 	background: linear-gradient(
+// 		180deg,
+// 		rgba(169, 147, 209, 0.26) 0%,
+// 		rgba(123, 95, 168, 0.24) 100%
+// 	);
+// 	border-color: $border-strong;
+// 	box-shadow:
+// 		0 14px 30px rgba(0, 0, 0, 0.32),
+// 		0 0 20px rgba(169, 147, 209, 0.18);
+
+// 	.story-part {
+// 		background: rgba(215, 135, 171, 0.85);
+// 	}
+
+// 	.story-part:nth-of-type(odd)::after {
+// 		border-right: 20px solid rgba(215, 135, 171, 0.85);
+// 		border-left: none;
+// 	}
+
+// 	.story-part::after {
+// 		border-left: 20px solid rgba(215, 135, 171, 0.85);
+// 	}
+// }
+
+// .story-part {
+// 	background: linear-gradient(135deg, $dust-lilac 0%, $dust-pink 100%);
+// 	padding: 20px;
+// 	margin: 20px;
+// 	position: relative;
+// 	border-radius: 10px;
+// 	width: 70%;
+// 	box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+
+// 	.part-username {
+// 		color: #11131a;
+// 		margin: 0;
+// 		font-weight: 700;
+// 	}
+// }
+
+// .story-part p {
+// 	color: #f8f7fc;
+// }
+
+// .story-part:nth-of-type(odd):after {
+// 	border-top: 20px solid transparent;
+// 	border-bottom: 20px solid transparent;
+// 	border-right: 20px solid $dust-lilac;
+// 	border-left: none;
+// 	right: auto;
+// 	left: -20px;
+// }
+
+// .story-part::after {
+// 	content: "";
+// 	width: 0;
+// 	height: 0;
+// 	border-top: 20px solid transparent;
+// 	border-bottom: 20px solid transparent;
+// 	border-left: 20px solid $dust-lilac;
+// 	right: -20px;
+// 	position: absolute;
+// 	top: 10px;
+// }
+
+// #scoreboard-page #scoreboard .scoreboard-item {
+// 	border: 1px solid $border-color;
+// 	border-radius: 20px;
+// 	padding: 15px;
+// 	background: rgba(19, 23, 40, 0.72);
+// 	margin: 15px;
+// 	min-width: 200px;
+// 	display: flex;
+// 	justify-content: space-between;
+// 	backdrop-filter: blur(8px);
+// 	box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+// }
+
+// #voting-page {
+// 	#vote-nav {
+// 		.nav-arrow {
+// 			width: 18%;
+// 			fill: $dust-lilac;
+// 			transition: fill 0.2s, filter 0.2s;
+// 		}
+
+// 		.nav-arrow:hover {
+// 			fill: $dust-pink;
+// 			filter: drop-shadow(0 0 8px rgba(215, 135, 171, 0.2));
+// 		}
+
+// 		.nav-circle {
+// 			width: 13%;
+
+// 			.fa-secondary {
+// 				opacity: 0.22;
+// 				fill: $star-white;
+// 			}
+
+// 			.fa-primary {
+// 				fill: $dust-violet;
+// 			}
+// 		}
+
+// 		.cur-circle {
+// 			.fa-primary {
+// 				fill: $star-blue;
+// 			}
+// 		}
+
+// 		.visited-circle {
+// 			.fa-primary {
+// 				fill: $dust-pink;
+// 			}
+// 		}
+// 	}
+// }
+
+
+
+
+//----------------OLD SCSS COLORS--------------------
+// $border-color: #6c36c3;
+// $shadow-color: #494141;
+// $primary-color: rgb(36, 32, 35);
+// $secondary-color: rgba(159, 36, 253, 0.25);
+// $secondary-color-hover: #4c415f;
+// $accent-color: #82719d;
+// $accent-color-hover: #a778a7;
+// $font-color: rgb(211, 190, 206);
+
+$rounded-corners: 30px;
 $padding-sm: 15px;
 $padding-xs: 10px;
 $margin-sm: 15px;
@@ -433,6 +739,16 @@ body {
 	justify-content: space-between;
 }
 
+@keyframes gradientSweep {
+	0% {
+		background-position: 0% 50%;
+	}
+
+	100% {
+		background-position: 100% 50%;
+	}
+}
+
 .credential-input-section {
 	display: flex;
 	flex-direction: column;
@@ -442,7 +758,7 @@ body {
 	max-width: 260px;
 
 	label {
-		font-size: 1.0rem;
+		font-size: 1rem;
 		color: $font-color;
 		letter-spacing: 0.03em;
 	}
@@ -451,31 +767,45 @@ body {
 		width: 100%;
 		padding: $padding-xs;
 		background: $primary-color;
-		border: 1px solid $border-color;
+		border: 1px solid $accent-color;
 		border-radius: 8px;
 		color: $font-color;
 		font-size: 0.9rem;
 		font-family: inherit;
 		box-sizing: border-box;
-
 		box-shadow: 0px 0px 8px 1px $shadow-color;
-		transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
-
-		&:focus {
-			outline: none;
-			border-color: $accent-color;
-		}
+		transition: border-color 0.5s, box-shadow 0.5s, background 0.3s;
 	}
 
-	/* Error state for input */
+	.credential-input:hover {
+		background: linear-gradient(
+			90deg,
+			$primary-color 0%,
+			color.scale($primary-color, $lightness: 18%) 45%,
+			$primary-color 100%
+		);
+		background-size: 200% 100%;
+		background-position: 0% 50%;
+
+		border-color: $accent-color;
+		box-shadow: 0 0 12px 2px color.scale($accent-color, $lightness: 20%);
+		animation: gradientSweep 0.8s ease-out 1 forwards;
+	}
+
+	.credential-input:focus {
+		outline: none;
+		background: $primary-color;
+		border-color: $accent-color;
+		animation: none;
+	}
+}
+
 	.input-error {
 		border-color: red;
 	}
 
-	/* Error message text */
 	.credential-error {
 		font-size: 0.75rem;
 		color: red;
 		margin-top: 2px;
 	}
-}

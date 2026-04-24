@@ -7,7 +7,7 @@ p,
 h2,
 label,
 span {
-  color: #d3bece;
+  color: #bcc5de;
 }
 
 .story-part p {
@@ -18,7 +18,7 @@ body {
   font-family: "Roboto Condensed", sans-serif;
   height: 100%;
   width: 100%;
-  background-color: #242023;
+  background-color: #060912;
   overflow-x: hidden;
   margin: 0;
 }
@@ -37,15 +37,15 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background-color: rgba(159, 36, 253, 0.25);
-  border-bottom: thin solid #6c36c3;
+  background-color: rgba(123, 95, 168, 0.18);
+  border-bottom: thin solid rgba(190, 170, 255, 0.16);
   position: relative;
   z-index: 1000;
 }
 #head-wrapper #head #header-title-container {
   display: flex;
   flex-direction: column;
-  color: #d3bece;
+  color: #bcc5de;
   padding-left: 30px;
 }
 #head-wrapper #head .fa-bars {
@@ -70,7 +70,7 @@ body {
   cursor: pointer;
   font-size: 1.5em;
   text-decoration: none;
-  color: #d3bece;
+  color: #bcc5de;
 }
 #head-wrapper #head #nav-items .nav-item:hover {
   color: gray;
@@ -99,17 +99,17 @@ body {
 }
 
 .button {
-  background-color: #82719d;
+  background-color: #a993d1;
   padding: 10px;
   border-radius: 8px;
-  border: #6c36c3;
-  box-shadow: 0px 0px 10px 2px #494141;
+  border: rgba(190, 170, 255, 0.16);
+  box-shadow: 0px 0px 10px 2px rgba(0, 0, 0, 0.35);
   color: whitesmoke;
   justify-self: end;
 }
 
 .button:hover {
-  background-color: #a778a7;
+  background-color: #d787ab;
 }
 
 .button:disabled {
@@ -127,14 +127,14 @@ body {
   height: 80%;
   width: 80%;
   border-radius: 30px;
-  box-shadow: 0px 0px 30px 10px #494141;
+  box-shadow: 0px 0px 30px 10px rgba(0, 0, 0, 0.35);
   align-self: center;
-  border: thin solid #6c36c3;
+  border: thin solid rgba(190, 170, 255, 0.16);
   justify-content: space-between;
 }
 .game-window .game-window-control-bar {
   height: 100px;
-  background-color: rgba(159, 36, 253, 0.25);
+  background-color: rgba(123, 95, 168, 0.18);
   padding: 15px;
   margin-top: 15px;
   display: grid;
@@ -144,7 +144,7 @@ body {
 }
 .game-window .game-window-header {
   height: 100px;
-  background-color: rgba(159, 36, 253, 0.25);
+  background-color: rgba(123, 95, 168, 0.18);
   padding: 15px;
   margin-bottom: 15px;
   display: flex;
@@ -164,10 +164,10 @@ body {
 }
 #voting-page #vote-nav .nav-arrow {
   width: 18%;
-  fill: #82719d;
+  fill: #a993d1;
 }
 #voting-page #vote-nav .nav-arrow:hover {
-  fill: #a778a7;
+  fill: #d787ab;
 }
 #voting-page #vote-nav .nav-circle {
   width: 13%;
@@ -177,32 +177,32 @@ body {
   fill: white;
 }
 #voting-page #vote-nav .nav-circle .fa-primary {
-  fill: #82719d;
+  fill: #a993d1;
 }
 #voting-page #vote-nav .cur-circle .fa-primary {
-  fill: #d3bece;
+  fill: #bcc5de;
 }
 #voting-page #vote-nav .visited-circle .fa-primary {
   fill: #ddb8fb;
 }
 #voting-page #story-vote-card-list .story-vote-card:hover {
-  background-color: #4c415f;
+  background-color: rgba(169, 147, 209, 0.2);
 }
 #voting-page #story-vote-card-list .selected-card {
-  background-color: #82719d;
+  background-color: #a993d1;
 }
 #voting-page #story-vote-card-list .selected-card .story-part {
-  background-color: rgba(159, 36, 253, 0.25);
+  background-color: rgba(123, 95, 168, 0.18);
 }
 #voting-page #story-vote-card-list .selected-card .story-part:nth-of-type(odd)::after {
-  border-right: 20px solid rgba(159, 36, 253, 0.25);
+  border-right: 20px solid rgba(123, 95, 168, 0.18);
   border-left: none;
 }
 #voting-page #story-vote-card-list .selected-card .story-part::after {
-  border-left: 20px solid rgba(159, 36, 253, 0.25);
+  border-left: 20px solid rgba(123, 95, 168, 0.18);
 }
 #voting-page #story-vote-card-list .selected-card:hover {
-  background-color: #a778a7;
+  background-color: #d787ab;
 }
 #voting-page #vote-button {
   font-size: larger;
@@ -241,7 +241,7 @@ body {
   justify-content: center;
   font-size: 28px;
   font-weight: bolder;
-  color: #d3bece;
+  color: #bcc5de;
 }
 
 .story-card-list {
@@ -254,10 +254,10 @@ body {
 }
 
 .story-vote-card {
-  border: thin solid #6c36c3;
+  border: thin solid rgba(190, 170, 255, 0.16);
   border-radius: 30px;
   padding: 15px;
-  background-color: rgba(159, 36, 253, 0.25);
+  background-color: rgba(123, 95, 168, 0.18);
   margin: 15px;
   width: 20%;
   min-width: 200px;
@@ -296,16 +296,16 @@ body {
   text-align: center;
 }
 .story-vote-card .badge-stack .badge-cont {
-  fill: #c269eb;
+  fill: rgb(194, 105, 235);
 }
 .story-vote-card .badge-stack .badge-cat-1 {
-  fill: #d3687a;
+  fill: rgb(211, 104, 122);
 }
 .story-vote-card .badge-stack .badge-cat-2 {
-  fill: #c97a45;
+  fill: rgb(201, 122, 69);
 }
 .story-vote-card .story-part {
-  background: #82719d;
+  background: #a993d1;
   padding: 20px;
   margin: 20px;
   position: relative;
@@ -319,7 +319,7 @@ body {
 .story-vote-card .story-part:nth-of-type(odd):after {
   border-top: 20px solid transparent;
   border-bottom: 20px solid transparent;
-  border-right: 20px solid #82719d;
+  border-right: 20px solid #a993d1;
   border-left: none;
   right: auto;
   left: -20px;
@@ -330,7 +330,7 @@ body {
   height: 0;
   border-top: 20px solid transparent;
   border-bottom: 20px solid transparent;
-  border-left: 20px solid #82719d;
+  border-left: 20px solid #a993d1;
   right: -20px;
   position: absolute;
   top: 10px;
@@ -346,16 +346,24 @@ body {
 }
 
 #scoreboard-page #scoreboard .scoreboard-item {
-  border: thin solid #6c36c3;
+  border: thin solid rgba(190, 170, 255, 0.16);
   border-radius: 30px;
   padding: 15px;
-  background-color: #242023;
+  background-color: #060912;
   margin: 15px;
   min-width: 200px;
   display: flex;
   justify-content: space-between;
 }
 
+@keyframes gradientSweep {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
 .credential-input-section {
   display: flex;
   flex-direction: column;
@@ -363,35 +371,45 @@ body {
   margin: 0.6rem;
   width: 100%;
   max-width: 260px;
-  /* Error state for input */
-  /* Error message text */
 }
 .credential-input-section label {
   font-size: 1rem;
-  color: #d3bece;
+  color: #bcc5de;
   letter-spacing: 0.03em;
 }
 .credential-input-section .credential-input {
   width: 100%;
   padding: 10px;
-  background: #242023;
-  border: 1px solid #6c36c3;
+  background: #060912;
+  border: 1px solid #a993d1;
   border-radius: 8px;
-  color: #d3bece;
+  color: #bcc5de;
   font-size: 0.9rem;
   font-family: inherit;
   box-sizing: border-box;
-  box-shadow: 0px 0px 8px 1px #494141;
-  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  box-shadow: 0px 0px 8px 1px rgba(0, 0, 0, 0.35);
+  transition: border-color 0.5s, box-shadow 0.5s, background 0.3s;
+}
+.credential-input-section .credential-input:hover {
+  background: linear-gradient(90deg, #060912 0%, rgb(27.87, 41.805, 83.61) 45%, #060912 100%);
+  background-size: 200% 100%;
+  background-position: 0% 50%;
+  border-color: #a993d1;
+  box-shadow: 0 0 12px 2px rgb(186.2, 168.6, 218.2);
+  animation: gradientSweep 0.8s ease-out 1 forwards;
 }
 .credential-input-section .credential-input:focus {
   outline: none;
-  border-color: #82719d;
+  background: #060912;
+  border-color: #a993d1;
+  animation: none;
 }
-.credential-input-section .input-error {
+
+.input-error {
   border-color: red;
 }
-.credential-input-section .credential-error {
+
+.credential-error {
   font-size: 0.75rem;
   color: red;
   margin-top: 2px;
