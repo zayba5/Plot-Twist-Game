@@ -4,6 +4,7 @@ import { socket, getCookie } from "./global.jsx";
 import { fetchGameStories, postVote, fetchVotingSession } from "./Utility.jsx";
 import { useNavigate } from "react-router-dom";
 import Timer from "./timer.jsx";
+import Waiting from "./Waiting.jsx";
 
 const StoryPart = ({ part }) => {
   if (!part) return null;
@@ -30,7 +31,6 @@ const StoryCard = ({ story, isSelected, onClick }) => {
 };
 
 const VoteNav = ({ curPage, visitedPages, setCurPage, setVisitedPages }) => {
-
   const totalPages = 3;
 
   const rightArrowClick = () => {
@@ -65,21 +65,27 @@ const VoteNav = ({ curPage, visitedPages, setCurPage, setVisitedPages }) => {
   return (
     <div id="vote-nav">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" onClick={leftArrowClick} id="left-arrow" className="nav-arrow clickable">
-        <path d="M448 208v96c0 13.3-10.7 24-24 24H224v103.8c0 21.4-25.8 32.1-41 17L7 273c-9.4-9.4-9.4-24.6 0-34L183 63.3c15.1-15.1 41-4.4 41 17V184h200c13.3 0 24 10.7 24 24z" /></svg>
+        <path d="M448 208v96c0 13.3-10.7 24-24 24H224v103.8c0 21.4-25.8 32.1-41 17L7 273c-9.4-9.4-9.4-24.6 0-34L183 63.3c15.1-15.1 41-4.4 41 17V184h200c13.3 0 24 10.7 24 24z" />
+      </svg>
 
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" id="1" className={classes(1)}><defs><style></style></defs>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" id="1" className={classes(1)}>
         <path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm0 424c-97.06 0-176-79-176-176S158.94 80 256 80s176 79 176 176-78.94 176-176 176z" className="fa-secondary" />
-        <path d="M256 432c-97.06 0-176-79-176-176S158.94 80 256 80s176 79 176 176-78.94 176-176 176z" className="fa-primary" /></svg>
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" id="2" className={classes(2)}><defs><style></style></defs>
+        <path d="M256 432c-97.06 0-176-79-176-176S158.94 80 256 80s176 79 176 176-78.94 176-176 176z" className="fa-primary" />
+      </svg>
+
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" id="2" className={classes(2)}>
         <path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm0 424c-97.06 0-176-79-176-176S158.94 80 256 80s176 79 176 176-78.94 176-176 176z" className="fa-secondary" />
-        <path d="M256 432c-97.06 0-176-79-176-176S158.94 80 256 80s176 79 176 176-78.94 176-176 176z" className="fa-primary" /></svg>
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" id="3" className={classes(3)}><defs><style></style></defs>
+        <path d="M256 432c-97.06 0-176-79-176-176S158.94 80 256 80s176 79 176 176-78.94 176-176 176z" className="fa-primary" />
+      </svg>
+
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" id="3" className={classes(3)}>
         <path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm0 424c-97.06 0-176-79-176-176S158.94 80 256 80s176 79 176 176-78.94 176-176 176z" className="fa-secondary" />
-        <path d="M256 432c-97.06 0-176-79-176-176S158.94 80 256 80s176 79 176 176-78.94 176-176 176z" className="fa-primary" /></svg>
+        <path d="M256 432c-97.06 0-176-79-176-176S158.94 80 256 80s176 79 176 176-78.94 176-176 176z" className="fa-primary" />
+      </svg>
 
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" onClick={rightArrowClick} id="right-arrow" className="nav-arrow clickable">
-        <path d="M0 304v-96c0-13.3 10.7-24 24-24h200V80.2c0-21.4 25.8-32.1 41-17L441 239c9.4 9.4 9.4 24.6 0 34L265 448.7c-15.1 15.1-41 4.4-41-17V328H24c-13.3 0-24-10.7-24-24z" /></svg>
-
+        <path d="M0 304v-96c0-13.3 10.7-24 24-24h200V80.2c0-21.4 25.8-32.1 41-17L441 239c9.4 9.4 9.4 24.6 0 34L265 448.7c-15.1 15.1-41 4.4-41-17V328H24c-13.3 0-24-10.7-24-24z" />
+      </svg>
     </div>
   );
 };
@@ -98,8 +104,10 @@ const StoryCardList = ({ selectedStoryId, setSelectedStoryId, curPage, gameId })
       }
     }
 
-    loadStories();
-  }, []);
+    if (gameId) {
+      loadStories();
+    }
+  }, [gameId]);
 
   return (
     <div id="story-vote-card-list" className="story-card-list">
@@ -121,8 +129,19 @@ const StoryCardList = ({ selectedStoryId, setSelectedStoryId, curPage, gameId })
   );
 };
 
-const ControlBar = ({ selectedStoryId, gameId, submitting, setSubmitting,
-  curPage, setCurPage, visitedPages, setVisitedPages, hasSubmittedVote, setHasSubmittedVote }) => {
+const ControlBar = ({
+  selectedStoryId,
+  gameId,
+  submitting,
+  setSubmitting,
+  curPage,
+  setCurPage,
+  visitedPages,
+  setVisitedPages,
+  hasSubmittedVote,
+  setHasSubmittedVote,
+  setLocallyVoted,
+}) => {
   const handleVoteClick = async () => {
     if (submitting || hasSubmittedVote || selectedStoryId.some((id) => !id)) return;
 
@@ -135,6 +154,7 @@ const ControlBar = ({ selectedStoryId, gameId, submitting, setSubmitting,
         selectedStoryId[2]
       );
       setHasSubmittedVote(true);
+      setLocallyVoted(true);
       console.log("vote submitted:", result);
     } catch (error) {
       console.error("Failed to submit vote:", error);
@@ -146,23 +166,25 @@ const ControlBar = ({ selectedStoryId, gameId, submitting, setSubmitting,
   return (
     <div className="game-window-control-bar">
       <div></div>
-      <VoteNav visitedPages={visitedPages} curPage={curPage}
-        setCurPage={setCurPage} setVisitedPages={setVisitedPages} />
+      <VoteNav
+        visitedPages={visitedPages}
+        curPage={curPage}
+        setCurPage={setCurPage}
+        setVisitedPages={setVisitedPages}
+      />
       <button
         className="button clickable"
         id="vote-button"
         onClick={handleVoteClick}
         disabled={selectedStoryId.some((id) => !id) || submitting || hasSubmittedVote}
       >
-        {submitting ? "Voting..." : "Vote"}
+        {submitting ? "Voting..." : hasSubmittedVote ? "Waiting..." : "Vote"}
       </button>
     </div>
   );
 };
 
 const Header = ({ handleTimerExpire, time, titles, curPage }) => {
-
-  //replace time with var
   return (
     <div className="game-window-header">
       <h1>{titles[curPage - 1]}</h1>
@@ -178,17 +200,17 @@ const VotingPage = () => {
   const [votingSession, setVotingSession] = useState(null);
   const [loadingSession, setLoadingSession] = useState(true);
   const [curPage, setCurPage] = useState(1);
-  const [visitedPages, setVisitedPages] = useState([1])
+  const [visitedPages, setVisitedPages] = useState([1]);
   const [gameId, setGameId] = useState(null);
   const [endTimeMs, setEndTimeMs] = useState(null);
   const [hasSubmittedVote, setHasSubmittedVote] = useState(false);
 
-  const finished = useRef(false)
+  const [locallyVoted, setLocallyVoted] = useState(false);
+  const [voteCount, setVoteCount] = useState(0);
+  const [totalPlayers, setTotalPlayers] = useState(0);
+
+  const finished = useRef(false);
   let prompt1 = "Which story would you like to continue?";
-
-  //const gameId = "01731b8d-0f53-42a2-9172-49674c247858";
-
-
 
   const endRound = useCallback((reason, path, payload = null) => {
     if (finished.current) return;
@@ -210,18 +232,18 @@ const VotingPage = () => {
       if (hasAnyVote && !hasSubmittedVote) {
         await postVote(gameId, selectedStoryId[0], selectedStoryId[1], selectedStoryId[2]);
         setHasSubmittedVote(true);
+        setLocallyVoted(true);
       }
     } catch (error) {
       console.error("postVote failed:", error);
     } finally {
       setSubmitting(false);
 
-      socket.emit("voting_round_expired", { game_id: gameId })
+      socket.emit("voting_round_expired", { game_id: gameId });
       if (!votingSession) return;
       if (votingSession.voting_session_number === votingSession.num_voting_sessions) {
-        endRound("timer_expired", "/results")
-      }
-      else {
+        endRound("timer_expired", "/results");
+      } else {
         endRound("timer_expired", "/results");
       }
     }
@@ -240,10 +262,20 @@ const VotingPage = () => {
           return;
         }
 
+        finished.current = false;
+        setHasSubmittedVote(false);
+        setLocallyVoted(false);
+        setVoteCount(0);
+        setTotalPlayers(0);
+        setSelectedStoryId([null, null, null]);
+        setCurPage(1);
+        setVisitedPages([1]);
+
         setGameId(incomingGameId);
 
         const data = await fetchVotingSession(incomingGameId);
         setVotingSession(data);
+
         const parsedEndTimeMs = new Date(data?.timer_ends_at).getTime();
         console.log("timer_ends_at raw:", data?.timer_ends_at);
         console.log("timer_ends_at parsed:", parsedEndTimeMs);
@@ -286,23 +318,33 @@ const VotingPage = () => {
     };
   }, []);
 
-
   useEffect(() => {
+    if (!gameId) return;
+
+    function handleVoteCountUpdate(payload) {
+      if (!payload || payload.game_id !== gameId) return;
+      setVoteCount(payload.vote_count ?? 0);
+      setTotalPlayers(payload.total_players ?? 0);
+    }
+
     function handleAllVotesIn(payload) {
       console.log("all votes in:", payload);
+      if (!payload || payload.game_id !== gameId) return;
+
       if (!votingSession) return;
       if (votingSession.voting_session_number === votingSession.num_voting_sessions) {
-        endRound("all_votes_in", "/results", payload)
-      }
-      else {
-        endRound("all_votes_in", "/results", payload)
+        endRound("all_votes_in", "/results", payload);
+      } else {
+        endRound("all_votes_in", "/results", payload);
       }
     }
 
     socket.emit("join_game_room", { game_id: gameId });
+    socket.on("vote_count_update", handleVoteCountUpdate);
     socket.on("all_votes_in", handleAllVotesIn);
 
     return () => {
+      socket.off("vote_count_update", handleVoteCountUpdate);
       socket.off("all_votes_in", handleAllVotesIn);
     };
   }, [gameId, endRound, votingSession]);
@@ -314,18 +356,43 @@ const VotingPage = () => {
     );
   }
 
-  const titles = [prompt1, votingSession.cat_1, votingSession.cat_2]
+  const titles = [prompt1, votingSession.cat_1, votingSession.cat_2];
+
+  const effectiveVoteCount = locallyVoted
+    ? Math.min(voteCount + 1, totalPlayers)
+    : voteCount;
+
+  const allVotesIn =
+    totalPlayers > 0 && effectiveVoteCount >= totalPlayers;
+
+  const shouldShowWaiting =
+    hasSubmittedVote && !allVotesIn;
 
   return (
     <div className="game-window" id="voting-page">
-      <Header handleTimerExpire={handleTimerExpire}
-        time={endTimeMs} titles={titles} curPage={curPage} />
-      <StoryCardList
-        selectedStoryId={selectedStoryId}
-        setSelectedStoryId={setSelectedStoryId}
+      <Header
+        handleTimerExpire={handleTimerExpire}
+        time={endTimeMs}
+        titles={titles}
         curPage={curPage}
-        gameId={gameId}
       />
+
+      <div className="game-window-body">
+        {shouldShowWaiting ? (
+          <Waiting
+            topText={"Aligning the Stars"}
+            bottomText={"Waiting for other Players"}
+          />
+        ) : (
+          <StoryCardList
+            selectedStoryId={selectedStoryId}
+            setSelectedStoryId={setSelectedStoryId}
+            curPage={curPage}
+            gameId={gameId}
+          />
+        )}
+      </div>
+
       <ControlBar
         selectedStoryId={selectedStoryId}
         gameId={gameId}
@@ -337,6 +404,7 @@ const VotingPage = () => {
         setVisitedPages={setVisitedPages}
         hasSubmittedVote={hasSubmittedVote}
         setHasSubmittedVote={setHasSubmittedVote}
+        setLocallyVoted={setLocallyVoted}
       />
     </div>
   );

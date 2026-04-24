@@ -296,13 +296,13 @@ body {
   text-align: center;
 }
 .story-vote-card .badge-stack .badge-cont {
-  fill: rgb(194, 105, 235);
+  fill: #c269eb;
 }
 .story-vote-card .badge-stack .badge-cat-1 {
-  fill: rgb(211, 104, 122);
+  fill: #d3687a;
 }
 .story-vote-card .badge-stack .badge-cat-2 {
-  fill: rgb(201, 122, 69);
+  fill: #c97a45;
 }
 .story-vote-card .story-part {
   background: #a993d1;
@@ -391,11 +391,11 @@ body {
   transition: border-color 0.5s, box-shadow 0.5s, background 0.3s;
 }
 .credential-input-section .credential-input:hover {
-  background: linear-gradient(90deg, #060912 0%, rgb(27.87, 41.805, 83.61) 45%, #060912 100%);
+  background: linear-gradient(90deg, #060912 0%, #1c2a54 45%, #060912 100%);
   background-size: 200% 100%;
   background-position: 0% 50%;
   border-color: #a993d1;
-  box-shadow: 0 0 12px 2px rgb(186.2, 168.6, 218.2);
+  box-shadow: 0 0 12px 2px #baa9da;
   animation: gradientSweep 0.8s ease-out 1 forwards;
 }
 .credential-input-section .credential-input:focus {
@@ -413,6 +413,33 @@ body {
   font-size: 0.75rem;
   color: red;
   margin-top: 2px;
+}
+
+.waiting {
+  width: 30%;
+}
+.waiting .text-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.waiting .text-container h1 {
+  font-size: 3em;
+  margin: 0;
+}
+.waiting .text-container p {
+  font-size: 1.5em;
+  margin: 0;
+}
+.waiting .text-container .text-separator {
+  font-size: 2em;
+}
+
+.game-window-body {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 /*# sourceMappingURL=index.css.map */
