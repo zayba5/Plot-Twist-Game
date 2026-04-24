@@ -361,7 +361,7 @@ const StorytellingPage = () => {
             onToggle={setShowDebug}
           />
         <label><strong>Claimed Player: {userId || "Not assigned"}</strong></label> 
-        {claimError ? <div>{claimError}</div> : null}
+        <label><strong>{claimError ? <div>{claimError}</div> : null}</strong></label>
         <div><label><strong>Status: {status || "no status available"}</strong></label></div>
       </div>
 
