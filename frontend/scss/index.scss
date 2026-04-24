@@ -338,9 +338,28 @@ body {
 	font-family: 'Roboto Condensed', sans-serif;
 	height: 100%;
 	width: 100%;
-	background-color: $primary-color;
+	background: $nebula-background;
 	overflow-x: hidden;
 	margin: 0;
+}
+
+// the star effect from lobby
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    radial-gradient(2px 2px at 20px 30px, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(2px 2px at 40px 70px, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(2px 2px at 50px 160px, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(2px 2px at 90px 40px, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(2px 2px at 130px 80px, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(2px 2px at 160px 120px, rgba(255, 255, 255, 0.5), transparent);
+  background-size: 200px 200px;
+  background-repeat: repeat;
+  opacity: 0.75;
 }
 
 //nav
