@@ -18,9 +18,21 @@ body {
   font-family: "Roboto Condensed", sans-serif;
   height: 100%;
   width: 100%;
-  background-color: #060912;
+  background: radial-gradient(circle at 20% 30%, rgba(215, 135, 171, 0.18), transparent 28%), radial-gradient(circle at 75% 35%, rgba(169, 147, 209, 0.16), transparent 30%), radial-gradient(circle at 55% 70%, rgba(140, 199, 232, 0.1), transparent 24%), radial-gradient(circle at 50% 50%, rgba(94, 65, 104, 0.18), transparent 45%), linear-gradient(180deg, #070b14 0%, #0b1020 45%, #141427 100%);
   overflow-x: hidden;
   margin: 0;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: radial-gradient(2px 2px at 20px 30px, rgba(255, 255, 255, 0.9), transparent), radial-gradient(2px 2px at 40px 70px, rgba(255, 255, 255, 0.6), transparent), radial-gradient(2px 2px at 50px 160px, rgba(255, 255, 255, 0.7), transparent), radial-gradient(2px 2px at 90px 40px, rgba(255, 255, 255, 0.5), transparent), radial-gradient(2px 2px at 130px 80px, rgba(255, 255, 255, 0.6), transparent), radial-gradient(2px 2px at 160px 120px, rgba(255, 255, 255, 0.5), transparent);
+  background-size: 200px 200px;
+  background-repeat: repeat;
+  opacity: 0.75;
 }
 
 #head-wrapper {
