@@ -546,17 +546,17 @@ body {
 			background-color: $accent-color;
 
 			.story-part {
-				background-color: $secondary-color;
+				background-color: $dust-plum;
 			}
 
 			.story-part:nth-of-type(odd)::after {
-				border-right: 20px solid $secondary-color;
+				border-right: 20px solid $dust-plum;
 				border-left: none;
 
 			}
 
 			.story-part::after {
-				border-left: 20px solid $secondary-color;
+				border-left: 20px solid $dust-plum;
 			}
 
 		}

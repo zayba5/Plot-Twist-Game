@@ -192,14 +192,14 @@ body {
   background-color: #a993d1;
 }
 #voting-page #story-vote-card-list .selected-card .story-part {
-  background-color: rgba(123, 95, 168, 0.18);
+  background-color: #5a3f67;
 }
 #voting-page #story-vote-card-list .selected-card .story-part:nth-of-type(odd)::after {
-  border-right: 20px solid rgba(123, 95, 168, 0.18);
+  border-right: 20px solid #5a3f67;
   border-left: none;
 }
 #voting-page #story-vote-card-list .selected-card .story-part::after {
-  border-left: 20px solid rgba(123, 95, 168, 0.18);
+  border-left: 20px solid #5a3f67;
 }
 #voting-page #story-vote-card-list .selected-card:hover {
   background-color: #d787ab;
