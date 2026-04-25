@@ -18,9 +18,21 @@ body {
   font-family: "Roboto Condensed", sans-serif;
   height: 100%;
   width: 100%;
-  background-color: #060912;
+  background: radial-gradient(circle at 20% 30%, rgba(215, 135, 171, 0.18), transparent 28%), radial-gradient(circle at 75% 35%, rgba(169, 147, 209, 0.16), transparent 30%), radial-gradient(circle at 55% 70%, rgba(140, 199, 232, 0.1), transparent 24%), radial-gradient(circle at 50% 50%, rgba(94, 65, 104, 0.18), transparent 45%), linear-gradient(180deg, #070b14 0%, #0b1020 45%, #141427 100%);
   overflow-x: hidden;
   margin: 0;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: radial-gradient(2px 2px at 20px 30px, rgba(255, 255, 255, 0.9), transparent), radial-gradient(2px 2px at 40px 70px, rgba(255, 255, 255, 0.6), transparent), radial-gradient(2px 2px at 50px 160px, rgba(255, 255, 255, 0.7), transparent), radial-gradient(2px 2px at 90px 40px, rgba(255, 255, 255, 0.5), transparent), radial-gradient(2px 2px at 130px 80px, rgba(255, 255, 255, 0.6), transparent), radial-gradient(2px 2px at 160px 120px, rgba(255, 255, 255, 0.5), transparent);
+  background-size: 200px 200px;
+  background-repeat: repeat;
+  opacity: 0.75;
 }
 
 #head-wrapper {
@@ -296,13 +308,13 @@ body {
   text-align: center;
 }
 .story-vote-card .badge-stack .badge-cont {
-  fill: #c269eb;
+  fill: rgb(194, 105, 235);
 }
 .story-vote-card .badge-stack .badge-cat-1 {
-  fill: #d3687a;
+  fill: rgb(211, 104, 122);
 }
 .story-vote-card .badge-stack .badge-cat-2 {
-  fill: #c97a45;
+  fill: rgb(201, 122, 69);
 }
 .story-vote-card .story-part {
   background: #a993d1;
@@ -391,11 +403,11 @@ body {
   transition: border-color 0.5s, box-shadow 0.5s, background 0.3s;
 }
 .credential-input-section .credential-input:hover {
-  background: linear-gradient(90deg, #060912 0%, #1c2a54 45%, #060912 100%);
+  background: linear-gradient(90deg, #060912 0%, rgb(27.87, 41.805, 83.61) 45%, #060912 100%);
   background-size: 200% 100%;
   background-position: 0% 50%;
   border-color: #a993d1;
-  box-shadow: 0 0 12px 2px #baa9da;
+  box-shadow: 0 0 12px 2px rgb(186.2, 168.6, 218.2);
   animation: gradientSweep 0.8s ease-out 1 forwards;
 }
 .credential-input-section .credential-input:focus {
