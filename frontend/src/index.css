@@ -308,13 +308,13 @@ body::before {
   text-align: center;
 }
 .story-vote-card .badge-stack .badge-cont {
-  fill: #c269eb;
+  fill: rgb(194, 105, 235);
 }
 .story-vote-card .badge-stack .badge-cat-1 {
-  fill: #d3687a;
+  fill: rgb(211, 104, 122);
 }
 .story-vote-card .badge-stack .badge-cat-2 {
-  fill: #c97a45;
+  fill: rgb(201, 122, 69);
 }
 .story-vote-card .story-part {
   background: #a993d1;
@@ -403,11 +403,11 @@ body::before {
   transition: border-color 0.5s, box-shadow 0.5s, background 0.3s;
 }
 .credential-input-section .credential-input:hover {
-  background: linear-gradient(90deg, #060912 0%, #1c2a54 45%, #060912 100%);
+  background: linear-gradient(90deg, #060912 0%, rgb(27.87, 41.805, 83.61) 45%, #060912 100%);
   background-size: 200% 100%;
   background-position: 0% 50%;
   border-color: #a993d1;
-  box-shadow: 0 0 12px 2px #baa9da;
+  box-shadow: 0 0 12px 2px rgb(186.2, 168.6, 218.2);
   animation: gradientSweep 0.8s ease-out 1 forwards;
 }
 .credential-input-section .credential-input:focus {
