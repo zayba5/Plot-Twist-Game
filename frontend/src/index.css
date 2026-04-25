@@ -351,8 +351,8 @@ body::before {
 #scoreboard-page #scoreboard {
   display: flex;
   flex-direction: column;
-  flex-wrap: wrap;
-  justify-content: center;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
   overflow: auto;
   flex-grow: 1;
 }
@@ -360,9 +360,9 @@ body::before {
 #scoreboard-page #scoreboard .scoreboard-item {
   border: thin solid rgba(190, 170, 255, 0.16);
   border-radius: 30px;
-  padding: 15px;
+  padding: 20px;
   background-color: #060912;
-  margin: 15px;
+  margin: 10px;
   min-width: 200px;
   display: flex;
   justify-content: space-between;
