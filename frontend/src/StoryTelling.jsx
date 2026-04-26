@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import "./index.css";
+import Waiting from "./Waiting";
+import Timer from "./timer.jsx";
 import { fetchCurrentStory, fetchUserId, fetchPollReady, fetchNextStoryPart } from "./Utility";
 import { postStory } from "./Utility.jsx";
 import { socket } from "./global.jsx";
@@ -7,14 +9,21 @@ import { useNavigate, useLocation } from "react-router-dom";
 import DebugPanel from "./DebugPanel.jsx";
 
 // Hardcode game settings
-const ROUND_TIME_SECONDS = 60000; // on deployment change it to 60
+const ROUND_TIME_SECONDS = 6000; // on deployment change it to 60
 
 // UI
-const Header = ({ innerRoundNumber, maxRounds }) => {
+const Header = ({ innerRoundNumber, maxRounds, endTimeMs, onExpire, submitted }) => {
   return (
     <div className="game-window-header">
       <h1>Write your story</h1>
       <p>Round {innerRoundNumber} / {maxRounds}</p>
+
+      {!submitted && (
+        <Timer
+          endTimeMs={endTimeMs}
+          onExpire={onExpire}
+        />
+      )}
     </div>
   );
 };
@@ -28,13 +37,7 @@ const PromptBox = ({ prompt }) => {
   );
 };
 
-const TimerBar = ({ timeLeft }) => {
-  return (
-    <div className="timer-box">
-      <p>Time remaining: {timeLeft}s</p>
-    </div>
-  );
-};
+
 
 const StoryInput = ({ storyText, setStoryText, disabled }) => {
   return (
@@ -52,7 +55,7 @@ const StoryInput = ({ storyText, setStoryText, disabled }) => {
   );
 };
 
-const ControlBar = ({ onSubmit, disabled, submitted, submitting, timeLeft }) => {
+const ControlBar = ({ onSubmit, disabled, submitted, submitting }) => {
   return (
     <div className="game-window-control-bar">
       <div className="control-bar-left">
@@ -61,7 +64,7 @@ const ControlBar = ({ onSubmit, disabled, submitted, submitting, timeLeft }) => 
             ? "Submitted"
             : submitting
             ? "Submitting..."
-            : `Auto-submit in ${timeLeft}s`}
+            : "Submit before the timer ends"}
         </span>
       </div>
       <div></div>
@@ -71,7 +74,11 @@ const ControlBar = ({ onSubmit, disabled, submitted, submitting, timeLeft }) => 
         onClick={onSubmit}
         disabled={disabled || submitting}
       >
-        {(!submitted && submitting) ? "Submitting..." : (submitted)? "Submitted": "Submit"}
+        {!submitted && submitting
+          ? "Submitting..."
+          : submitted
+          ? "Submitted"
+          : "Submit"}
       </button>
     </div>
   );
@@ -85,14 +92,13 @@ const StorytellingPage = () => {
   const queryParams = new URLSearchParams(location.search);
   // use URL game id as initial hint 
   const initialUrlGameId = queryParams.get("game_id");
-
   const [gameId, setGameId] = useState(null);
   const [storyId, setStoryId] = useState(null);
   const [maxRound, setMaxRound] = useState(-1);
   const [prompt, setPrompt] = useState("");
   const [storyText, setStoryText] = useState("");
 
-  const [timeLeft, setTimeLeft] = useState(ROUND_TIME_SECONDS);
+  const [endTimeMs, setEndTimeMs] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [innerRoundNumber, setInnerRoundNumber] = useState(-1);
@@ -109,12 +115,41 @@ const StorytellingPage = () => {
   const outerRoundRef = useRef(outerRoundNumber);
   const hasClaimedRef = useRef(false);
 
-  const canSubmit = useMemo(() => {
-    return !submitted && storyText.trim().length > 0;
-  }, [submitted, storyText]);
+  const canSubmit = !submitted && storyText.trim().length > 0;
 
   const [showDebug, setShowDebug] = useState(false);
-  const debugData = useMemo(() => ({
+  const shouldShowWaiting = submitted && isPolling;
+  const debugData = useMemo(() => (  
+    {game: {
+      gameId,
+      storyId,
+      maxRound,
+      innerRoundNumber,
+      outerRoundNumber,
+    },
+    player: {
+      userId,
+      hasClaimed: hasClaimedRef.current,
+    },
+    ui: {
+      prompt,
+      storyText,
+      endTimeMs,
+      submitting,
+      submitted,
+      canSubmit,
+    },
+    status: {
+      status,
+      claimError,
+      isPolling,
+      fetchNext,
+    },
+    refs: {
+      gameIdRef: gameIdRef.current,
+      innerRoundRef: innerRoundRef.current,
+      outerRoundRef: outerRoundRef.current,
+    }}), [
     gameId,
     storyId,
     maxRound,
@@ -123,28 +158,7 @@ const StorytellingPage = () => {
     userId,
     prompt,
     storyText,
-    timeLeft,
-    submitting,
-    submitted,
-    claimError,
-    status,
-    isPolling,
-    fetchNext,
-    canSubmit,
-    hasClaimed: hasClaimedRef.current,
-    gameIdRef: gameIdRef.current,
-    innerRoundRef: innerRoundRef.current,
-    outerRoundRef: outerRoundRef.current,
-  }), [
-    gameId,
-    storyId,
-    maxRound,
-    innerRoundNumber,
-    outerRoundNumber,
-    userId,
-    prompt,
-    storyText,
-    timeLeft,
+    endTimeMs,
     submitting,
     submitted,
     claimError,
@@ -173,7 +187,7 @@ const StorytellingPage = () => {
         if (!res.ok) {
           throw new Error(res.error || "Something went wrong");
         }
-
+        setEndTimeMs(Date.now() + ROUND_TIME_SECONDS * 1000);
         setGameId(res.game_id);
         setStoryId(res.story_id);
         setInnerRoundNumber(res.inner_round_number);
@@ -198,24 +212,10 @@ const StorytellingPage = () => {
   }, []);
 
   // update the timer, stops when submitted or no time left
-  useEffect(() => {
-    if (submitted) return;
-    if (timeLeft <= 0) return;
 
-    const intervalId = setInterval(() => {
-      setTimeLeft((prev) => prev - 1);
-    }, 1000);
-
-    return () => clearInterval(intervalId);
-  }, [timeLeft, submitted]);
   
   //auto submission when timer runs out
-  useEffect(() => {
-    if (timeLeft === 0 && !submitted && !submitting) {
-      console.log(`timeLeft: ${timeLeft}, submitted: ${submitted}, submitting: ${submitting}`);
-      handleSubmit(true);
-    }
-  }, [timeLeft, submitted, submitting]);
+
 
   //sets and shows UserId on page
   useEffect(() => {
@@ -253,7 +253,7 @@ const StorytellingPage = () => {
           setSubmitted(false);
           setIsPolling(false); // stops the polling
           setFetchNext(true); // trigger the next fetch
-          setTimeLeft(ROUND_TIME_SECONDS); // reset the timer
+          setEndTimeMs(Date.now() + ROUND_TIME_SECONDS * 1000); // reset the timer
           return;
         }
 
@@ -303,6 +303,7 @@ const StorytellingPage = () => {
           setInnerRoundNumber(res.inner_round_number);
           setStoryText("");
           setFetchNext(false);
+          setEndTimeMs(Date.now() + ROUND_TIME_SECONDS * 1000); //reset timer
         }
 
       } catch (err) {
@@ -352,33 +353,44 @@ const StorytellingPage = () => {
 
   return (
     <div className="game-window" id="storytelling-page">
-      
-      <div>
-          <DebugPanel
-            title="Story Page State"
-            data={debugData}
-            enabled={showDebug}
-            onToggle={setShowDebug}
-          />
-        <label><strong>Claimed Player: {userId || "Not assigned"}</strong></label> 
-        <label><strong>{claimError ? <div>{claimError}</div> : null}</strong></label>
-        <div><label><strong>Status: {status || "no status available"}</strong></label></div>
-      </div>
 
-      <Header innerRoundNumber={innerRoundNumber} maxRounds={maxRound} />
-      <PromptBox prompt={prompt} />
-      <TimerBar timeLeft={timeLeft} />
-      <StoryInput
-        storyText={storyText}
-        setStoryText={setStoryText}
-        disabled={submitted}
+
+      <Header
+        innerRoundNumber={innerRoundNumber}
+        maxRounds={maxRound}
+        endTimeMs={submitted ? null : endTimeMs}
+        onExpire={() => handleSubmit(true)}
+        submitted={submitted}
       />
+      <div>
+        <DebugPanel
+          title="Story Page State"
+          data={debugData}
+          enabled={showDebug}
+          onToggle={setShowDebug}
+        />
+      </div>
+      {shouldShowWaiting ? (
+        <Waiting
+          topText="Aligning the Stars"
+          bottomText="Waiting for other players"
+        />
+      ) : (
+        <>
+          <PromptBox prompt={prompt} />
+          <StoryInput
+            storyText={storyText}
+            setStoryText={setStoryText}
+            disabled={submitted}
+          />
+        </>
+      )}
+
       <ControlBar
         onSubmit={() => handleSubmit(false)}
         disabled={!canSubmit}
         submitted={submitted}
         submitting={submitting}
-        timeLeft={timeLeft}
       />
     </div>
   );
