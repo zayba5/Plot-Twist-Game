@@ -1,4 +1,4 @@
-from models import Game_Players, Voting, Voting_Session,Game_Settings, Game_Players, Status, Story_Part, Game, Story
+from models import Game_Players, Voting, Voting_Session,Game_Settings, Game_Players, Status, Story_Part, Game, Story, Category_Score
 import uuid
 from peewee import fn
 import random
@@ -72,6 +72,24 @@ def calcVotes(game, active_session):
 
                 if game_player:
                     game_player.user_score += 1
+                    if stage == 1:
+                        game_player.cont_score += 1
+                    elif stage == 2:
+                        category, created = Category_Score.get_or_create(
+                            game_id = game_player.game_id,
+                            user_id = game_player.user_id,
+                            category_id = active_session.cat_1
+                        )
+                        category.score += 1
+                        category.save()  
+                    elif stage == 3:
+                        category, created = Category_Score.get_or_create(
+                            game_id = game_player.game_id,
+                            user_id = game_player.user_id,
+                            category_id = active_session.cat_2
+                        )
+                        category.score += 1
+                        category.save()  
                     game_player.save()
 
         stage_results[f"stage_{stage}"] = {

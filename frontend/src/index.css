@@ -348,6 +348,42 @@ body::before {
   top: 10px;
 }
 
+#scoreboard-page {
+  .score-badge-pair {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .badge-stack {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    justify-content: flex-end;
+  }
+  .badge-stack .winner-badge {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    fill: rgb(194, 105, 235);
+  }
+  .badge-stack .badge-icon svg {
+    height: 100%;
+    width: 100%;
+    display: block;
+  }
+  .badge-stack .badge-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: black;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-align: center;
+  }
+}
+
 #scoreboard-page #scoreboard {
   display: flex;
   flex-direction: column;
@@ -366,6 +402,7 @@ body::before {
   min-width: 200px;
   display: flex;
   justify-content: space-between;
+  align-items: center;
 }
 
 @keyframes gradientSweep {

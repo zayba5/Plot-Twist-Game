@@ -44,6 +44,7 @@ class Game_Players(BaseModel):
     game_id = ForeignKeyField(Game, backref="player")
     user_id = ForeignKeyField(App_User, backref="player")
     user_score = IntegerField(default=0)
+    cont_score = IntegerField(default=0)
     
     class Meta:
         primary_key = CompositeKey('game_id', 'user_id')
@@ -63,6 +64,15 @@ class Voting_Category(BaseModel):
     title = TextField()
     tag = TextField()
     category_id = AutoField(primary_key = True)
+
+class Category_Score(BaseModel):
+    game_id = ForeignKeyField(Game, backref="category_score")
+    user_id = ForeignKeyField(App_User, backref="category_score")
+    category_id = ForeignKeyField(Voting_Category, backref="category_score")
+    score = IntegerField(default=0)
+    
+    class Meta:
+        primary_key = CompositeKey('game_id', 'user_id', 'category_id')
     
 class Voting_Session(BaseModel):
     voting_session_id = UUIDField(primary_key=True) ##primary key

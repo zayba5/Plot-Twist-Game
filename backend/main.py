@@ -966,9 +966,18 @@ def create_app(test_config: dict | None = None):
             
             scores = []
             for player in game.player:
+                category_scores_query = list(Category_Score.select().where(
+                    (Category_Score.user_id == player.user_id) &
+                    (Category_Score.game_id == player.game_id)
+                ))
+
+                category_scores = [{"category": cs.category_id.tag, "score": cs.score} for cs in category_scores_query]
+                category_scores.append({"category": "Continue", "score": player.cont_score})
+
                 scores.append({
                     "user" : str(player.user_id.username),
-                    "score" : int(player.user_score)
+                    "score" : int(player.user_score),
+                    "category_scores" : category_scores
                 })
             return jsonify({"scores" : scores})
     
