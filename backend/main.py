@@ -17,6 +17,8 @@ from votingUtil import *
 import bcrypt
 from util import *
 from datetime import datetime, timedelta, timezone
+from flask import session
+from flask_cors import CORS
 
 
 load_dotenv()
@@ -42,7 +44,7 @@ results_ready = {}
 
 def create_app(test_config: dict | None = None):
     app = Flask(__name__)
-    app.config["secretKey"] = os.getenv("secretKey")
+    app.config["SECRET_KEY"] = os.getenv("secretKey") or "dev-secret"
 
     # allow tests to override config easily
     app.config.update(
@@ -1197,14 +1199,15 @@ def create_app(test_config: dict | None = None):
     class SessionEndpoint(Resource):
         def get(self):
             username = request.args.get("username") or random.choice(DEFAULT_NAMES)  # default name
-
-
+            
             if getattr(g, "user", None):
                 return {
                     "ok": True,
                     "user_id": str(g.user.user_id),
                     "existing": True,
-                    "username": g.user.username 
+                    "username": g.user.username,
+                    "game_id": session.get("game_id"),
+                    "game_code": session.get("game_code")
                 }, 200
 
             user = App_User.create(
@@ -1218,7 +1221,9 @@ def create_app(test_config: dict | None = None):
                 "ok": True,
                 "user_id": str(user.user_id),
                 "existing": False,
-                "username": username
+                "username": username,
+                "game_id": None,
+                "game_code": None
             }, 201
 
 
@@ -1229,6 +1234,11 @@ def create_app(test_config: dict | None = None):
     class CreateLobby(Resource):
         def post(self):
             user = require_user()
+            if session.get("game_id"):
+                return {
+                    "ok": False,
+                    "error": "You are already in a game. Leave first."
+                }, 400
 
             data = request.get_json() or {}
             username = data.get("username", "Player")
@@ -1295,6 +1305,9 @@ def create_app(test_config: dict | None = None):
                 max_players=max_players
             )
 
+            session["game_id"] = str(game.game_id)
+            session["game_code"] = game.game_code
+
             return {
                 "ok": True,
                 "game_id": str(game.game_id),
@@ -1305,6 +1318,12 @@ def create_app(test_config: dict | None = None):
     class JoinLobby(Resource):
         def post(self):
             user = require_user()
+            if session.get("game_id"):
+                return {
+                    "ok": False,
+                    "error": "You are already in a game. Leave first."
+                }, 400
+
             data = request.get_json() or {}
             username = data.get("username", "Player")
             user.username = username
@@ -1349,6 +1368,9 @@ def create_app(test_config: dict | None = None):
                 {"username": user.username},
                 to=f"game:{game.game_code}"
             )
+
+            session["game_id"] = str(game.game_id)
+            session["game_code"] = game.game_code
 
             return {"ok": True, "game_id": str(game.game_id), "game_code": game.game_code}
 
@@ -1406,6 +1428,12 @@ def create_app(test_config: dict | None = None):
                 "password_hash": str(user.password_hash),
             }, 201
     
+    class LeaveLobby(Resource):
+        def post(self):
+            session.pop("game_id", None)
+            session.pop("game_code", None)
+            return {"ok": True}
+
     api.add_resource(CreateUserEndpoint, "/CreateUser")
 
 
@@ -1415,6 +1443,7 @@ def create_app(test_config: dict | None = None):
     api.add_resource(LobbyPlayers, "/lobby-players")
     
     api.add_resource(SessionEndpoint, "/session")
+    api.add_resource(LeaveLobby, "/leave-lobby")
 
     return app
             

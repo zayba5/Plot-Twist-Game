@@ -7,6 +7,8 @@ import { postStory } from "./Utility.jsx";
 import { socket } from "./global.jsx";
 import { useNavigate, useLocation } from "react-router-dom";
 import DebugPanel from "./DebugPanel.jsx";
+import Chat from "./Chat";
+import "./Lobby.css";
 
 // Hardcode game settings
 const ROUND_TIME_SECONDS = 6000; // on deployment change it to 60
@@ -220,12 +222,14 @@ const StorytellingPage = () => {
   //sets and shows UserId on page
   useEffect(() => {
     if (!gameId) return;
-    if (hasClaimedRef.current) return;
 
-    hasClaimedRef.current = true;
-    socket.emit("join_game", { game_id: gameId });
+    console.log("JOINING ROOMS:", gameId, initialUrlGameId);
+
+    // join BOTH possible room types (safe fix)
+    socket.emit("join_game", { game_code: initialUrlGameId });
+
     fetchUserId().then(setUserId);
-  }, [gameId]);
+  }, [gameId, initialUrlGameId]);
 
   // frontend polling to check if other players are ready, interval: 2 s
   useEffect(() => {
@@ -352,46 +356,63 @@ const StorytellingPage = () => {
   };
 
   return (
-    <div className="game-window" id="storytelling-page">
+    <div className="storytelling-container">
 
+      {/* LEFT SIDE: your existing game */}
+      <div className="game-window" id="storytelling-page">
 
-      <Header
-        innerRoundNumber={innerRoundNumber}
-        maxRounds={maxRound}
-        endTimeMs={submitted ? null : endTimeMs}
-        onExpire={() => handleSubmit(true)}
-        submitted={submitted}
-      />
-      <div>
-        <DebugPanel
-          title="Story Page State"
-          data={debugData}
-          enabled={showDebug}
-          onToggle={setShowDebug}
+        <Header
+          innerRoundNumber={innerRoundNumber}
+          maxRounds={maxRound}
+          endTimeMs={submitted ? null : endTimeMs}
+          onExpire={() => handleSubmit(true)}
+          submitted={submitted}
         />
-      </div>
-      {shouldShowWaiting ? (
-        <Waiting
-          topText="Aligning the Stars"
-          bottomText="Waiting for other players"
-        />
-      ) : (
-        <>
-          <PromptBox prompt={prompt} />
-          <StoryInput
-            storyText={storyText}
-            setStoryText={setStoryText}
-            disabled={submitted}
+
+        <div>
+          <DebugPanel
+            title="Story Page State"
+            data={debugData}
+            enabled={showDebug}
+            onToggle={setShowDebug}
           />
-        </>
+        </div>
+
+        {shouldShowWaiting ? (
+          <Waiting
+            topText="Aligning the Stars"
+            bottomText="Waiting for other players"
+          />
+        ) : (
+          <>
+            <PromptBox prompt={prompt} />
+            <StoryInput
+              storyText={storyText}
+              setStoryText={setStoryText}
+              disabled={submitted}
+            />
+          </>
+        )}
+
+        <ControlBar
+          onSubmit={() => handleSubmit(false)}
+          disabled={!canSubmit}
+          submitted={submitted}
+          submitting={submitting}
+        />
+
+      </div>
+
+      {/* RIGHT SIDE: chat sidebar */}
+      {gameId && (
+        <Chat
+          username={String(userId)}
+          gameCode={initialUrlGameId}
+          players={[]}
+          variant="sidebar"
+        />
       )}
 
-      <ControlBar
-        onSubmit={() => handleSubmit(false)}
-        disabled={!canSubmit}
-        submitted={submitted}
-        submitting={submitting}
-      />
     </div>
   );
 };
