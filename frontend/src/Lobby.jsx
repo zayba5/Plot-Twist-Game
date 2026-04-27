@@ -209,6 +209,24 @@ const Lobby = () => {
   socket.emit("start_game", { game_code: gameCode });
   };
 
+  const handleLeaveGame = async () => {
+    try {
+      await fetch("http://localhost:5000/leave-lobby", {
+        method: "POST",
+        credentials: "include",
+      });
+
+      // reset frontend state
+      setIsLobbyCreated(false);
+      setGameId("");
+      setGameCode("");
+      setPlayers([]);
+
+    } catch (err) {
+      console.error("Failed to leave lobby", err);
+    }
+  };
+
 
 
   return (
@@ -370,6 +388,14 @@ const Lobby = () => {
           disabled={!isHost}
         >
           {isHost ? "Play Game" : "Waiting for host..."}
+        </button>
+
+        <button
+          type="button"
+          className="lobby-footer-btn lobby-btn-leave"
+          onClick={handleLeaveGame}
+        >
+          Leave Game
         </button>
       </footer>
     </div>

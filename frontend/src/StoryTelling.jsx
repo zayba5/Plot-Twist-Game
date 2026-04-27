@@ -226,7 +226,7 @@ const StorytellingPage = () => {
     console.log("JOINING ROOMS:", gameId, initialUrlGameId);
 
     // join BOTH possible room types (safe fix)
-    socket.emit("join_game", { game_code: initialUrlGameId });
+    socket.emit("join_game", { game_id: gameId });
 
     fetchUserId().then(setUserId);
   }, [gameId, initialUrlGameId]);
@@ -404,14 +404,12 @@ const StorytellingPage = () => {
       </div>
 
       {/* RIGHT SIDE: chat sidebar */}
-      {gameId && (
         <Chat
           username={String(userId)}
-          gameCode={initialUrlGameId}
+          gameCode={gameId}
           players={[]}
           variant="sidebar"
         />
-      )}
 
     </div>
   );
