@@ -225,7 +225,7 @@ span {
   resize: vertical;
   padding: 18px 20px;
   border-radius: 14px;
-  border: 1px solid rgba(190, 170, 255, 0.16);
+  border: 1px solid #a993d1;
   background: rgba(8, 12, 24, 0.72);
   color: #eef2ff;
   font-family: inherit;
@@ -237,7 +237,6 @@ span {
 .story-textarea:focus {
   outline: none;
   border-color: #a993d1;
-  box-shadow: 0 0 0 3px rgba(169, 147, 209, 0.12);
 }
 
 .story-textarea::placeholder {

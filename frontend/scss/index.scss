@@ -312,7 +312,7 @@ span {
   resize: vertical;
   padding: 18px 20px;
   border-radius: 14px;
-  border: 1px solid $border-color;
+  border: 1px solid $accent-color;
   background: rgba(8, 12, 24, 0.72);
   color: $text-primary;
   font-family: inherit;
@@ -324,7 +324,6 @@ span {
 .story-textarea:focus {
   outline: none;
   border-color: $accent-color;
-  box-shadow: 0 0 0 3px rgba(169, 147, 209, 0.12);
 }
 
 .story-textarea::placeholder {
@@ -712,10 +711,3 @@ span {
   color: red;
   margin-top: 2px;
 }
-
-// .game-window-body{
-//   width: 100%;
-//   display: flex;
-//   justify-content: center;
-//   align-items: center;
-// }
