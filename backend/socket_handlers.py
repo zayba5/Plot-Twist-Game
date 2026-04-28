@@ -1,5 +1,4 @@
 import uuid
-from flask import session
 from flask_socketio import join_room, leave_room, emit
 
 from models import Game, Game_Players, App_User, Status

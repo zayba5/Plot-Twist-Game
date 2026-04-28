@@ -22,7 +22,7 @@ from flask_cors import CORS
 from socket_handlers import register_socket_handlers
 
 load_dotenv()
-s = TimestampSigner(os.getenv("secretKey") or "")
+#s = TimestampSigner(os.getenv("secretKey") or "")
 signer = TimestampSigner(os.getenv("secretKey") or "")
 socketio = SocketIO(cors_allowed_origins=[os.getenv("frontHost")])
 FRONTEND_ORIGIN = os.getenv("frontHost")

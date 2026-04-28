@@ -2,11 +2,11 @@ from models import *
 
 def reset_tables():
     db.connect(reuse_if_open=True)
-    db.drop_tables([Story_Part, Voting, Story, Voting_Session, Voting_Category, 
+    table_list = [Story_Part, Voting, Story, Voting_Session, Voting_Category, 
                     Game_Players, Game_Settings, Game, App_User, Status, 
-                    Story_Assignment, Round_State, Category_Score], safe=True, cascade=True)
-    db.create_tables([Status, App_User, Game, Game_Settings, Game_Players, Voting_Category,
-                      Voting_Session, Story, Voting, Story_Part, Story_Assignment, Round_State, Category_Score], safe=True)
+                    Story_Assignment, Round_State, Category_Score, Chat_Message]
+    db.drop_tables(table_list, safe=True, cascade=True)
+    db.create_tables(table_list, safe=True)
     Status.create(status_type="LOBBY")
     Status.create(status_type="IN_PROGRESS")
     Status.create(status_type="FINISHED")
