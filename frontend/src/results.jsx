@@ -5,6 +5,8 @@ import { fetchGameStories, fetchVotingSession, fetchResults } from "./Utility.js
 import { useNavigate } from "react-router-dom";
 import Timer from "./timer.jsx";
 import Waiting from "./Waiting.jsx";
+import Chat from "./Chat";
+import "./Lobby.css";
 
 const StoryPart = ({ part }) => {
     if (!part) return null;
@@ -113,6 +115,8 @@ const ResultsPage = () => {
     const waitingTimeoutRef = useRef(null);
     const tag1 = "Continue";
 
+    const [username, setUsername] = useState("");
+
     const clearWaitingTimeout = () => {
         if (waitingTimeoutRef.current) {
             clearTimeout(waitingTimeoutRef.current);
@@ -147,6 +151,25 @@ const ResultsPage = () => {
     const handleButtonClick = () => {
         beginContinue();
     };
+
+    useEffect(() => {
+        const loadSession = async () => {
+            const res = await fetch("http://localhost:5000/session", {
+            credentials: "include",
+            });
+            const data = await res.json();
+
+            setUsername(data.username || "Player");
+        };
+
+        loadSession();
+        }, []);
+
+    useEffect(() => {
+        if (!gameId) return;
+
+        socket.emit("join_game", { game_id: gameId });
+        }, [gameId]);
 
     useEffect(() => {
         async function handleResultsStarted(payload) {
@@ -256,34 +279,49 @@ const ResultsPage = () => {
     const tags = [tag1, results.cat_1, results.cat_2];
 
     return (
-        <div className="game-window" id="results-page">
-            <div className="game-window-header">
-                <h1>Your Results</h1>
-                <Timer endTimeMs={endTimeMs} onExpire={handleTimerExpire} />
+        <div className="storytelling-container">
+            <div className="game-window" id="results-page">
+                <div className="game-window-header">
+                    <h1>Your Results</h1>
+                    <Timer endTimeMs={endTimeMs} onExpire={handleTimerExpire} />
+                </div>
+
+                <div className="game-window-body">
+                    {showWaiting ? (
+                        <Waiting
+                            topText={"Aligning the Stars"}
+                            bottomText={"Waiting for other Players"}
+                        />
+                    ) : (
+                        <StoryCardList
+                            winners={results.winners}
+                            tags={tags}
+                            gameId={gameId}
+                        />
+                    )}
+                </div>
+
+                <div className="game-window-control-bar">
+                    <div></div>
+                    <div></div>
+                    <button
+                        className="button clickable"
+                        onClick={handleButtonClick}
+                        disabled={hasClickedContinue}
+                    >
+                        {hasClickedContinue ? "Waiting..." : "Continue"}
+                    </button>
+                </div>
             </div>
 
-            <div className="game-window-body">
-                {showWaiting ? (
-                    <Waiting
-                        topText={"Aligning the Stars"}
-                        bottomText={"Waiting for other Players"}
-                    />
-                ) : (
-                    <StoryCardList winners={results.winners} tags={tags} gameId={gameId} />
-                )}
-            </div>
-
-            <div className="game-window-control-bar">
-                <div></div>
-                <div></div>
-                <button
-                    className="button clickable"
-                    onClick={handleButtonClick}
-                    disabled={hasClickedContinue}
-                >
-                    {hasClickedContinue ? "Waiting..." : "Continue"}
-                </button>
-            </div>
+            {username && gameId && (
+                <Chat
+                    username={username}
+                    gameId={gameId}
+                    players={[]}
+                    variant="sidebar"
+                />
+            )}
         </div>
     );
 };
