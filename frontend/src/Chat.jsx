@@ -48,9 +48,7 @@ const Chat = ({ username, gameId, players, variant = "default", socketId }) => {
         {
           id: Date.now(),
           
-          user: data.username
-            ? (data.username === username ? "You" : data.username)
-            : "Unknown",
+          user: data.username === username ? "You" : data.username,
           text: data.text,
           time: data.time,
         },

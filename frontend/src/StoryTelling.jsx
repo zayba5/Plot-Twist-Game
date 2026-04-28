@@ -232,12 +232,13 @@ const StorytellingPage = () => {
     });
 
     const loadUser = async () => {
-      const data = await fetchUserId();
+      const res = await fetch("http://localhost:5000/session", {
+        credentials: "include",
+      });
+      const data = await res.json();
 
       setUserId(data.user_id);
-
-      // IMPORTANT FIX
-      setUsername(data.username || data.user_name || data.user?.username || "");
+      setUsername(data.username || "Player");
     };
 
     loadUser();
@@ -417,12 +418,14 @@ const StorytellingPage = () => {
       </div>
 
       {/* RIGHT SIDE: chat sidebar */}
-        <Chat
-          username={username}
-          gameId={gameId}
-          players={[]}
-          variant="sidebar"
-        />
+        {username && (
+          <Chat
+            username={username}
+            gameId={gameId}
+            players={[]}
+            variant="sidebar"
+          />
+        )}
 
     </div>
   );
