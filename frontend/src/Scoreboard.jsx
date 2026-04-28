@@ -3,6 +3,8 @@ import './index.css';
 import { socket } from "./global.jsx"
 import { fetchScores } from './Utility.jsx';
 import { useNavigate } from "react-router-dom";
+import Chat from "./Chat";
+import "./Lobby.css";
 
 
 const Header = () => {
@@ -133,6 +135,27 @@ const ScoreboardPage = () => {
   const [gameId, setGameId] = useState(null);
   const [scoreBreakdown, setScoreBreakdown] = useState(false);
 
+  const [username, setUsername] = useState("");
+
+  useEffect(() => {
+    const loadSession = async () => {
+      const res = await fetch("http://localhost:5000/session", {
+        credentials: "include",
+      });
+      const data = await res.json();
+
+      setUsername(data.username || "Player");
+    };
+
+    loadSession();
+  }, []);
+
+  useEffect(() => {
+    if (!gameId) return;
+
+    socket.emit("join_game", { game_id: gameId });
+  }, [gameId]);
+
   useEffect(() => {
     async function handleShowScoreboard(payload) {
       try {
@@ -174,13 +197,33 @@ const ScoreboardPage = () => {
   }, []);
 
   return (
-    <div className='game-window' id='scoreboard-page'>
-      <Header></Header>
-      <Scoreboard gameId={gameId} scoreBreakdown={scoreBreakdown}></Scoreboard>
-      <ControlBar toggleScoreBreakdown={() => setScoreBreakdown(!scoreBreakdown)}></ControlBar>
+    <div className="storytelling-container">
+      <div className="game-window" id="scoreboard-page">
+        <Header />
+
+        <Scoreboard
+          gameId={gameId}
+          scoreBreakdown={scoreBreakdown}
+        />
+
+        <ControlBar
+          toggleScoreBreakdown={() =>
+            setScoreBreakdown(!scoreBreakdown)
+          }
+        />
+      </div>
+
+      {username && gameId && (
+        <Chat
+          username={username}
+          gameId={gameId}
+          players={[]}
+          variant="sidebar"
+        />
+      )}
     </div>
-  )
-}
+  );
+};
 //end display content functions
 
 export default ScoreboardPage
