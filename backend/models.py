@@ -129,3 +129,12 @@ class Round_State(BaseModel):
         indexes = (
             (("game_id", "outer_round_number", "inner_round_number"), True),
         )
+
+class Chat_Message(BaseModel):
+    message_id = UUIDField(primary_key=True)
+    game_id = ForeignKeyField(Game, backref="chat_messages")
+    user_id = ForeignKeyField(App_User, backref="chat_messages", null=True)
+    username = CharField()
+    message_type = CharField(default="user")  # user, system
+    text = TextField()
+    created_at = DateTimeField(default=datetime.now(timezone.utc))
