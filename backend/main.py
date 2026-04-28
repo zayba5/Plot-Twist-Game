@@ -8,7 +8,7 @@ from models import *
 from itsdangerous import TimestampSigner
 from functools import wraps
 import uuid
-from flask_socketio import SocketIO, emit, join_room
+from flask_socketio import SocketIO, emit, join_room, leave_room
 from peewee import fn, IntegrityError
 import random
 import string
@@ -39,8 +39,6 @@ DEFAULT_NAMES = [
 results_ready = {}
 
 
-        
-
 
 def create_app(test_config: dict | None = None):
     app = Flask(__name__)
@@ -62,12 +60,88 @@ def create_app(test_config: dict | None = None):
     def handle_join_game(data):
         game_id = data.get("game_id")
         if not game_id:
+            print("join_game: missing game_id")
             return
 
-        join_room(f"game:{game_id}")
-        print(f"socket joined room game:{game_id}")
-            
-            
+        room_name = f"game:{game_id}"
+        join_room(room_name)
+        print(f"join_game: joined {room_name}")
+
+
+    @socketio.on("leave_game")
+    def handle_leave_game(data):
+        game_id = data.get("game_id")
+        if not game_id:
+            print("leave_game: missing game_id")
+            return
+
+        room_name = f"game:{game_id}"
+        leave_room(room_name)
+        print(f"leave_game: left {room_name}")
+
+
+    @socketio.on("send_message")
+    def handle_send_message(data):
+        print("send_message received:", data)
+
+        user_id = session.get("user_id")
+        game_id = data.get("game_id")
+        text = (data.get("text") or "").strip()
+        username = data.get("username")
+        time = data.get("time")
+
+        if not user_id:
+            print("send_message blocked: no user_id in session")
+            return
+
+        if not game_id:
+            print("send_message blocked: no game_id")
+            return
+
+        if not text:
+            print("send_message blocked: empty text")
+            return
+
+        try:
+            game_uuid = uuid.UUID(str(game_id))
+            user_uuid = uuid.UUID(str(user_id))
+        except ValueError:
+            print("send_message blocked: invalid UUID")
+            return
+
+        game = Game.get_or_none(Game.game_id == game_uuid)
+        if not game:
+            print("send_message blocked: game not found")
+            return
+
+        user = App_User.get_or_none(App_User.user_id == user_uuid)
+        if not user:
+            print("send_message blocked: user not found")
+            return
+
+        membership = Game_Players.get_or_none(
+            (Game_Players.game_id == game) &
+            (Game_Players.user_id == user)
+        )
+        if not membership:
+            print("send_message blocked: user not in lobby")
+            return
+
+        room_name = f"game:{game.game_id}"
+
+        emit(
+            "receive_message",
+            {
+                "game_id": str(game.game_id),
+                "username": username or user.username,
+                "text": text,
+                "time": time,
+            },
+            to=room_name
+        )
+
+        print(f"send_message emitted to {room_name}")
+
     @socketio.on("voting_round_expired")
     def handle_expired_voting(data):
         game_id = data.get("game_id")
@@ -115,28 +189,6 @@ def create_app(test_config: dict | None = None):
                 "game_id": str(game.game_id)
             },
             to=f"game:{game.game_id}"
-        )
-        
-    @socketio.on("send_message")
-    def handle_send_message(data):
-        game_id = data.get("game_id")
-        username = data.get("username")
-        socket_id = data.get("socket_id")
-        text = data.get("text")
-        time = data.get("time")
-
-        if not game_id or not text:
-            return
-
-        socketio.emit(
-            "receive_message",
-            {
-                "username": username,
-                "socket_id": socket_id,
-                "text": text,
-                "time": time,
-            },
-            to=f"game:{game_id}"
         )
 
     signer = TimestampSigner(os.getenv("secretKey") or "")
@@ -1412,9 +1464,98 @@ def create_app(test_config: dict | None = None):
     
     class LeaveLobby(Resource):
         def post(self):
+            user = require_user()
+            game_id_str = session.get("game_id")
+
+            if not game_id_str:
+                session.pop("game_id", None)
+                session.pop("game_code", None)
+                return {"ok": True, "message": "Not in a lobby."}, 200
+
+            try:
+                game_uuid = uuid.UUID(game_id_str)
+            except ValueError:
+                session.pop("game_id", None)
+                session.pop("game_code", None)
+                return {"ok": True, "message": "Invalid session game_id cleared."}, 200
+
+            game = Game.get_or_none(Game.game_id == game_uuid)
+
+            if not game:
+                session.pop("game_id", None)
+                session.pop("game_code", None)
+                return {"ok": True, "message": "Lobby no longer exists."}, 200
+
+            membership = Game_Players.get_or_none(
+                (Game_Players.game_id == game) &
+                (Game_Players.user_id == user)
+            )
+
+            if not membership:
+                session.pop("game_id", None)
+                session.pop("game_code", None)
+                return {"ok": True, "message": "User not in lobby."}, 200
+
+            room_name = f"game:{game.game_id}"
+            is_host = (game.game_host.user_id == user.user_id)
+
+            if is_host:
+                socketio.emit(
+                    "lobby_closed",
+                    {
+                        "message": "The host left the game. Lobby closed.",
+                        "game_id": str(game.game_id),
+                    },
+                    to=room_name
+                )
+
+                Game_Players.delete().where(Game_Players.game_id == game).execute()
+                Game_Settings.delete().where(Game_Settings.game_id == game).execute()
+                Game.delete().where(Game.game_id == game.game_id).execute()
+
+                try:
+                    socketio.server.close_room(room_name)
+                except Exception as e:
+                    print("close_room failed:", e)
+
+                session.pop("game_id", None)
+                session.pop("game_code", None)
+
+                return {"ok": True, "hostLeft": True}, 200
+
+            Game_Players.delete().where(
+                (Game_Players.game_id == game) &
+                (Game_Players.user_id == user)
+            ).execute()
+
+            players_list = [
+                {
+                    "user_id": str(p.user_id.user_id),
+                    "username": p.user_id.username,
+                    "isHost": p.user_id.user_id == game.game_host.user_id
+                }
+                for p in game.player
+            ]
+
+            socketio.emit(
+                "lobby_update",
+                {"game_id": str(game.game_id), "players": players_list},
+                to=room_name
+            )
+
+            socketio.emit(
+                "player_left_message",
+                {
+                    "username": user.username,
+                    "game_id": str(game.game_id),
+                },
+                to=room_name
+            )
+
             session.pop("game_id", None)
             session.pop("game_code", None)
-            return {"ok": True}
+
+            return {"ok": True, "hostLeft": False}, 200
 
     api.add_resource(CreateUserEndpoint, "/CreateUser")
 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './index.css';
 import './Lobby.css';
-import { io } from "socket.io-client";
+//import { io } from "socket.io-client";
 import { socket } from "./global.jsx";
 import Chat from "./Chat";
 
@@ -55,27 +55,27 @@ const Lobby = () => {
 
 
   React.useEffect(() => {
-    if (!socket) return;
+    const handleLobbyUpdate = (data) => {
+      if (!data?.players) return;
 
-    socket.on("lobby_update", (data) => {
-      if (data.players) {
-        setPlayers(prev =>
-          data.players.map(p => {
-            const existing = prev.find(x => x.user_id === p.user_id);
-            return {
-              name: p.username,
-              user_id: p.user_id,
-              isHost: p.isHost ?? existing?.isHost ?? false,
-            };
-          })
-        );
-      }
-    });
+      setPlayers((prev) =>
+        data.players.map((p) => {
+          const existing = prev.find((x) => x.user_id === p.user_id);
+          return {
+            name: p.username,
+            user_id: p.user_id,
+            isHost: p.isHost ?? existing?.isHost ?? false,
+          };
+        })
+      );
+    };
+
+    socket.on("lobby_update", handleLobbyUpdate);
 
     return () => {
-      socket.off("lobby_update");
+      socket.off("lobby_update", handleLobbyUpdate);
     };
-  }, [socket]);
+  }, []);
  
 
   /*React.useEffect(() => {
@@ -96,16 +96,37 @@ const Lobby = () => {
     return () => socket.off("lobby_snapshot");
   }, []); */
 
+  //handle host left their own game
+  React.useEffect(() => {
+    const handleLobbyClosed = (data) => {
+      alert(data?.message || "The host left. Lobby closed.");
+
+      if (gameId) {
+        socket.emit("leave_game", { game_id: gameId });
+      }
+
+      setIsLobbyCreated(false);
+      setGameId("");
+      setGameCode("");
+      setPlayers([]);
+    };
+
+    socket.on("lobby_closed", handleLobbyClosed);
+
+    return () => {
+      socket.off("lobby_closed", handleLobbyClosed);
+    };
+  }, [gameId]);
 
   React.useEffect(() => {
-    socket.on("game_started", (data) => {
+    const handleGameStarted = (data) => {
       console.log("Game started!", data);
-
-      // redirect to Storytelling page
       window.location.href = `/story?game_id=${data.game_id}`;
-    });
+    };
 
-    return () => socket.off("game_started");
+    socket.on("game_started", handleGameStarted);
+
+    return () => socket.off("game_started", handleGameStarted);
   }, []);
 
 
@@ -225,18 +246,28 @@ const Lobby = () => {
   };
 
   const handleLeaveGame = async () => {
+    const leavingGameId = gameId;
+
     try {
-      await fetch("http://localhost:5000/leave-lobby", {
+      const res = await fetch("http://localhost:5000/leave-lobby", {
         method: "POST",
         credentials: "include",
       });
 
-      // reset frontend state
+      const data = await res.json();
+
+      if (leavingGameId) {
+        socket.emit("leave_game", { game_id: leavingGameId });
+      }
+
       setIsLobbyCreated(false);
       setGameId("");
       setGameCode("");
       setPlayers([]);
 
+      if (!data.ok) {
+        console.error("Leave lobby returned non-ok:", data);
+      }
     } catch (err) {
       console.error("Failed to leave lobby", err);
     }

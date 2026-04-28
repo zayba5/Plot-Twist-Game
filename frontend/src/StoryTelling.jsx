@@ -215,12 +215,6 @@ const StorytellingPage = () => {
     loadData();
   }, []);
 
-  // update the timer, stops when submitted or no time left
-
-  
-  //auto submission when timer runs out
-
-
   //sets and shows UserId on page
 
   useEffect(() => {
