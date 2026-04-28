@@ -60,38 +60,13 @@ def create_app(test_config: dict | None = None):
     ##websocket handlers
     @socketio.on("join_game")
     def handle_join_game(data):
-        game_code = data.get("game_code")
-        if not game_code:
+        game_id = data.get("game_id")
+        if not game_id:
             return
 
-        game = Game.get_or_none(Game.game_code == game_code.upper())
-        if game:
-            join_room(f"game:{game.game_code}")
-            print(f"socket joined room game:{game.game_id}")
-
-            #  build player list
-            players_list = [
-                {
-                    "user_id": str(p.user_id.user_id),
-                    "username": p.user_id.username,
-                    "isHost": p.user_id.user_id == game.game_host.user_id
-                }
-                for p in game.player
-            ]
-
-            #  send ONLY to this user
-            socketio.emit(
-                "lobby_snapshot",
-                {"players": players_list},
-                to=request.sid
-            )
+        join_room(f"game:{game_id}")
+        print(f"socket joined room game:{game_id}")
             
-    @socketio.on("join_game_room")
-    def handle_join_game(data):
-        game_id = data.get("game_id")
-        if game_id:
-            join_room(f"game:{game_id}")
-            print(f"socket joined room game:{game_id}")
             
     @socketio.on("voting_round_expired")
     def handle_expired_voting(data):
@@ -103,11 +78,17 @@ def create_app(test_config: dict | None = None):
 
     @socketio.on("start_game")
     def handle_start_game(data):
-        game_code = data.get("game_code")
-        if not game_code:
+        game_id = data.get("game_id")
+        if not game_id:
             return
 
-        game = Game.get_or_none(Game.game_code == game_code.upper())
+        import uuid
+        try:
+            game_uuid = uuid.UUID(str(game_id))
+        except ValueError:
+            return
+
+        game = Game.get_or_none(Game.game_id == game_uuid)
         if not game:
             return
 
@@ -133,28 +114,29 @@ def create_app(test_config: dict | None = None):
             {
                 "game_id": str(game.game_id)
             },
-            to=f"game:{game.game_code}"
-        )    
+            to=f"game:{game.game_id}"
+        )
         
     @socketio.on("send_message")
     def handle_send_message(data):
-        game_code = data.get("game_code")
+        game_id = data.get("game_id")
         username = data.get("username")
+        socket_id = data.get("socket_id")
         text = data.get("text")
         time = data.get("time")
 
-        if not game_code or not text:
+        if not game_id or not text:
             return
 
-        # broadcast to everyone in the same room
         socketio.emit(
             "receive_message",
             {
                 "username": username,
+                "socket_id": socket_id,
                 "text": text,
                 "time": time,
             },
-            to=f"game:{game_code}"
+            to=f"game:{game_id}"
         )
 
     signer = TimestampSigner(os.getenv("secretKey") or "")
@@ -1281,7 +1263,7 @@ def create_app(test_config: dict | None = None):
             socketio.emit(
                 "lobby_update",
                 {"game_id": str(game.game_id), "players": players_list},
-                to=f"game:{game.game_code}"
+                to=f"game:{game.game_id}"
             )
 
             # emit system message for chat
@@ -1292,7 +1274,7 @@ def create_app(test_config: dict | None = None):
                     "username": user.username,
                     "players": players_list  
                 },
-                to=f"game:{game.game_code}"
+                to=f"game:{game.game_id}"
             )
 
             # save game settings
@@ -1359,14 +1341,14 @@ def create_app(test_config: dict | None = None):
             socketio.emit(
                 "lobby_update",
                 {"game_id": str(game.game_id), "players": players_list},
-                to=f"game:{game.game_code}"
+                to=f"game:{game.game_id}"
             )
 
             # emit system chat join message
             socketio.emit(
                 "player_joined_message",
                 {"username": user.username},
-                to=f"game:{game.game_code}"
+                to=f"game:{game.game_id}"
             )
 
             session["game_id"] = str(game.game_id)

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { socket } from "./global.jsx";
 
-const Chat = ({ username, gameCode, gameId, players, variant = "default" }) => {
+const Chat = ({ username, gameId, players, variant = "default", socketId }) => {
   const [chatMessage, setChatMessage] = useState("");
   const [messages, setMessages] = useState([
     {
@@ -12,77 +12,73 @@ const Chat = ({ username, gameCode, gameId, players, variant = "default" }) => {
     },
   ]);
 
+
   useEffect(() => {
-    socket.on("player_joined_message", (data) => {
+    const handler = (data) => {
+      if (!data) return;
+
+
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now(),
           user: "System",
           text: `${data.username} joined the lobby.`,
-          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          time: new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
         },
       ]);
-    });
+    };
 
-    return () => socket.off("player_joined_message");
-  }, []);
+    socket.on("player_joined_message", handler);
+
+    return () => {
+      socket.off("player_joined_message", handler);
+    };
+  }, [gameId]);
 
   useEffect(() => {
     const handler = (data) => {
-      console.log("CHAT RECEIVED:", data); //
-
       if (!data) return;
 
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now(),
-          user: data.username === username ? "You" : data.username,
+          
+          user: data.username
+            ? (data.username === username ? "You" : data.username)
+            : "Unknown",
           text: data.text,
           time: data.time,
         },
       ]);
     };
 
-    console.log("LISTENING FOR MESSAGES..."); // 
-
     socket.on("receive_message", handler);
 
-    return () => {
-      socket.off("receive_message", handler);
-    };
-  }, [username]);
+    return () => socket.off("receive_message", handler);
+    
+  }, [username, gameId]);
 
 
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (!chatMessage.trim()) return;
 
-    const payload = {
-      text: chatMessage,
+    
+    socket.emit("send_message", {
+      game_id: gameId,
       username,
+      text: chatMessage,
       time: new Date().toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
       }),
-    };
+    });
 
-    const isUuid = /^[0-9a-fA-F-]{36}$/.test(gameCode);
-
-    if (isUuid) {
-      payload.game_id = gameCode;
-    } else {
-      payload.game_code = gameCode;
-    }
-
-    // ADD MESSAGE LOCALLY so you see it instantly
-    
-
-    // send to server
-    socket.emit("send_message", payload);
-
-    // clear input
     setChatMessage("");
   };
 

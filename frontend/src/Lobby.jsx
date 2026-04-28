@@ -147,6 +147,13 @@ const Lobby = () => {
 
   const handleInvite = async (e) => {
     e.preventDefault();
+
+    // ADD THIS BLOCK
+    await fetch("http://localhost:5000/leave-lobby", {
+      method: "POST",
+      credentials: "include",
+    });
+
     const name = username.trim() || "Host";
 
     try {
@@ -164,7 +171,7 @@ const Lobby = () => {
         setIsLobbyCreated(true);
 
         // join socket room
-        socket.emit("join_game", { game_code: data.game_code });
+        socket.emit("join_game", { game_id: data.game_id });
 
         // Chat component will handle lobby messages via socket events
       }
@@ -174,9 +181,17 @@ const Lobby = () => {
     }
   };
 
+
   const handleJoinGame = async (e) => {
     e.preventDefault();
-    const name = joinUsername.trim() || "Player";
+
+    // ADD THIS BLOCK
+    await fetch("http://localhost:5000/leave-lobby", {
+      method: "POST",
+      credentials: "include",
+    });
+
+  const name = joinUsername.trim() || "Player";
 
     try {
       const res = await fetch("http://localhost:5000/join-lobby", {
@@ -193,7 +208,7 @@ const Lobby = () => {
         setIsLobbyCreated(true);
 
         // join socket room
-        socket.emit("join_game", { game_code: data.game_code });
+        socket.emit("join_game", { game_id: data.game_id });
       } else {
         alert(data.error);
       }
@@ -206,7 +221,7 @@ const Lobby = () => {
   const handleStartGame = (e) => {
   e.preventDefault();
 
-  socket.emit("start_game", { game_code: gameCode });
+  socket.emit("start_game", { game_id: gameId });
   };
 
   const handleLeaveGame = async () => {
@@ -376,7 +391,7 @@ const Lobby = () => {
 
         <Chat
           username={username}
-          gameCode={gameCode}
+          gameId={gameId}
           players={players}
         />
       </div>

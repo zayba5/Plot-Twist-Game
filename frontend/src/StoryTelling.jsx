@@ -117,6 +117,8 @@ const StorytellingPage = () => {
   const outerRoundRef = useRef(outerRoundNumber);
   const hasClaimedRef = useRef(false);
 
+  const [username, setUsername] = useState("");
+
   const canSubmit = !submitted && storyText.trim().length > 0;
 
   const [showDebug, setShowDebug] = useState(false);
@@ -220,16 +222,27 @@ const StorytellingPage = () => {
 
 
   //sets and shows UserId on page
+
   useEffect(() => {
     if (!gameId) return;
 
-    console.log("JOINING ROOMS:", gameId, initialUrlGameId);
+    socket.emit("join_game", {
+      game_id: gameId,
+      game_code: initialUrlGameId
+    });
 
-    // join BOTH possible room types (safe fix)
-    socket.emit("join_game", { game_id: gameId });
+    const loadUser = async () => {
+      const data = await fetchUserId();
 
-    fetchUserId().then(setUserId);
+      setUserId(data.user_id);
+
+      // IMPORTANT FIX
+      setUsername(data.username || data.user_name || data.user?.username || "");
+    };
+
+    loadUser();
   }, [gameId, initialUrlGameId]);
+
 
   // frontend polling to check if other players are ready, interval: 2 s
   useEffect(() => {
@@ -405,8 +418,8 @@ const StorytellingPage = () => {
 
       {/* RIGHT SIDE: chat sidebar */}
         <Chat
-          username={String(userId)}
-          gameCode={gameId}
+          username={username}
+          gameId={gameId}
           players={[]}
           variant="sidebar"
         />
