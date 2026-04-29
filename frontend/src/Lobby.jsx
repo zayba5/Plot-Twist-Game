@@ -21,6 +21,7 @@ const Lobby = () => {
   const [copied, setCopied] = useState(false);
   const [gameId, setGameId] = useState('');
   const [players, setPlayers] = useState([]);
+  const [showHowToPlay, setShowHowToPlay] = useState(false);
 
   const isHost = players.find(p => p.user_id === currentUserId)?.isHost;
 
@@ -305,6 +306,12 @@ const Lobby = () => {
         <p className="lobby-status">
           {isLobbyCreated ? 'Waiting for players...' : 'Create a game or join with a code.'}
         </p>
+        <button
+          className="lobby-howto-btn"
+          onClick={() => setShowHowToPlay(true)}
+        >
+          How to Play
+        </button>
       </header>
 
       <div className="lobby-panels">
@@ -463,6 +470,20 @@ const Lobby = () => {
         />
       </div>
       <footer className="lobby-footer">
+
+        <p className="lobby-footer-tagline">
+          <span>Build</span>
+          <span>a</span>
+          <span>story</span>
+          <span>together,</span>
+          <span>then</span>
+          <span>vote</span>
+          <span>for</span>
+          <span>the</span>
+          <span>best</span>
+          <span>one!</span>
+        </p>
+
         <button
           type="button"
           className="lobby-footer-btn lobby-btn-play"
@@ -480,6 +501,91 @@ const Lobby = () => {
           Leave Game
         </button>
       </footer>
+
+      {showHowToPlay && (
+        <div
+          className="howto-overlay"
+          onClick={() => setShowHowToPlay(false)}
+        >
+          <div
+            className="howto-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="howto-close"
+              onClick={() => setShowHowToPlay(false)}
+            >
+              ✕
+            </button>
+
+            <h2 className="lobby-panel-title">How to Play</h2>
+
+            <div className="howto-content">
+
+              <div className="howto-step">
+                <span className="howto-step-number">1</span>
+                <div>
+                  <p className="howto-title">Start or Join a Game</p>
+                  <p>Create a lobby or enter an invite code to play with others.</p>
+                </div>
+              </div>
+
+              <div className="howto-step">
+                <span className="howto-step-number">2</span>
+                <div>
+                  <p className="howto-title">Set Game Settings</p>
+                  <p>Choose how many rounds you want to play and how many voting sessions will happen.</p>
+                </div>
+              </div>
+
+              <div className="howto-step">
+                <span className="howto-step-number">3</span>
+                <div>
+                  <p className="howto-title">Write Your Part</p>
+                  <p>Each round, write a continuation of a story based on what you receive.</p>
+                </div>
+              </div>
+
+              <div className="howto-step">
+                <span className="howto-step-number">4</span>
+                <div>
+                  <p className="howto-title">Pass It On</p>
+                  <p>Your story is passed to another player—continue building together.</p>
+                </div>
+              </div>
+
+              <div className="howto-step">
+                <span className="howto-step-number">5</span>
+                <div>
+                  <p className="howto-title">Vote</p>
+                  <p>After several rounds, vote for your favorite completed story.</p>
+                </div>
+              </div>
+
+              <div className="howto-step">
+                <span className="howto-step-number">6</span>
+                <div>
+                  <p className="howto-title">Score Points</p>
+                  <p>Everyone who contributed to the winning story earns points.</p>
+                </div>
+              </div>
+
+              <div className="howto-step">
+                <span className="howto-step-number">7</span>
+                <div>
+                  <p className="howto-title">Win the Game</p>
+                  <p>After all rounds, the player with the highest score wins.</p>
+                </div>
+              </div>
+
+              <div className="howto-tip">
+                💡 Tip: You only see the previous part of the story—be creative!
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
     </div>
 
   );
