@@ -36,7 +36,6 @@ DEFAULT_NAMES = [
     "PanicButton"
 ]
 
-# results_ready = {}
 
 def create_app(test_config: dict | None = None):
     app = Flask(__name__)

@@ -4,7 +4,6 @@ import { socket } from "./global.jsx"
 import { fetchScores } from './Utility.jsx';
 import { useNavigate } from "react-router-dom";
 import Chat from "./Chat";
-// import "./Lobby.css";
 
 
 const Header = () => {

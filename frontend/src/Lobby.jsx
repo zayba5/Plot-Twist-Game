@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 import './index.css';
-// import './Lobby.css';
-//import { io } from "socket.io-client";
 import { socket } from "./global.jsx";
 import Chat from "./Chat";
 
