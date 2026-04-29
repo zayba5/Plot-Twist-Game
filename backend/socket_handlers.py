@@ -1,7 +1,7 @@
 import uuid
 from flask_socketio import join_room, leave_room, emit
 
-from models import Game, Game_Players, App_User, Status
+from models import *
 from util import (
     get_user_from_cookie,
     get_active_game_from_user,
@@ -44,7 +44,6 @@ def register_socket_handlers(socketio, signer):
         game_id = data.get("game_id")
         user_id = data.get("user_id")
         text = (data.get("text") or "").strip()
-        time = data.get("time")
 
         if not user_id:
             print("send_message blocked: no user_id in payload")
@@ -80,24 +79,33 @@ def register_socket_handlers(socketio, signer):
             (Game_Players.user_id == user)
         )
         if not membership:
-            print("send_message blocked: user not in lobby")
+            print("send_message blocked: user not in game")
             return
 
-        room_name = f"game:{game.game_id}"
+        msg = Chat_Message.create(
+            game_id=game,
+            user_id=user,
+            username=user.username,
+            text=text,
+            message_type="user",
+        )
 
         emit(
-            "receive_message",
+            "chat_message",
             {
+                "id": str(msg.message_id),
                 "game_id": str(game.game_id),
                 "user_id": str(user.user_id),
                 "username": user.username,
-                "text": text,
-                "time": time,
+                "text": msg.text,
+                "message_type": msg.message_type,
+                "time": msg.created_at.strftime("%I:%M %p"),
+                "created_at": msg.created_at.isoformat(),
             },
-            to=room_name
+            to=f"game:{game.game_id}"
         )
 
-        print(f"send_message emitted to {room_name}")
+        print(f"send_message emitted to game:{game.game_id}")
 
 
     @socketio.on("voting_round_expired")
