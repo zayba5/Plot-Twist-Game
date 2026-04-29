@@ -141,7 +141,7 @@ const ControlBar = ({ toggleScoreBreakdown, gameId }) => {
         className="button"
         onClick={handleReturnToLobby}
       >
-        Return to Lobby
+        Leave Game
       </button>
     </div>
   );

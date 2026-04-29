@@ -1235,8 +1235,6 @@ def create_app(test_config: dict | None = None):
                     to=room_name
                 )
 
-                Game_Players.delete().where(Game_Players.game_id == game).execute()
-                Game_Settings.delete().where(Game_Settings.game_id == game).execute()
                 Game.delete().where(Game.game_id == game.game_id).execute()
 
                 try:
