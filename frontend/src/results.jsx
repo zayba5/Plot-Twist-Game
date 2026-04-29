@@ -327,7 +327,6 @@ const ResultsPage = () => {
                 currentUserId={currentUserId}
                 gameId={gameId}
                 players={players}
-                variant="sidebar"
                 />
             )}
         </div>
