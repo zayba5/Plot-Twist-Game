@@ -1,80 +1,95 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { socket } from "./global.jsx";
+import { fetchChatHistory } from "./utility.jsx";
 
-const Chat = ({ username, gameId, players, variant = "default", socketId }) => {
+const Chat = ({ username, currentUserId, gameId, players, variant = "default" }) => {
   const [chatMessage, setChatMessage] = useState("");
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      user: "StoryBot",
-      text: "Welcome to Plot Twist! Prepare your story and wait for friends to join!",
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    },
-  ]);
+  const [messages, setMessages] = useState([]);
+  const [chatDisabled, setChatDisabled] = useState(false);
 
+  const normalizeMessage = (msg) => ({
+    id: msg.id,
+    user:
+      msg.message_type === "system"
+        ? "System"
+        : String(msg.user_id) === String(currentUserId)
+        ? "You"
+        : msg.username,
+    text: msg.text,
+    time: msg.time,
+    message_type: msg.message_type,
+  });
 
   useEffect(() => {
-    const handler = (data) => {
-      if (!data) return;
-
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now(),
-          user: "System",
-          text: `${data.username} joined the lobby.`,
-          time: new Date().toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-        },
-      ]);
-    };
-
-    socket.on("player_joined_message", handler);
-
-    return () => {
-      socket.off("player_joined_message", handler);
-    };
+    setChatDisabled(!gameId);
   }, [gameId]);
 
   useEffect(() => {
-    const handler = (data) => {
-      if (!data) return;
+    if (!gameId) {
+      setMessages([]);
+      return;
+    }
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now(),
-          
-          user: data.username === username ? "You" : data.username,
-          text: data.text,
-          time: data.time,
-        },
-      ]);
+    let cancelled = false;
+
+    const loadHistory = async () => {
+      try {
+        const data = await fetchChatHistory(gameId);
+        if (cancelled) return;
+
+        setMessages((data.messages || []).map(normalizeMessage));
+      } catch (err) {
+        console.error("Failed to load chat history", err);
+      }
     };
 
-    socket.on("receive_message", handler);
+    loadHistory();
 
-    return () => socket.off("receive_message", handler);
-    
-  }, [username, gameId]);
+    return () => {
+      cancelled = true;
+    };
+  }, [gameId, currentUserId]);
 
+  useEffect(() => {
+    const handleChatMessage = (data) => {
+      if (!data) return;
+      if (String(data.game_id) !== String(gameId)) return;
+
+      setMessages((prev) => {
+        const alreadyExists = prev.some((msg) => String(msg.id) === String(data.id));
+        if (alreadyExists) return prev;
+
+        return [...prev, normalizeMessage(data)];
+      });
+    };
+
+    const handleLobbyClosed = (data) => {
+      if (!data) return;
+      if (String(data.game_id) !== String(gameId)) return;
+
+      setChatDisabled(true);
+      setChatMessage("");
+    };
+
+    socket.on("chat_message", handleChatMessage);
+    socket.on("lobby_closed", handleLobbyClosed);
+
+    return () => {
+      socket.off("chat_message", handleChatMessage);
+      socket.off("lobby_closed", handleLobbyClosed);
+    };
+  }, [gameId, currentUserId]);
 
   const handleSendMessage = (e) => {
     e.preventDefault();
+
+    if (!gameId || !currentUserId || chatDisabled) return;
     if (!chatMessage.trim()) return;
 
-    
     socket.emit("send_message", {
       game_id: gameId,
-      username,
-      text: chatMessage,
-      time: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
+      user_id: currentUserId,
+      text: chatMessage.trim(),
     });
 
     setChatMessage("");
@@ -92,9 +107,9 @@ const Chat = ({ username, gameId, players, variant = "default", socketId }) => {
         <div className="lobby-players-in-chat">
           <p className="lobby-players-in-chat-title">Players in lobby</p>
           <ul className="lobby-players-in-chat-list">
-            {players.map((p, i) => (
-              <li key={i}>
-                {p.name} {p.isHost ? "(Host)" : ""}
+            {players.map((p) => (
+              <li key={p.user_id}>
+                {p.name || p.username} {p.isHost ? "(Host)" : ""}
               </li>
             ))}
           </ul>
@@ -106,7 +121,7 @@ const Chat = ({ username, gameId, players, variant = "default", socketId }) => {
           <div
             key={msg.id}
             className={`lobby-chat-msg ${
-              msg.user === "System" ? "lobby-chat-msg-system" : ""
+              msg.message_type === "system" ? "lobby-chat-msg-system" : ""
             }`}
           >
             <span className="lobby-chat-user">{msg.user}</span>
@@ -120,11 +135,12 @@ const Chat = ({ username, gameId, players, variant = "default", socketId }) => {
         <input
           type="text"
           className="lobby-chat-input"
-          placeholder="Type a message..."
+          placeholder={chatDisabled ? "Chat disabled" : "Type a message..."}
           value={chatMessage}
           onChange={(e) => setChatMessage(e.target.value)}
+          disabled={chatDisabled}
         />
-        <button type="submit" className="lobby-btn-send">
+        <button type="submit" className="lobby-btn-send" disabled={chatDisabled}>
           Send
         </button>
       </form>

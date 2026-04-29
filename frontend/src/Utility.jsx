@@ -140,3 +140,10 @@ export async function fetchResults(gameID) {
     credentials: "include"
   })
 }
+
+export async function fetchChatHistory(gameID) {
+  return apiJson(`chat-history?game_id=${gameID}`, {
+    method: "GET",
+    credentials: "include",
+  });
+}
