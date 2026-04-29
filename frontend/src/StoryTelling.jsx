@@ -378,31 +378,22 @@ const StorytellingPage = () => {
           submitted={submitted}
         />
 
-        <div>
-          <DebugPanel
-            title="Story Page State"
-            data={debugData}
-            enabled={showDebug}
-            onToggle={setShowDebug}
-          />
-        </div>
-
         {shouldShowWaiting ? (
           <Waiting
             topText="Aligning the Stars"
             bottomText="Waiting for other players"
           />
         ) : (
-          <>
+          <div id="story-prompt-wrapper">
             <PromptBox prompt={prompt} />
             <StoryInput
               storyText={storyText}
               setStoryText={setStoryText}
               disabled={submitted}
             />
-          </>
+          </div>
         )}
-
+        <div></div>
         <ControlBar
           onSubmit={() => handleSubmit(false)}
           disabled={!canSubmit}

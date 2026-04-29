@@ -1582,3 +1582,16 @@ span {
     margin-left: 0;
   }
 }
+
+#storytelling-page{
+	justify-content: space-between;
+
+	#story-prompt-wrapper{
+		padding: 20px;
+		height: 100%;
+
+		.story-textarea{
+			height: 30%;
+		}
+	}
+}
