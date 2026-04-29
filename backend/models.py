@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 import random
 from datetime import *
-
+import uuid
 ##initialization
 load_dotenv()
 
@@ -131,10 +131,10 @@ class Round_State(BaseModel):
         )
 
 class Chat_Message(BaseModel):
-    message_id = UUIDField(primary_key=True)
-    game_id = ForeignKeyField(Game, backref="chat_messages")
-    user_id = ForeignKeyField(App_User, backref="chat_messages", null=True)
+    message_id = UUIDField(primary_key=True, default=uuid.uuid4)
+    game_id = ForeignKeyField(Game, backref="chat_messages", on_delete="CASCADE")
+    user_id = ForeignKeyField(App_User, backref="chat_messages", null=True, on_delete="SET NULL")
     username = CharField()
-    message_type = CharField(default="user")  # user, system
     text = TextField()
-    created_at = DateTimeField(default=datetime.now(timezone.utc))
+    message_type = CharField(default="user")  # "user" or "system"
+    created_at = DateTimeField(default=lambda: datetime.now(timezone.utc))
