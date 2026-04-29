@@ -52,6 +52,70 @@ $nebula-background:
   radial-gradient(circle at 50% 50%, rgba(94, 65, 104, 0.18), transparent 45%),
   linear-gradient(180deg, #070b14 0%, #0b1020 45%, #141427 100%);
 
+//gradient sweep animation
+
+@keyframes gradientSweep {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
+@mixin gradient-sweep-input(
+  $bg: $primary-color,
+  $border: $accent-color,
+  $text: $font-color,
+  $glow: $accent-color
+) {
+  background: $bg;
+  border: 1px solid $border;
+  border-radius: 8px;
+  color: $text;
+  font-family: inherit;
+  box-sizing: border-box;
+  transition: border-color 0.5s, box-shadow 0.5s, background 0.3s;
+
+  &:hover {
+    background: linear-gradient(
+      90deg,
+      $bg 0%,
+      color.scale($bg, $lightness: 18%) 45%,
+      $bg 100%
+    );
+    background-size: 200% 100%;
+    background-position: 0% 50%;
+    border-color: $border;
+    box-shadow: 0 0 12px 2px color.scale($glow, $lightness: 20%);
+    animation: gradientSweep 0.8s ease-out 1 forwards;
+  }
+
+  &:focus {
+    outline: none;
+    background: $bg;
+    border-color: $border;
+    box-shadow: 0 0 0 2px rgba($glow, 0.18);
+    animation: none;
+  }
+
+  &::placeholder {
+    color: rgba($text, 0.65);
+  }
+}
+
+@keyframes dotBlink {
+  0%, 80%, 100% {
+    opacity: 0.2;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
 //----------------OLD SCSS COLORS--------------------
 // $border-color: #6c36c3;
 // $shadow-color: #494141;
@@ -665,19 +729,19 @@ span {
     letter-spacing: 0.03em;
   }
 
-  .credential-input {
-    width: 100%;
-    padding: $padding-xs;
-    background: $primary-color;
-    border: 1px solid $accent-color;
-    border-radius: 8px;
-    color: $font-color;
-    font-size: 0.9rem;
-    font-family: inherit;
-    box-sizing: border-box;
-    box-shadow: 0px 0px 8px 1px $shadow-color;
-    transition: border-color 0.5s, box-shadow 0.5s, background 0.3s;
-  }
+.credential-input {
+  width: 100%;
+  padding: $padding-xs;
+  font-size: 0.9rem;
+  box-shadow: 0px 0px 8px 1px $shadow-color;
+
+  @include gradient-sweep-input(
+    $bg: $primary-color,
+    $border: $accent-color,
+    $text: $font-color,
+    $glow: $accent-color
+  );
+}
 
   .credential-input:hover {
     background: linear-gradient(
@@ -710,4 +774,811 @@ span {
   font-size: 0.75rem;
   color: red;
   margin-top: 2px;
+}
+
+.lobby {
+  position: relative;
+  width: 100%;
+  max-width: 100vw;
+  height: 93vh;
+  display: flex;
+  flex-direction: column;
+  color: $text-primary;
+  overflow-x: hidden;
+  overflow-y: hidden;
+}
+
+.lobby-input,
+.lobby-invite-input,
+.lobby-chat-input,
+.lobby-select {
+  background: rgba($bg-1, 0.9);
+  border: 1px solid $border-soft;
+  border-radius: 8px;
+  color: $text-primary;
+  font-family: inherit;
+  box-sizing: border-box;
+  transition: border-color 0.5s, box-shadow 0.5s, background 0.3s;
+  background-size: 200% 100%;
+  background-position: 0% 50%;
+
+  &::placeholder {
+    color: rgba($text-primary, 0.65);
+  }
+
+  &:hover {
+    background: linear-gradient(
+      90deg,
+      rgba($bg-1, 0.9) 0%,
+      color.scale(rgba($bg-1, 0.9), $lightness: 18%) 45%,
+      rgba($bg-1, 0.9) 100%
+    );
+    background-size: 200% 100%;
+    background-position: 0% 50%;
+    border-color: $border-soft;
+    box-shadow: 0 0 12px 2px rgba($dust-lilac, 0.2);
+    animation: gradientSweep 0.8s ease-out 1 forwards;
+  }
+
+  &:focus {
+    outline: none;
+    background: rgba($bg-1, 0.9);
+    border-color: $border-strong;
+    box-shadow: 0 0 0 2px rgba($dust-lilac, 0.18);
+    animation: none;
+  }
+}
+
+/* Background */
+.lobby-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: $nebula-background;
+}
+
+.lobby-bg-stars {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(2px 2px at 20px 30px, rgba($star-white, 0.9), transparent),
+    radial-gradient(2px 2px at 40px 70px, rgba($star-white, 0.6), transparent),
+    radial-gradient(2px 2px at 50px 160px, rgba($star-white, 0.7), transparent),
+    radial-gradient(2px 2px at 90px 40px, rgba($star-white, 0.5), transparent),
+    radial-gradient(2px 2px at 130px 80px, rgba($star-white, 0.6), transparent),
+    radial-gradient(2px 2px at 160px 120px, rgba($star-white, 0.5), transparent);
+  background-size: 200px 200px;
+  background-repeat: repeat;
+  opacity: 0.75;
+}
+
+.lobby-bg-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 120%;
+  height: 120%;
+  transform: translate(-30%, -50%);
+  background: radial-gradient(
+    ellipse 60% 50% at 70% 50%,
+    rgba($accent-magenta, 0.14) 0%,
+    rgba($dust-lilac, 0.08) 38%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+.lobby-bg-planet {
+  position: absolute;
+  top: 50%;
+  right: -10%;
+  width: 55%;
+  height: 80%;
+  transform: translateY(-50%);
+  background: radial-gradient(
+    circle at 30% 50%,
+    rgba($dust-plum, 0.9) 0%,
+    rgba($bg-2, 0.95) 30%,
+    rgba($bg-0, 0.98) 60%,
+    transparent 75%
+  );
+  border-radius: 50%;
+  box-shadow:
+    inset -15% 0 30% rgba(0, 0, 0, 0.8),
+    -20px 0 80px rgba($accent-magenta, 0.12);
+  pointer-events: none;
+}
+
+/* Header */
+.lobby-header {
+  position: relative;
+  z-index: 1;
+  padding: 1.5rem 2rem 0.05rem;
+  text-align: center;
+}
+
+.lobby-status {
+  margin: 0.05rem 0 0;
+  font-size: 0.9rem;
+  color: $text-muted;
+}
+
+/* Panels container */
+.lobby-panels {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.5fr);
+  gap: 1.25rem;
+  max-width: min(1100px, 100%);
+  margin: 0 auto;
+  padding: 0.5rem 2rem 0.5rem;
+  width: 100%;
+  height: 0;
+}
+
+/* Shared panel styles */
+.lobby-panel {
+  min-height: 0;
+  background: $surface-0;
+  border: 1px solid $border-soft;
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  backdrop-filter: blur(8px);
+  box-shadow:
+    0 4px 24px $shadow-soft,
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.lobby-panel-title {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+
+  // gradient text (light core → violet edge)
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(230, 230, 255, 0.85) 30%,
+    $dust-violet 100%
+  );
+
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+
+  // glow emission (soft, not harsh)
+  text-shadow:
+    0 0 2px rgba(255, 255, 255, 0.2),
+    0 0 6px rgba($dust-lilac, 0.25),
+    0 0 12px rgba($dust-violet, 0.2);
+}
+
+/* Left panel – Create Game + Join Game flows */
+.lobby-panel-left {
+  min-height: 200px;
+  overflow: visible;
+}
+
+.lobby-flow-section {
+  margin-bottom: 0;
+}
+
+.lobby-flow-section:last-child {
+  margin-bottom: 0;
+}
+
+.lobby-panel-left .lobby-panel-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+}
+
+.lobby-flow-divider {
+  height: 1px;
+  background: rgba($text-primary, 0.08);
+  margin: 0.6rem 0;
+}
+
+.lobby-btn-invite {
+  padding: 0.4rem 0.75rem;
+  background: $secondary-color;
+  border: 1px solid $border-soft;
+  border-radius: 6px;
+  color: $text-primary;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  margin-top: 0.25rem;
+  width: 100%;
+  max-width: 180px;
+  box-sizing: border-box;
+}
+
+.lobby-btn-invite:hover {
+  background: $secondary-color-hover;
+  border-color: $border-strong;
+}
+
+/* After Invite is clicked – show code + Start Game */
+.lobby-invite-result {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.lobby-game-code-label {
+  font-size: 0.8rem;
+  color: $accent-magenta;
+  margin: 0;
+}
+
+.lobby-game-code {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: $dust-pink;
+  margin: 0;
+  font-family: ui-monospace, monospace;
+}
+
+.lobby-btn-start {
+  align-self: flex-start;
+  padding: 0.6rem 1.25rem;
+  background: linear-gradient(135deg, $dust-pink 0%, $dust-violet 100%);
+  border: 1px solid $border-strong;
+  border-radius: 8px;
+  color: $bg-0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: filter 0.2s, transform 0.15s;
+}
+
+.lobby-btn-start:hover {
+  filter: brightness(1.1);
+}
+
+.lobby-btn-start:active {
+  transform: scale(0.98);
+}
+
+.lobby-panel-left .lobby-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.lobby-label {
+  color: $text-secondary;
+}
+
+.lobby-label-text {
+  display: block;
+}
+
+.lobby-select {
+  width: 100%;
+  max-width: 220px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.lobby-select:focus {
+  outline: none;
+  border-color: $border-strong;
+  box-shadow: 0 0 0 2px rgba($dust-lilac, 0.18);
+}
+
+/* Text inputs */
+.lobby-input {
+  width: 100%;
+  max-width: 220px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+}
+
+.lobby-input::placeholder {
+  color: $text-muted;
+}
+
+.lobby-input:focus {
+  outline: none;
+  border-color: $border-strong;
+  box-shadow: 0 0 0 2px rgba($dust-lilac, 0.18);
+}
+
+/* Slider rows */
+.lobby-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.lobby-slider-track {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.lobby-slider-track .lobby-range {
+  flex: 0 0 auto;
+  width: 100%;
+}
+
+.lobby-range {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba($bg-1, 0.9);
+  border: 1px solid $border-soft;
+  outline: none;
+}
+
+.lobby-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: $dust-pink;
+  border: 1px solid $accent-magenta;
+  cursor: pointer;
+  box-shadow: 0 0 0 3px rgba($dust-lilac, 0.2);
+}
+
+.lobby-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: $dust-pink;
+  border: 1px solid $accent-magenta;
+  cursor: pointer;
+  box-shadow: 0 0 0 3px rgba($dust-lilac, 0.2);
+}
+
+.lobby-range-value {
+  min-width: 2rem;
+  text-align: right;
+  font-size: 0.85rem;
+  color: $dust-lilac;
+}
+
+.lobby-ticks {
+  position: relative;
+  margin-top: 0.25rem;
+  height: 1rem;
+  width: 100%;
+  font-size: 0.7rem;
+  color: $text-muted;
+}
+
+.lobby-tick {
+  position: absolute;
+  transform: translateX(-50%);
+  top: 0;
+}
+
+.lobby-tick::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: -6px;
+  width: 1px;
+  height: 4px;
+  background: rgba($text-muted, 0.8);
+}
+
+.lobby-tick-active {
+  color: $dust-pink;
+  font-weight: 600;
+}
+
+.lobby-btn-secondary {
+  align-self: flex-start;
+  padding: 0.45rem 0.9rem;
+  background: transparent;
+  border: 1px solid $border-soft;
+  border-radius: 6px;
+  color: $dust-lilac;
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.lobby-btn-secondary:hover {
+  background: $secondary-color-hover;
+  border-color: $border-strong;
+}
+
+.lobby-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: $text-secondary;
+  cursor: pointer;
+}
+
+.lobby-checkbox input {
+  accent-color: $accent-magenta;
+  cursor: pointer;
+}
+
+.lobby-join-section {
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid rgba($text-primary, 0.08);
+}
+
+.lobby-join-label {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  color: $accent-magenta;
+}
+
+.lobby-invite-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.lobby-invite-input {
+  width: 95%;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.9rem;
+}
+
+.lobby-invite-input::placeholder {
+  color: $text-muted;
+}
+
+.lobby-invite-input:focus {
+  outline: none;
+  border-color: $border-strong;
+}
+
+.lobby-game-code-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.lobby-copy-btn {
+  padding: 0.35rem 0.6rem;
+  font-size: 0.75rem;
+  border-radius: 6px;
+  border: 1px solid $border-soft;
+  background: $secondary-color;
+  color: $text-primary;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+}
+
+.lobby-copy-btn:hover {
+  background: $secondary-color-hover;
+  border-color: $border-strong;
+}
+
+/* When copied */
+.lobby-copy-btn.copied {
+  background: linear-gradient(
+    135deg,
+    $dust-lilac 0%,
+    $dust-pink 100%
+  );
+  color: $bg-0;
+  border-color: $border-strong;
+}
+
+/* Join section */
+.lobby-options-join {
+  margin-bottom: 0;
+}
+
+.lobby-join-row {
+  display: flex;
+  gap: 3rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.lobby-join-row .lobby-label {
+  flex: 1;
+  min-width: 100px;
+}
+
+.lobby-join-row .lobby-label:first-child .lobby-input {
+  max-width: none;
+}
+
+.lobby-join-row .lobby-label:last-child .lobby-input {
+  max-width: 140px;
+}
+
+.lobby-options-join .lobby-btn-join {
+  align-self: flex-start;
+  margin-top: 0.4rem;
+  width: 100%;
+  max-width: 220px;
+  box-sizing: border-box;
+}
+
+.lobby-btn-join {
+  padding: 0.5rem 1rem;
+  background: $secondary-color;
+  border: 1px solid $border-soft;
+  border-radius: 8px;
+  color: $text-primary;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.lobby-btn-join:hover {
+  background: $secondary-color-hover;
+  border-color: $border-strong;
+}
+
+/* Right panel – chat */
+.lobby-panel-right {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Players in chat */
+.lobby-players-in-chat {
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba($dust-violet, 0.14);
+  border-radius: 8px;
+  border-left: 3px solid $border-strong;
+}
+
+.lobby-players-in-chat-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: $accent-magenta;
+  margin: 0 0 0.35rem;
+  letter-spacing: 0.03em;
+}
+
+.lobby-players-in-chat-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.85rem;
+  color: $text-secondary;
+}
+
+.lobby-players-in-chat-list li {
+  padding: 0.15rem 0;
+}
+
+.lobby-chat-msg-system .lobby-chat-user {
+  color: $text-muted;
+}
+
+.lobby-chat-msg-system {
+  border-left-color: rgba($text-muted, 0.5);
+}
+
+.lobby-chat-messages {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-right: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.lobby-chat-messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.lobby-chat-messages::-webkit-scrollbar-track {
+  background: rgba($bg-0, 0.35);
+  border-radius: 3px;
+}
+
+.lobby-chat-messages::-webkit-scrollbar-thumb {
+  background: rgba($dust-violet, 0.4);
+  border-radius: 3px;
+}
+
+.lobby-chat-msg {
+  padding: 0.5rem 0.75rem;
+  background: rgba($dust-violet, 0.14);
+  border-radius: 8px;
+  border-left: 3px solid $border-soft;
+}
+
+.lobby-chat-user {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: $accent-magenta;
+  margin-right: 0.5rem;
+}
+
+.lobby-chat-time {
+  font-size: 0.7rem;
+  color: $text-muted;
+}
+
+.lobby-chat-text {
+  margin: 0.25rem 0 0;
+  font-size: 0.9rem;
+  color: $text-secondary;
+  line-height: 1.4;
+}
+
+.lobby-chat-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: auto;
+  min-width: 0;
+}
+
+.lobby-chat-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.9rem;
+}
+
+.lobby-chat-input::placeholder {
+  color: $text-muted;
+}
+
+.lobby-chat-input:focus {
+  outline: none;
+  border-color: $border-strong;
+  box-shadow: 0 0 0 2px rgba($dust-lilac, 0.18);
+}
+
+.lobby-btn-send {
+  padding: 0.6rem 1rem;
+  background: $secondary-color;
+  border: 1px solid $border-soft;
+  border-radius: 8px;
+  color: $text-primary;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.lobby-btn-send:hover {
+  background: $secondary-color-hover;
+  border-color: $border-strong;
+}
+
+/* Footer */
+.lobby-footer {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 2rem 1.5rem;
+  max-width: min(1100px, 100%);
+  margin: 0 auto;
+  width: 100%;
+  min-width: 0;
+}
+
+.lobby-footer-btn {
+  padding: 0.65rem 1.25rem;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: filter 0.2s, transform 0.15s;
+}
+
+.lobby-footer-btn:hover {
+  filter: brightness(1.15);
+}
+
+.lobby-footer-btn:active {
+  transform: scale(0.98);
+}
+
+.lobby-btn-play {
+  background: linear-gradient(135deg, $dust-pink 0%, $dust-violet 100%);
+  border: 1px solid $border-strong;
+  color: $bg-0;
+  padding: 0.75rem 1.75rem;
+  margin-left: auto;
+}
+
+.lobby-btn-leave {
+  background: linear-gradient(
+    135deg,
+    #ff6b6b 0%,
+    #d94a4a 60%,
+    #a83232 100%
+  );
+  border: 1px solid rgba(255, 107, 107, 0.5);
+  color: #000000;
+  padding: 0.75rem 1.5rem;
+  box-shadow: 0 0 12px rgba(255, 80, 80, 0.25);
+  transition: all 0.2s ease;
+}
+
+.lobby-btn-leave:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 0 18px rgba(255, 80, 80, 0.4);
+}
+
+.lobby-btn-leave:active {
+  transform: scale(0.96);
+}
+
+.dot-loader {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.dot-loader span {
+  animation: dotBlink 1.2s infinite;
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.dot-loader span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.dot-loader span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .lobby-panels {
+    grid-template-columns: 1fr;
+    padding: 1rem;
+  }
+
+  .lobby-footer {
+    flex-wrap: wrap;
+    padding: 1rem;
+  }
+
+  .lobby-btn-play {
+    width: 100%;
+    margin-left: 0;
+  }
 }

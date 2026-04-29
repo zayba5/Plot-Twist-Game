@@ -4,7 +4,7 @@ import { socket } from "./global.jsx"
 import { fetchScores } from './Utility.jsx';
 import { useNavigate } from "react-router-dom";
 import Chat from "./Chat";
-import "./Lobby.css";
+// import "./Lobby.css";
 
 
 const Header = () => {
@@ -105,26 +105,43 @@ const Scoreboard = ({ gameId, scoreBreakdown }) => {
   );
 };
 
-const ControlBar = ({ toggleScoreBreakdown }) => {
+const ControlBar = ({ toggleScoreBreakdown, gameId }) => {
   const navigate = useNavigate();
+
+  const handleReturnToLobby = async () => {
+    try {
+      await fetch("http://localhost:5000/leave-lobby", {
+        method: "POST",
+        credentials: "include",
+      });
+
+      if (gameId) {
+        socket.emit("leave_game", { game_id: gameId });
+      }
+
+      navigate("/lobby");
+    } catch (err) {
+      console.error("Failed to leave game", err);
+    }
+  };
 
   return (
     <div className="game-window-control-bar">
       <button
         className="button"
-        style={{ justifySelf: 'start' }}
+        style={{ justifySelf: "start" }}
         onClick={toggleScoreBreakdown}
       >
-        {"Toggle score breakdown"}
+        Toggle score breakdown
       </button>
 
       <div></div>
-      
+
       <button
         className="button"
-        onClick={() => {navigate("/lobby")}}
+        onClick={handleReturnToLobby}
       >
-        {"Return to Lobby"}
+        Return to Lobby
       </button>
     </div>
   );
@@ -134,8 +151,9 @@ const ControlBar = ({ toggleScoreBreakdown }) => {
 const ScoreboardPage = () => {
   const [gameId, setGameId] = useState(null);
   const [scoreBreakdown, setScoreBreakdown] = useState(false);
-
   const [username, setUsername] = useState("");
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [players, setPlayers] = useState([]);
 
   useEffect(() => {
     const loadSession = async () => {
@@ -143,7 +161,7 @@ const ScoreboardPage = () => {
         credentials: "include",
       });
       const data = await res.json();
-
+      setCurrentUserId(data.user_id || null);
       setUsername(data.username || "Player");
     };
 
@@ -153,7 +171,38 @@ const ScoreboardPage = () => {
   useEffect(() => {
     if (!gameId) return;
 
+    const loadPlayers = async () => {
+      try {
+        const res = await fetch(`http://localhost:5000/lobby-players?game_id=${gameId}`, {
+          credentials: "include",
+        });
+        const data = await res.json();
+
+        if (data.players) {
+          setPlayers(
+            data.players.map((p) => ({
+              name: p.username,
+              user_id: p.user_id,
+              isHost: p.isHost || false,
+            }))
+          );
+        }
+      } catch (err) {
+        console.error("Failed to load players", err);
+      }
+    };
+
+    loadPlayers();
+  }, [gameId]);
+
+  useEffect(() => {
+    if (!gameId) return;
+
     socket.emit("join_game", { game_id: gameId });
+
+    return () => {
+      socket.emit("leave_game", { game_id: gameId });
+    };
   }, [gameId]);
 
   useEffect(() => {
@@ -207,18 +256,17 @@ const ScoreboardPage = () => {
         />
 
         <ControlBar
-          toggleScoreBreakdown={() =>
-            setScoreBreakdown(!scoreBreakdown)
-          }
+          gameId={gameId}
+          toggleScoreBreakdown={() => setScoreBreakdown(!scoreBreakdown)}
         />
       </div>
 
       {username && gameId && (
         <Chat
           username={username}
+          currentUserId={currentUserId}
           gameId={gameId}
-          players={[]}
-          variant="sidebar"
+          players={players || []}
         />
       )}
     </div>
