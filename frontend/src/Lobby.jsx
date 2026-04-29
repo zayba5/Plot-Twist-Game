@@ -422,6 +422,7 @@ const Lobby = () => {
 
         <Chat
           username={username}
+          currentUserId={currentUserId}
           gameId={gameId}
           players={players}
         />

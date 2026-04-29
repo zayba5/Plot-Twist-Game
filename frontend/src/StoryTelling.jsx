@@ -107,6 +107,9 @@ const StorytellingPage = () => {
   const [outerRoundNumber, setOuterRoundNumber] = useState(-1);
   const [claimError, setClaimError] = useState("");
   const [userId, setUserId] = useState(null);
+  const [username, setUsername] = useState("");
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [players, setPlayers] = useState([]);
 
   const [status, setStatus] = useState("idle"); // idle | submitting | waiting | ready | error
   const [isPolling, setIsPolling] = useState(false);
@@ -116,8 +119,6 @@ const StorytellingPage = () => {
   const innerRoundRef = useRef(innerRoundNumber);
   const outerRoundRef = useRef(outerRoundNumber);
   const hasClaimedRef = useRef(false);
-
-  const [username, setUsername] = useState("");
 
   const canSubmit = !submitted && storyText.trim().length > 0;
 
@@ -415,9 +416,9 @@ const StorytellingPage = () => {
         {username && (
           <Chat
             username={username}
+            currentUserId={userId}
             gameId={gameId}
-            players={[]}
-            variant="sidebar"
+            players={players || []}
           />
         )}
 

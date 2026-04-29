@@ -212,6 +212,8 @@ const VotingPage = () => {
   const [totalPlayers, setTotalPlayers] = useState(0);
 
   const [username, setUsername] = useState("");
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [players, setPlayers] = useState([]);
 
   const finished = useRef(false);
   let prompt1 = "Which story would you like to continue?";
@@ -254,22 +256,27 @@ const VotingPage = () => {
   };
 
   useEffect(() => {
-    const loadSession = async () => {
-      const res = await fetch("http://localhost:5000/session", {
-        credentials: "include",
-      });
-      const data = await res.json();
-
-      setUsername(data.username || "Player");
-    };
-
-    loadSession();
+      fetch("http://localhost:5000/session", {
+          credentials: "include",
+      })
+          .then((res) => res.json())
+          .then((data) => {
+          setUsername(data.username || "");
+          setCurrentUserId(data.user_id || null);
+          })
+          .catch((err) => {
+          console.error("Failed to load session", err);
+          });
   }, []);
 
   useEffect(() => {
-    if (!gameId) return;
+  if (!gameId) return;
 
-    socket.emit("join_game", { game_id: gameId });
+  socket.emit("join_game", { game_id: gameId });
+
+  return () => {
+      socket.emit("leave_game", { game_id: gameId });
+  };
   }, [gameId]);
 
   useEffect(() => {
@@ -438,9 +445,9 @@ const VotingPage = () => {
       {username && gameId && (
         <Chat
           username={username}
+          currentUserId={currentUserId}
           gameId={gameId}
-          players={[]}
-          variant="sidebar"
+          players={players}
         />
       )}
     </div>

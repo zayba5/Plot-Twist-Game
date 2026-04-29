@@ -116,6 +116,8 @@ const ResultsPage = () => {
     const tag1 = "Continue";
 
     const [username, setUsername] = useState("");
+    const [currentUserId, setCurrentUserId] = useState(null);
+    const [players, setPlayers] = useState([]);
 
     const clearWaitingTimeout = () => {
         if (waitingTimeoutRef.current) {
@@ -153,23 +155,28 @@ const ResultsPage = () => {
     };
 
     useEffect(() => {
-        const loadSession = async () => {
-            const res = await fetch("http://localhost:5000/session", {
+        fetch("http://localhost:5000/session", {
             credentials: "include",
+        })
+            .then((res) => res.json())
+            .then((data) => {
+            setUsername(data.username || "");
+            setCurrentUserId(data.user_id || null);
+            })
+            .catch((err) => {
+            console.error("Failed to load session", err);
             });
-            const data = await res.json();
-
-            setUsername(data.username || "Player");
-        };
-
-        loadSession();
-        }, []);
+    }, []);
 
     useEffect(() => {
-        if (!gameId) return;
+    if (!gameId) return;
 
-        socket.emit("join_game", { game_id: gameId });
-        }, [gameId]);
+    socket.emit("join_game", { game_id: gameId });
+
+    return () => {
+        socket.emit("leave_game", { game_id: gameId });
+    };
+    }, [gameId]);
 
     useEffect(() => {
         async function handleResultsStarted(payload) {
@@ -316,10 +323,11 @@ const ResultsPage = () => {
 
             {username && gameId && (
                 <Chat
-                    username={username}
-                    gameId={gameId}
-                    players={[]}
-                    variant="sidebar"
+                username={username}
+                currentUserId={currentUserId}
+                gameId={gameId}
+                players={players}
+                variant="sidebar"
                 />
             )}
         </div>
