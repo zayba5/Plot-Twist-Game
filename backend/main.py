@@ -8,7 +8,7 @@ from models import *
 from itsdangerous import TimestampSigner
 from functools import wraps
 import uuid
-from flask_socketio import SocketIO, emit, join_room
+from flask_socketio import SocketIO, emit, join_room, leave_room
 from peewee import fn, IntegrityError
 import random
 import string
@@ -17,10 +17,13 @@ from votingUtil import *
 import bcrypt
 from util import *
 from datetime import datetime, timedelta, timezone
-
+from flask import session
+from flask_cors import CORS
+from socket_handlers import register_socket_handlers
 
 load_dotenv()
-s = TimestampSigner(os.getenv("secretKey"))
+#s = TimestampSigner(os.getenv("secretKey") or "")
+signer = TimestampSigner(os.getenv("secretKey") or "")
 socketio = SocketIO(cors_allowed_origins=[os.getenv("frontHost")])
 FRONTEND_ORIGIN = os.getenv("frontHost")
 
@@ -34,15 +37,11 @@ DEFAULT_NAMES = [
     "PanicButton"
 ]
 
-results_ready = {}
-
-
-        
-
+# results_ready = {}
 
 def create_app(test_config: dict | None = None):
     app = Flask(__name__)
-    app.config["secretKey"] = os.getenv("secretKey")
+    app.config["SECRET_KEY"] = os.getenv("secretKey") or "dev-secret"
 
     # allow tests to override config easily
     app.config.update(
@@ -54,257 +53,8 @@ def create_app(test_config: dict | None = None):
     Compress(app)
     api = Api(app)
     socketio.init_app(app)
+    register_socket_handlers(socketio, signer)
     
-    ##websocket handlers
-    @socketio.on("join_game")
-    def handle_join_game(data):
-        game_code = data.get("game_code")
-        if not game_code:
-            return
-
-        game = Game.get_or_none(Game.game_code == game_code.upper())
-        if game:
-            join_room(f"game:{game.game_code}")
-            print(f"socket joined room game:{game.game_id}")
-
-            #  build player list
-            players_list = [
-                {
-                    "user_id": str(p.user_id.user_id),
-                    "username": p.user_id.username,
-                    "isHost": p.user_id.user_id == game.game_host.user_id
-                }
-                for p in game.player
-            ]
-
-            #  send ONLY to this user
-            socketio.emit(
-                "lobby_snapshot",
-                {"players": players_list},
-                to=request.sid
-            )
-            
-    @socketio.on("join_game_room")
-    def handle_join_game(data):
-        game_id = data.get("game_id")
-        if game_id:
-            join_room(f"game:{game_id}")
-            print(f"socket joined room game:{game_id}")
-            
-    @socketio.on("voting_round_expired")
-    def handle_expired_voting(data):
-        game_id = data.get("game_id")
-        if game_id:
-            print(f"voting expired for game: {game_id}")
-            finishVotingSession("timer expired", game_id, socketio)
-
-
-    @socketio.on("start_game")
-    def handle_start_game(data):
-        game_code = data.get("game_code")
-        if not game_code:
-            return
-
-        game = Game.get_or_none(Game.game_code == game_code.upper())
-        if not game:
-            return
-
-        # get current user
-        user = get_user_from_cookie(signer)
-        if not user:
-            return
-
-        # BLOCK if not host
-        if user.user_id != game.game_host.user_id:
-            print("Non-host tried to start game")
-            return
-
-        print("Host started the game")
-
-        active_status = Status.get(Status.status_type == "ACTIVE")
-        game.game_status = active_status
-        game.save()
-
-        # start game for everyone
-        socketio.emit(
-            "game_started",
-            {
-                "game_id": str(game.game_id)
-            },
-            to=f"game:{game.game_code}"
-        )    
-        
-    @socketio.on("send_message")
-    def handle_send_message(data):
-        game_code = data.get("game_code")
-        username = data.get("username")
-        text = data.get("text")
-        time = data.get("time")
-
-        if not game_code or not text:
-            return
-
-        # broadcast to everyone in the same room
-        socketio.emit(
-            "receive_message",
-            {
-                "username": username,
-                "text": text,
-                "time": time,
-            },
-            to=f"game:{game_code}"
-        )
-
-    signer = TimestampSigner(os.getenv("secretKey") or "")
-
-    @socketio.on("show_scoreboard")
-    def handle_show_scoreboard(data=None):
-        print("show_scoreboard received:", data, flush=True)
-
-        user = get_user_from_cookie(signer)
-        print("resolved user:", user, flush=True)
-
-        if not user:
-            print("no valid user", flush=True)
-            return
-
-        game = get_active_game_from_user(user)
-
-        print("resolved game:", game, flush=True)
-
-        if not game:
-            print("no active game found", flush=True)
-            return
-        
-        print("raw game_id:", repr(game.game_id), flush=True)
-        emit("scoreboard_shown", {"game_id": str(game.game_id)})   
-            
-    @socketio.on("begin_voting")
-    def handle_begin_voting(data=None):
-        print("begin_voting received:", data, flush=True)
-
-        user = get_user_from_cookie(signer)
-        print("resolved user:", user, flush=True)
-
-        if not user:
-            print("no valid user", flush=True)
-            return
-
-        game = get_active_game_from_user(user)
-
-        print("resolved game:", game, flush=True)
-
-        if not game:
-            print("no active game found", flush=True)
-            return
-
-        emit("voting_started", {"game_id": str(game.game_id)})
-        
-        
-    @socketio.on("show_results")
-    def handle_show_results(data=None):
-        print("show_results received:", data, flush=True)
-
-        user = get_user_from_cookie(signer)
-        print("resolved user:", user, flush=True)
-
-        if not user:
-            print("no valid user", flush=True)
-            return
-
-        game = get_active_game_from_user(user)
-
-        print("resolved game:", game, flush=True)
-
-        if not game:
-            print("no active game found", flush=True)
-            return
-        
-        print("raw game_id:", repr(game.game_id), flush=True)
-        emit("results_shown", {"game_id": str(game.game_id)})    
-        
-    @socketio.on("results_continue")
-    def handle_results_continue(data):
-        user = get_user_from_cookie(signer)
-        if not user:
-            return
-
-        game_id = data.get("game_id")
-        if not game_id:
-            return
-
-        try:
-            game_uuid = uuid.UUID(str(game_id))
-        except ValueError:
-            return
-
-        game = Game.get_or_none(Game.game_id == game_uuid)
-        if not game:
-            return
-
-        game_key = str(game.game_id)
-
-        if game_key not in results_ready:
-            results_ready[game_key] = set()
-
-        results_ready[game_key].add(str(user.user_id))
-
-        ready_count = len(results_ready[game_key])
-        total_players = game.player.count()
-
-        socketio.emit(
-            "results_ready_update",
-            {
-                "game_id": game_key,
-                "ready_count": ready_count,
-                "total_players": total_players,
-            },
-            to=f"game:{game.game_id}"
-        )
-
-        if ready_count >= total_players:
-            final_path = "/score" if isFinalSession(getLastVotingSession(game)) else "/story"
-
-            socketio.emit(
-                "results_continue_all",
-                {
-                    "game_id": game_key,
-                    "path": final_path,
-                },
-                to=f"game:{game.game_id}"
-            )
-
-            results_ready.pop(game_key, None) 
-            
-        @socketio.on("get_results_ready_status")
-        def handle_get_results_ready_status(data):
-            game_id = data.get("game_id")
-            if not game_id:
-                return
-
-            try:
-                game_uuid = uuid.UUID(str(game_id))
-            except ValueError:
-                return
-
-            game = Game.get_or_none(Game.game_id == game_uuid)
-            if not game:
-                return
-
-            game_key = str(game.game_id)
-            ready_count = len(results_ready.get(game_key, set()))
-            total_players = game.player.count()
-
-            emit(
-                "results_ready_update",
-                {
-                    "game_id": game_key,
-                    "ready_count": ready_count,
-                    "total_players": total_players,
-                }
-            )
-
-
     API_DIR = os.path.dirname(os.path.abspath(__file__))
 
     @app.before_request
@@ -1197,14 +947,15 @@ def create_app(test_config: dict | None = None):
     class SessionEndpoint(Resource):
         def get(self):
             username = request.args.get("username") or random.choice(DEFAULT_NAMES)  # default name
-
-
+            
             if getattr(g, "user", None):
                 return {
                     "ok": True,
                     "user_id": str(g.user.user_id),
                     "existing": True,
-                    "username": g.user.username 
+                    "username": g.user.username,
+                    "game_id": session.get("game_id"),
+                    "game_code": session.get("game_code")
                 }, 200
 
             user = App_User.create(
@@ -1218,7 +969,9 @@ def create_app(test_config: dict | None = None):
                 "ok": True,
                 "user_id": str(user.user_id),
                 "existing": False,
-                "username": username
+                "username": username,
+                "game_id": None,
+                "game_code": None
             }, 201
 
 
@@ -1229,6 +982,11 @@ def create_app(test_config: dict | None = None):
     class CreateLobby(Resource):
         def post(self):
             user = require_user()
+            if session.get("game_id"):
+                return {
+                    "ok": False,
+                    "error": "You are already in a game. Leave first."
+                }, 400
 
             data = request.get_json() or {}
             username = data.get("username", "Player")
@@ -1271,18 +1029,18 @@ def create_app(test_config: dict | None = None):
             socketio.emit(
                 "lobby_update",
                 {"game_id": str(game.game_id), "players": players_list},
-                to=f"game:{game.game_code}"
+                to=f"game:{game.game_id}"
             )
 
             # emit system message for chat
 
-            socketio.emit(
-                "player_joined_message",
-                {
-                    "username": user.username,
-                    "players": players_list  
-                },
-                to=f"game:{game.game_code}"
+            create_and_emit_chat_message(
+                socketio=socketio,
+                game=game,
+                text=f"{user.username} created the lobby.",
+                message_type="system",
+                user=None,
+                room_name=f"game:{game.game_id}"
             )
 
             # save game settings
@@ -1295,16 +1053,25 @@ def create_app(test_config: dict | None = None):
                 max_players=max_players
             )
 
+            session["game_id"] = str(game.game_id)
+            session["game_code"] = game.game_code
+
             return {
                 "ok": True,
                 "game_id": str(game.game_id),
                 "game_code": game.game_code
             }, 201
-
+    api.add_resource(CreateLobby, "/create-lobby")
 
     class JoinLobby(Resource):
         def post(self):
             user = require_user()
+            if session.get("game_id"):
+                return {
+                    "ok": False,
+                    "error": "You are already in a game. Leave first."
+                }, 400
+
             data = request.get_json() or {}
             username = data.get("username", "Player")
             user.username = username
@@ -1340,15 +1107,21 @@ def create_app(test_config: dict | None = None):
             socketio.emit(
                 "lobby_update",
                 {"game_id": str(game.game_id), "players": players_list},
-                to=f"game:{game.game_code}"
+                to=f"game:{game.game_id}"
             )
 
             # emit system chat join message
-            socketio.emit(
-                "player_joined_message",
-                {"username": user.username},
-                to=f"game:{game.game_code}"
+            create_and_emit_chat_message(
+                socketio=socketio,
+                game=game,
+                text=f"{user.username} joined the lobby.",
+                message_type="system",
+                user=None,
+                room_name=f"game:{game.game_id}"
             )
+
+            session["game_id"] = str(game.game_id)
+            session["game_code"] = game.game_code
 
             return {"ok": True, "game_id": str(game.game_id), "game_code": game.game_code}
 
@@ -1405,16 +1178,152 @@ def create_app(test_config: dict | None = None):
                 "username": str(user.username),
                 "password_hash": str(user.password_hash),
             }, 201
-    
     api.add_resource(CreateUserEndpoint, "/CreateUser")
+    class LeaveLobby(Resource):
+        def post(self):
+            user = require_user()
+            game_id_str = session.get("game_id")
 
+            if not game_id_str:
+                session.pop("game_id", None)
+                session.pop("game_code", None)
+                return {"ok": True, "message": "Not in a lobby."}, 200
+
+            try:
+                game_uuid = uuid.UUID(game_id_str)
+            except ValueError:
+                session.pop("game_id", None)
+                session.pop("game_code", None)
+                return {"ok": True, "message": "Invalid session game_id cleared."}, 200
+
+            game = Game.get_or_none(Game.game_id == game_uuid)
+
+            if not game:
+                session.pop("game_id", None)
+                session.pop("game_code", None)
+                return {"ok": True, "message": "Lobby no longer exists."}, 200
+
+            membership = Game_Players.get_or_none(
+                (Game_Players.game_id == game) &
+                (Game_Players.user_id == user)
+            )
+
+            if not membership:
+                session.pop("game_id", None)
+                session.pop("game_code", None)
+                return {"ok": True, "message": "User not in lobby."}, 200
+
+            room_name = f"game:{game.game_id}"
+            is_host = (game.game_host.user_id == user.user_id)
+
+            if is_host:
+                create_and_emit_chat_message(
+                    socketio=socketio,
+                    game=game,
+                    text=f"{user.username} left the game. Lobby closed.",
+                    message_type="system",
+                    user=None,
+                    room_name=room_name
+                )
+
+                socketio.emit(
+                    "lobby_closed",
+                    {
+                        "message": "The host left the game. Lobby closed.",
+                        "game_id": str(game.game_id),
+                    },
+                    to=room_name
+                )
+
+                Game_Players.delete().where(Game_Players.game_id == game).execute()
+                Game_Settings.delete().where(Game_Settings.game_id == game).execute()
+                Game.delete().where(Game.game_id == game.game_id).execute()
+
+                try:
+                    socketio.server.close_room(room_name)
+                except Exception as e:
+                    print("close_room failed:", e)
+
+                session.pop("game_id", None)
+                session.pop("game_code", None)
+
+                return {"ok": True, "hostLeft": True}, 200
+
+            Game_Players.delete().where(
+                (Game_Players.game_id == game) &
+                (Game_Players.user_id == user)
+            ).execute()
+
+            players_list = [
+                {
+                    "user_id": str(p.user_id.user_id),
+                    "username": p.user_id.username,
+                    "isHost": p.user_id.user_id == game.game_host.user_id
+                }
+                for p in game.player
+            ]
+
+            socketio.emit(
+                "lobby_update",
+                {"game_id": str(game.game_id), "players": players_list},
+                to=room_name
+            )
+
+            create_and_emit_chat_message(
+                socketio=socketio,
+                game=game,
+                text=f"{user.username} left the lobby.",
+                message_type="system",
+                user=None,
+                room_name=room_name
+            )
+
+            session.pop("game_id", None)
+            session.pop("game_code", None)
+
+            return {"ok": True, "hostLeft": False}, 200
+    class ChatHistory(Resource):
+        def get(self):
+            user = require_user()
+            game_id = request.args.get("game_id")
+
+            if not game_id:
+                return {"ok": False, "error": "game_id required"}, 400
+
+            try:
+                game_uuid = uuid.UUID(str(game_id))
+            except ValueError:
+                return {"ok": False, "error": "invalid game_id"}, 400
+
+            game = Game.get_or_none(Game.game_id == game_uuid)
+            if not game:
+                return {"ok": False, "error": "Game not found"}, 404
+
+            membership = Game_Players.get_or_none(
+                (Game_Players.game_id == game) &
+                (Game_Players.user_id == user)
+            )
+            if not membership:
+                return {"ok": False, "error": "Not in this game"}, 403
+
+            messages = (
+                Chat_Message
+                .select()
+                .where(Chat_Message.game_id == game)
+                .order_by(Chat_Message.created_at.asc())
+            )
+
+            return {
+                "ok": True,
+                "messages": [serialize_chat_message(m) for m in messages]
+            }, 200
+    api.add_resource(ChatHistory, "/chat-history")
 
     # REGISTER ROUTES
-    api.add_resource(CreateLobby, "/create-lobby")
     api.add_resource(JoinLobby, "/join-lobby")
     api.add_resource(LobbyPlayers, "/lobby-players")
-    
     api.add_resource(SessionEndpoint, "/session")
+    api.add_resource(LeaveLobby, "/leave-lobby")
 
     return app
             

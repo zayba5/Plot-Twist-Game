@@ -5,6 +5,8 @@ import { fetchGameStories, postVote, fetchVotingSession } from "./Utility.jsx";
 import { useNavigate } from "react-router-dom";
 import Timer from "./timer.jsx";
 import Waiting from "./Waiting.jsx";
+import Chat from "./Chat";
+import "./Lobby.css";
 
 const StoryPart = ({ part }) => {
   if (!part) return null;
@@ -209,6 +211,10 @@ const VotingPage = () => {
   const [voteCount, setVoteCount] = useState(0);
   const [totalPlayers, setTotalPlayers] = useState(0);
 
+  const [username, setUsername] = useState("");
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [players, setPlayers] = useState([]);
+
   const finished = useRef(false);
   let prompt1 = "Which story would you like to continue?";
 
@@ -248,6 +254,30 @@ const VotingPage = () => {
       }
     }
   };
+
+  useEffect(() => {
+      fetch("http://localhost:5000/session", {
+          credentials: "include",
+      })
+          .then((res) => res.json())
+          .then((data) => {
+          setUsername(data.username || "");
+          setCurrentUserId(data.user_id || null);
+          })
+          .catch((err) => {
+          console.error("Failed to load session", err);
+          });
+  }, []);
+
+  useEffect(() => {
+  if (!gameId) return;
+
+  socket.emit("join_game", { game_id: gameId });
+
+  return () => {
+      socket.emit("leave_game", { game_id: gameId });
+  };
+  }, [gameId]);
 
   useEffect(() => {
     async function handleVotingStarted(payload) {
@@ -368,46 +398,59 @@ const VotingPage = () => {
   const shouldShowWaiting =
     hasSubmittedVote && !allVotesIn;
 
-  return (
-    <div className="game-window" id="voting-page">
-      <Header
-        handleTimerExpire={handleTimerExpire}
-        time={endTimeMs}
-        titles={titles}
-        curPage={curPage}
-      />
 
-      <div className="game-window-body">
-        {shouldShowWaiting ? (
-          <Waiting
-            topText={"Aligning the Stars"}
-            bottomText={"Waiting for other Players"}
-          />
-        ) : (
-          <StoryCardList
-            selectedStoryId={selectedStoryId}
-            setSelectedStoryId={setSelectedStoryId}
-            curPage={curPage}
-            gameId={gameId}
-          />
-        )}
+  return (
+    <div className="storytelling-container">
+      <div className="game-window" id="voting-page">
+
+        <Header
+          handleTimerExpire={handleTimerExpire}
+          time={endTimeMs}
+          titles={titles}
+          curPage={curPage}
+        />
+
+        <div className="game-window-body">
+          {shouldShowWaiting ? (
+            <Waiting
+              topText={"Aligning the Stars"}
+              bottomText={"Waiting for other Players"}
+            />
+          ) : (
+            <StoryCardList
+              selectedStoryId={selectedStoryId}
+              setSelectedStoryId={setSelectedStoryId}
+              curPage={curPage}
+              gameId={gameId}
+            />
+          )}
+        </div>
+
+        <ControlBar
+          selectedStoryId={selectedStoryId}
+          gameId={gameId}
+          submitting={submitting}
+          setSubmitting={setSubmitting}
+          curPage={curPage}
+          setCurPage={setCurPage}
+          visitedPages={visitedPages}
+          setVisitedPages={setVisitedPages}
+          hasSubmittedVote={hasSubmittedVote}
+          setHasSubmittedVote={setHasSubmittedVote}
+          setLocallyVoted={setLocallyVoted}
+        />
+
       </div>
 
-      <ControlBar
-        selectedStoryId={selectedStoryId}
-        gameId={gameId}
-        submitting={submitting}
-        setSubmitting={setSubmitting}
-        curPage={curPage}
-        setCurPage={setCurPage}
-        visitedPages={visitedPages}
-        setVisitedPages={setVisitedPages}
-        hasSubmittedVote={hasSubmittedVote}
-        setHasSubmittedVote={setHasSubmittedVote}
-        setLocallyVoted={setLocallyVoted}
-      />
+      {username && gameId && (
+        <Chat
+          username={username}
+          currentUserId={currentUserId}
+          gameId={gameId}
+          players={players}
+        />
+      )}
     </div>
   );
 };
-
 export default VotingPage;

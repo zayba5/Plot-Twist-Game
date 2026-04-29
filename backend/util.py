@@ -129,3 +129,35 @@ def get_player_count(game):
     return Game_Players.select().where(
         Game_Players.game_id == game
     ).count()
+
+def serialize_chat_message(message):
+    return {
+        "id": str(message.message_id),
+        "game_id": str(message.game_id.game_id),
+        "user_id": str(message.user_id.user_id) if message.user_id else None,
+        "username": message.username,
+        "text": message.text,
+        "message_type": message.message_type,
+        "time": message.created_at.strftime("%I:%M %p"),
+        "created_at": message.created_at.isoformat(),
+    }
+
+
+def create_and_emit_chat_message(socketio, game, text, message_type="system", user=None, room_name=None):
+    msg = Chat_Message.create(
+        game_id=game,
+        user_id=user if user else None,
+        username=user.username if user else "System",
+        text=text,
+        message_type=message_type,
+    )
+
+    payload = serialize_chat_message(msg)
+
+    socketio.emit(
+        "chat_message",
+        payload,
+        to=room_name or f"game:{game.game_id}"
+    )
+
+    return msg

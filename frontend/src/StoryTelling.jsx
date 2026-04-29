@@ -7,6 +7,8 @@ import { postStory } from "./Utility.jsx";
 import { socket } from "./global.jsx";
 import { useNavigate, useLocation } from "react-router-dom";
 import DebugPanel from "./DebugPanel.jsx";
+import Chat from "./Chat";
+import "./Lobby.css";
 
 // Hardcode game settings
 const ROUND_TIME_SECONDS = 6000; // on deployment change it to 60
@@ -105,6 +107,9 @@ const StorytellingPage = () => {
   const [outerRoundNumber, setOuterRoundNumber] = useState(-1);
   const [claimError, setClaimError] = useState("");
   const [userId, setUserId] = useState(null);
+  const [username, setUsername] = useState("");
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [players, setPlayers] = useState([]);
 
   const [status, setStatus] = useState("idle"); // idle | submitting | waiting | ready | error
   const [isPolling, setIsPolling] = useState(false);
@@ -211,21 +216,29 @@ const StorytellingPage = () => {
     loadData();
   }, []);
 
-  // update the timer, stops when submitted or no time left
-
-  
-  //auto submission when timer runs out
-
-
   //sets and shows UserId on page
+
   useEffect(() => {
     if (!gameId) return;
-    if (hasClaimedRef.current) return;
 
-    hasClaimedRef.current = true;
-    socket.emit("join_game", { game_id: gameId });
-    fetchUserId().then(setUserId);
-  }, [gameId]);
+    socket.emit("join_game", {
+      game_id: gameId,
+      game_code: initialUrlGameId
+    });
+
+    const loadUser = async () => {
+      const res = await fetch("http://localhost:5000/session", {
+        credentials: "include",
+      });
+      const data = await res.json();
+
+      setUserId(data.user_id);
+      setUsername(data.username || "Player");
+    };
+
+    loadUser();
+  }, [gameId, initialUrlGameId]);
+
 
   // frontend polling to check if other players are ready, interval: 2 s
   useEffect(() => {
@@ -352,46 +365,63 @@ const StorytellingPage = () => {
   };
 
   return (
-    <div className="game-window" id="storytelling-page">
+    <div className="storytelling-container">
 
+      {/* LEFT SIDE: your existing game */}
+      <div className="game-window" id="storytelling-page">
 
-      <Header
-        innerRoundNumber={innerRoundNumber}
-        maxRounds={maxRound}
-        endTimeMs={submitted ? null : endTimeMs}
-        onExpire={() => handleSubmit(true)}
-        submitted={submitted}
-      />
-      <div>
-        <DebugPanel
-          title="Story Page State"
-          data={debugData}
-          enabled={showDebug}
-          onToggle={setShowDebug}
+        <Header
+          innerRoundNumber={innerRoundNumber}
+          maxRounds={maxRound}
+          endTimeMs={submitted ? null : endTimeMs}
+          onExpire={() => handleSubmit(true)}
+          submitted={submitted}
         />
-      </div>
-      {shouldShowWaiting ? (
-        <Waiting
-          topText="Aligning the Stars"
-          bottomText="Waiting for other players"
-        />
-      ) : (
-        <>
-          <PromptBox prompt={prompt} />
-          <StoryInput
-            storyText={storyText}
-            setStoryText={setStoryText}
-            disabled={submitted}
+
+        <div>
+          <DebugPanel
+            title="Story Page State"
+            data={debugData}
+            enabled={showDebug}
+            onToggle={setShowDebug}
           />
-        </>
-      )}
+        </div>
 
-      <ControlBar
-        onSubmit={() => handleSubmit(false)}
-        disabled={!canSubmit}
-        submitted={submitted}
-        submitting={submitting}
-      />
+        {shouldShowWaiting ? (
+          <Waiting
+            topText="Aligning the Stars"
+            bottomText="Waiting for other players"
+          />
+        ) : (
+          <>
+            <PromptBox prompt={prompt} />
+            <StoryInput
+              storyText={storyText}
+              setStoryText={setStoryText}
+              disabled={submitted}
+            />
+          </>
+        )}
+
+        <ControlBar
+          onSubmit={() => handleSubmit(false)}
+          disabled={!canSubmit}
+          submitted={submitted}
+          submitting={submitting}
+        />
+
+      </div>
+
+      {/* RIGHT SIDE: chat sidebar */}
+        {username && (
+          <Chat
+            username={username}
+            currentUserId={userId}
+            gameId={gameId}
+            players={players || []}
+          />
+        )}
+
     </div>
   );
 };

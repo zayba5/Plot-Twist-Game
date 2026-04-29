@@ -669,6 +669,16 @@
   margin-left: auto;
 }
 
+.lobby-btn-leave {
+  background: linear-gradient(135deg, #f87171 0%, #b91c1c 100%);
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  color: #1a0a0a;
+}
+
+.lobby-btn-leave:hover {
+  filter: brightness(1.1);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .lobby-panels {
@@ -685,4 +695,94 @@
     width: 100%;
     margin-left: 0;
   }
+}
+
+
+/* ===== GLOBAL PAGE LAYOUT ===== */
+.page-layout {
+  display: flex;
+  height: calc(100vh - 80px); /* adjust if header height differs */
+  gap: 3rem;
+  align-items: stretch;
+  padding: 0 2rem;
+}
+
+.main-content {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-right: 1rem;
+}
+
+/* ===== SIDEBAR CHAT MODE ===== */
+.chat-sidebar {
+  width: auto;
+  height: 100%;
+  min-height: 0;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-left: 2px solid rgba(145, 6, 252, 0.4);
+  border-radius: 8px;
+  background: rgba(15, 25, 30, 0.9);
+  backdrop-filter: blur(8px);
+  margin-left: 1rem;
+}
+
+/* scroll messages */
+.chat-sidebar .lobby-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* keep input at bottom */
+.chat-sidebar .lobby-chat-form {
+  margin-top: auto;
+}
+
+/* ===== STORYTELLING CONTAINER ===== */
+
+.storytelling-container {
+  display: flex;
+  height: calc(100vh - 80px);
+
+  /* CENTER the whole layout */
+  justify-content: center;
+
+  /* spacing between game and chat */
+  gap: 2rem;
+
+  /* IMPORTANT: limit total width */
+  max-width: 1000px;
+  margin: 0 auto;
+
+  /* reduce huge side padding */
+  padding: 1rem;
+  width: 100%;
+}
+
+.storytelling-container .game-window {
+  flex: 0 0 70%;
+  height: 100%;
+  min-width: 0;
+}
+
+.storytelling-container .chat-sidebar {
+  flex: 0 0 30%;
+  width: auto;
+  height: 92%;
+  max-height: calc(100vh - 80px);
+  min-height: 0;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-left: 2px solid rgba(145, 6, 252, 0.4);
+  border-radius: 8px;
+  background: rgba(15, 25, 30, 0.9);
+  backdrop-filter: blur(8px);
+  margin-left: 2 rem;
+  align-self: flex-end;
 }

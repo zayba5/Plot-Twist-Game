@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import './index.css';
 import './Lobby.css';
-import { io } from "socket.io-client";
-const socket = io("http://localhost:5000", { withCredentials: true });
+//import { io } from "socket.io-client";
+import { socket } from "./global.jsx";
+import Chat from "./Chat";
+
 
 const Lobby = () => {
 
@@ -20,15 +22,6 @@ const Lobby = () => {
 
   const isHost = players.find(p => p.user_id === currentUserId)?.isHost;
 
-  const [chatMessage, setChatMessage] = useState('');
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      user: 'StoryBot',
-      text: 'Welcome to Plot Twist! Prepare your story and wait for friends to join!',
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    },
-  ]);
 
   React.useEffect(() => {
     fetch("http://localhost:5000/session", {
@@ -56,55 +49,34 @@ const Lobby = () => {
     }, 2000);
 
     return () => clearInterval(interval);
-  }, [gameCode]);
+  }, [gameId]);
 
   
 
 
   React.useEffect(() => {
-    if (!socket) return;
+    const handleLobbyUpdate = (data) => {
+      if (!data?.players) return;
 
-    socket.on("lobby_update", (data) => {
-      if (data.players) {
-        setPlayers(
-          data.players.map(p => ({
+      setPlayers((prev) =>
+        data.players.map((p) => {
+          const existing = prev.find((x) => x.user_id === p.user_id);
+          return {
             name: p.username,
             user_id: p.user_id,
-            isHost: p.isHost || false,   // <-- key fix
-          }))
-        );
-      }
-    });
+            isHost: p.isHost ?? existing?.isHost ?? false,
+          };
+        })
+      );
+    };
+
+    socket.on("lobby_update", handleLobbyUpdate);
 
     return () => {
-      socket.off("lobby_update");
+      socket.off("lobby_update", handleLobbyUpdate);
     };
-  }, [socket]);
-
-  React.useEffect(() => {
-    if (!socket) return;
-
-    // listen for system join messages from server
-
-    socket.on("player_joined_message", (data) => {
-      const playerNames = data.players
-        ? data.players.map(p => p.username).join(", ")
-        : "";
-
-      setMessages(prev => [
-        ...prev,
-        {
-          id: prev.length + 1,
-          user: "System",
-          text: `${data.username} joined the lobby.`,
-          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        },
-      ]);
-    });
-
-    return () => socket.off("player_joined_message");
-  }, [socket]);
-
+  }, []);
+ 
 
   /*React.useEffect(() => {
     socket.on("lobby_snapshot", (data) => {
@@ -124,35 +96,39 @@ const Lobby = () => {
     return () => socket.off("lobby_snapshot");
   }, []); */
 
+  //handle host left their own game
+  React.useEffect(() => {
+    const handleLobbyClosed = (data) => {
+      alert(data?.message || "The host left. Lobby closed.");
+
+      if (gameId) {
+        socket.emit("leave_game", { game_id: gameId });
+      }
+
+      setIsLobbyCreated(false);
+      setGameId("");
+      setGameCode("");
+      setPlayers([]);
+    };
+
+    socket.on("lobby_closed", handleLobbyClosed);
+
+    return () => {
+      socket.off("lobby_closed", handleLobbyClosed);
+    };
+  }, [gameId]);
 
   React.useEffect(() => {
-    socket.on("game_started", (data) => {
+    const handleGameStarted = (data) => {
       console.log("Game started!", data);
-
-      // redirect to Storytelling page
       window.location.href = `/story?game_id=${data.game_id}`;
-    });
+    };
 
-    return () => socket.off("game_started");
+    socket.on("game_started", handleGameStarted);
+
+    return () => socket.off("game_started", handleGameStarted);
   }, []);
 
-  React.useEffect(() => {
-    if (!socket) return;
-
-    socket.on("receive_message", (data) => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now(),
-          user: data.username === username ? "You" : data.username,
-          text: data.text,
-          time: data.time,
-        },
-      ]);
-    });
-
-    return () => socket.off("receive_message");
-  }, [socket, username]);
 
 
   const fetchPlayers = async (gameId) => {
@@ -192,6 +168,13 @@ const Lobby = () => {
 
   const handleInvite = async (e) => {
     e.preventDefault();
+
+    // ADD THIS BLOCK
+    await fetch("http://localhost:5000/leave-lobby", {
+      method: "POST",
+      credentials: "include",
+    });
+
     const name = username.trim() || "Host";
 
     try {
@@ -209,18 +192,9 @@ const Lobby = () => {
         setIsLobbyCreated(true);
 
         // join socket room
-        socket.emit("join_game", { game_code: data.game_code });
+        socket.emit("join_game", { game_id: data.game_id });
 
-        // add local lobby message
-        setMessages(prev => [
-          ...prev,
-          {
-            id: prev.length + 1,
-            user: "Lobby",
-            text: `${name} created the lobby and joined as Host.`,
-            time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          },
-        ]);
+        // Chat component will handle lobby messages via socket events
       }
     } catch (err) {
       console.error(err);
@@ -228,9 +202,17 @@ const Lobby = () => {
     }
   };
 
+
   const handleJoinGame = async (e) => {
     e.preventDefault();
-    const name = joinUsername.trim() || "Player";
+
+    // ADD THIS BLOCK
+    await fetch("http://localhost:5000/leave-lobby", {
+      method: "POST",
+      credentials: "include",
+    });
+
+  const name = joinUsername.trim() || "Player";
 
     try {
       const res = await fetch("http://localhost:5000/join-lobby", {
@@ -247,18 +229,7 @@ const Lobby = () => {
         setIsLobbyCreated(true);
 
         // join socket room
-        socket.emit("join_game", { game_code: data.game_code });
-
-        // add local lobby message
-        setMessages(prev => [
-          ...prev,
-          {
-            id: prev.length + 1,
-            user: "Lobby",
-            text: `${name} joined the lobby.`,
-            time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          },
-        ]);
+        socket.emit("join_game", { game_id: data.game_id });
       } else {
         alert(data.error);
       }
@@ -271,29 +242,38 @@ const Lobby = () => {
   const handleStartGame = (e) => {
   e.preventDefault();
 
-  socket.emit("start_game", { game_code: gameCode });
+  socket.emit("start_game", { game_id: gameId });
+  };
+
+  const handleLeaveGame = async () => {
+    const leavingGameId = gameId;
+
+    try {
+      const res = await fetch("http://localhost:5000/leave-lobby", {
+        method: "POST",
+        credentials: "include",
+      });
+
+      const data = await res.json();
+
+      if (leavingGameId) {
+        socket.emit("leave_game", { game_id: leavingGameId });
+      }
+
+      setIsLobbyCreated(false);
+      setGameId("");
+      setGameCode("");
+      setPlayers([]);
+
+      if (!data.ok) {
+        console.error("Leave lobby returned non-ok:", data);
+      }
+    } catch (err) {
+      console.error("Failed to leave lobby", err);
+    }
   };
 
 
-  const handleSendMessage = (e) => {
-    e.preventDefault();
-    if (!chatMessage.trim()) return;
-
-    const messageData = {
-      text: chatMessage.trim(),
-      username: username,
-      time: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      game_code: gameCode,
-    };
-
-    // send to server
-    socket.emit("send_message", messageData);
-
-    setChatMessage('');
-};
 
   return (
     <div className="lobby">
@@ -440,40 +420,12 @@ const Lobby = () => {
           </div>
         </section>
 
-        <section className="lobby-panel lobby-panel-right">
-          <h2 className="lobby-panel-title">Chat</h2>
-          {players.length > 0 && (
-            <div className="lobby-players-in-chat">
-              <p className="lobby-players-in-chat-title">Players in lobby</p>
-              <ul className="lobby-players-in-chat-list">
-                {players.map((p, i) => (
-                  <li key={i}>{p.name}{p.isHost ? ' (Host)' : ''}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          <div className="lobby-chat-messages">
-            {messages.map((msg) => (
-              <div key={msg.id} className={`lobby-chat-msg${msg.user === 'System' ? ' lobby-chat-msg-system' : ''}`}>
-                <span className="lobby-chat-user">{msg.user}</span>
-                <span className="lobby-chat-time">{msg.time}</span>
-                <p className="lobby-chat-text">{msg.text}</p>
-              </div>
-            ))}
-          </div>
-          <form onSubmit={handleSendMessage} className="lobby-chat-form">
-            <input
-              type="text"
-              className="lobby-chat-input"
-              placeholder="Type a message..."
-              value={chatMessage}
-              onChange={(e) => setChatMessage(e.target.value)}
-            />
-            <button type="submit" className="lobby-btn-send">
-              Send
-            </button>
-          </form>
-        </section>
+        <Chat
+          username={username}
+          currentUserId={currentUserId}
+          gameId={gameId}
+          players={players}
+        />
       </div>
       <footer className="lobby-footer">
         <button
@@ -483,6 +435,14 @@ const Lobby = () => {
           disabled={!isHost}
         >
           {isHost ? "Play Game" : "Waiting for host..."}
+        </button>
+
+        <button
+          type="button"
+          className="lobby-footer-btn lobby-btn-leave"
+          onClick={handleLeaveGame}
+        >
+          Leave Game
         </button>
       </footer>
     </div>
