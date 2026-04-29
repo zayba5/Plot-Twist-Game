@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import Timer from "./timer.jsx";
 import Waiting from "./Waiting.jsx";
 import Chat from "./Chat";
-import "./Lobby.css";
+// import "./Lobby.css";
 
 const StoryPart = ({ part }) => {
     if (!part) return null;
