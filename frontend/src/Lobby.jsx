@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import './index.css';
-import './Lobby.css';
+// import './Lobby.css';
 //import { io } from "socket.io-client";
 import { socket } from "./global.jsx";
 import Chat from "./Chat";
@@ -16,7 +16,9 @@ const Lobby = () => {
   const [currentUserId, setCurrentUserId] = useState(null);
 
   const [isLobbyCreated, setIsLobbyCreated] = useState(false);
+  const [isCreatingLobby, setIsCreatingLobby] = useState(false);
   const [gameCode, setGameCode] = useState('');
+  const [copied, setCopied] = useState(false);
   const [gameId, setGameId] = useState('');
   const [players, setPlayers] = useState([]);
 
@@ -169,7 +171,8 @@ const Lobby = () => {
   const handleInvite = async (e) => {
     e.preventDefault();
 
-    // ADD THIS BLOCK
+    setIsCreatingLobby(true); // start loading
+
     await fetch("http://localhost:5000/leave-lobby", {
       method: "POST",
       credentials: "include",
@@ -184,6 +187,7 @@ const Lobby = () => {
         credentials: "include",
         body: JSON.stringify({ username: name, rounds, votingSessions }),
       });
+
       const data = await res.json();
 
       if (data.ok) {
@@ -191,17 +195,31 @@ const Lobby = () => {
         setGameId(data.game_id);
         setIsLobbyCreated(true);
 
-        // join socket room
         socket.emit("join_game", { game_id: data.game_id });
-
-        // Chat component will handle lobby messages via socket events
       }
     } catch (err) {
       console.error(err);
       alert("Could not connect to backend.");
+    } finally {
+      setIsCreatingLobby(false); // stop loading
     }
   };
 
+    const handleCopy = async () => {
+    // e.preventDefault();
+    if (!gameCode) return;
+
+    try {
+      await navigator.clipboard.writeText(gameCode);
+      setCopied(true);
+
+      setTimeout(() => {
+        setCopied(false);
+      }, 1500); // resets after 1.5s
+    } catch (err) {
+      console.error("Failed to copy", err);
+    }
+  };
 
   const handleJoinGame = async (e) => {
     e.preventDefault();
@@ -370,16 +388,33 @@ const Lobby = () => {
             {isLobbyCreated ? (
               <div className="lobby-invite-result">
                 <p className="lobby-game-code-label">Invite code</p>
-                <p className="lobby-game-code">{gameCode}</p>
+                <div className="lobby-game-code-row">
+                  <p className="lobby-game-code">{gameCode}</p>
+
+                  <button
+                    type="button"
+                    className={`lobby-copy-btn ${copied ? "✓" : "⧉"}`}
+                    onClick={handleCopy}
+                  >
+                    {copied ? "✓" : "⧉"}
+                  </button>
+                </div>
               </div>
             ) : (
-              <button
-                type="button"
-                className="lobby-btn-invite"
-                onClick={handleInvite}
-              >
-                Invite
-              </button>
+            <button
+              type="button"
+              className="lobby-btn-invite"
+              onClick={handleInvite}
+              disabled={isCreatingLobby}
+            >
+              {isCreatingLobby ? (
+                <span className="dot-loader">
+                  <span>.</span><span>.</span><span>.</span>
+                </span>
+              ) : (
+                "Invite"
+              )}
+            </button>
             )}
           </div>
 
