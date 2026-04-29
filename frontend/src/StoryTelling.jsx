@@ -8,10 +8,9 @@ import { socket } from "./global.jsx";
 import { useNavigate, useLocation } from "react-router-dom";
 import DebugPanel from "./DebugPanel.jsx";
 import Chat from "./Chat";
-// import "./Lobby.css";
 
 // Hardcode game settings
-const ROUND_TIME_SECONDS = 6000; // on deployment change it to 60
+const ROUND_TIME_SECONDS = 60; // on deployment change it to 60
 
 // UI
 const Header = ({ innerRoundNumber, maxRounds, endTimeMs, onExpire, submitted }) => {
