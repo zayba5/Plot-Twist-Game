@@ -22,7 +22,6 @@ from flask_cors import CORS
 from socket_handlers import register_socket_handlers
 
 load_dotenv()
-#s = TimestampSigner(os.getenv("secretKey") or "")
 signer = TimestampSigner(os.getenv("secretKey") or "")
 socketio = SocketIO(cors_allowed_origins=[os.getenv("frontHost")])
 FRONTEND_ORIGIN = os.getenv("frontHost")
@@ -37,7 +36,6 @@ DEFAULT_NAMES = [
     "PanicButton"
 ]
 
-# results_ready = {}
 
 def create_app(test_config: dict | None = None):
     app = Flask(__name__)

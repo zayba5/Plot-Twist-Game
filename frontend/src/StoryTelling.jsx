@@ -8,10 +8,9 @@ import { socket } from "./global.jsx";
 import { useNavigate, useLocation } from "react-router-dom";
 import DebugPanel from "./DebugPanel.jsx";
 import Chat from "./Chat";
-// import "./Lobby.css";
 
 // Hardcode game settings
-const ROUND_TIME_SECONDS = 6000; // on deployment change it to 60
+const ROUND_TIME_SECONDS = 60; // on deployment change it to 60
 
 // UI
 const Header = ({ innerRoundNumber, maxRounds, endTimeMs, onExpire, submitted }) => {
@@ -119,11 +118,16 @@ const StorytellingPage = () => {
   const innerRoundRef = useRef(innerRoundNumber);
   const outerRoundRef = useRef(outerRoundNumber);
   const hasClaimedRef = useRef(false);
+  const waitingTimeoutRef = useRef(null);
 
   const canSubmit = !submitted && storyText.trim().length > 0;
 
   const [showDebug, setShowDebug] = useState(false);
-  const shouldShowWaiting = submitted && isPolling;
+  const shouldTriggerWaiting = submitted && isPolling;
+  const [showWaiting, setShowWaiting] = useState(false);
+  const shouldShowWaiting = showWaiting;
+
+
   const debugData = useMemo(() => (  
     {game: {
       gameId,
@@ -364,6 +368,28 @@ const StorytellingPage = () => {
     }
   };
 
+  useEffect(() => {
+    // clear any previous timer
+    if (waitingTimeoutRef.current) {
+      clearTimeout(waitingTimeoutRef.current);
+      waitingTimeoutRef.current = null;
+    }
+
+    if (shouldTriggerWaiting) {
+      waitingTimeoutRef.current = setTimeout(() => {
+        setShowWaiting(true);
+      }, 200);
+    } else {
+      // reset immediately when condition is false
+      setShowWaiting(false);
+    }
+
+    return () => {
+      if (waitingTimeoutRef.current) {
+        clearTimeout(waitingTimeoutRef.current);
+      }
+    };
+  }, [shouldTriggerWaiting]);
   return (
     <div className="storytelling-container">
 
