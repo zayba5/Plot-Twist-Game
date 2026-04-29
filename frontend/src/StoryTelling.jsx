@@ -119,11 +119,16 @@ const StorytellingPage = () => {
   const innerRoundRef = useRef(innerRoundNumber);
   const outerRoundRef = useRef(outerRoundNumber);
   const hasClaimedRef = useRef(false);
+  const waitingTimeoutRef = useRef(null);
 
   const canSubmit = !submitted && storyText.trim().length > 0;
 
   const [showDebug, setShowDebug] = useState(false);
-  const shouldShowWaiting = submitted && isPolling;
+  const shouldTriggerWaiting = submitted && isPolling;
+  const [showWaiting, setShowWaiting] = useState(false);
+  const shouldShowWaiting = showWaiting;
+
+
   const debugData = useMemo(() => (  
     {game: {
       gameId,
@@ -364,6 +369,28 @@ const StorytellingPage = () => {
     }
   };
 
+  useEffect(() => {
+    // clear any previous timer
+    if (waitingTimeoutRef.current) {
+      clearTimeout(waitingTimeoutRef.current);
+      waitingTimeoutRef.current = null;
+    }
+
+    if (shouldTriggerWaiting) {
+      waitingTimeoutRef.current = setTimeout(() => {
+        setShowWaiting(true);
+      }, 200);
+    } else {
+      // reset immediately when condition is false
+      setShowWaiting(false);
+    }
+
+    return () => {
+      if (waitingTimeoutRef.current) {
+        clearTimeout(waitingTimeoutRef.current);
+      }
+    };
+  }, [shouldTriggerWaiting]);
   return (
     <div className="storytelling-container">
 
