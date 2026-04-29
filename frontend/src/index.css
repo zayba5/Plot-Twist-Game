@@ -7,6 +7,16 @@
     background-position: 100% 50%;
   }
 }
+@keyframes dotBlink {
+  0%, 80%, 100% {
+    opacity: 0.2;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
 html {
   height: 100%;
 }
@@ -1313,6 +1323,25 @@ span {
 
 .lobby-btn-leave:active {
   transform: scale(0.96);
+}
+
+.dot-loader {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.dot-loader span {
+  animation: dotBlink 1.2s infinite;
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.dot-loader span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.dot-loader span:nth-child(3) {
+  animation-delay: 0.4s;
 }
 
 /* Responsive */
