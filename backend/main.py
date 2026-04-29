@@ -37,9 +37,7 @@ DEFAULT_NAMES = [
     "PanicButton"
 ]
 
-results_ready = {}
-
-
+# results_ready = {}
 
 def create_app(test_config: dict | None = None):
     app = Flask(__name__)
@@ -1036,13 +1034,13 @@ def create_app(test_config: dict | None = None):
 
             # emit system message for chat
 
-            socketio.emit(
-                "player_joined_message",
-                {
-                    "username": user.username,
-                    "players": players_list  
-                },
-                to=f"game:{game.game_id}"
+            create_and_emit_chat_message(
+                socketio=socketio,
+                game=game,
+                text=f"{user.username} created the lobby.",
+                message_type="system",
+                user=None,
+                room_name=f"game:{game.game_id}"
             )
 
             # save game settings
@@ -1063,7 +1061,7 @@ def create_app(test_config: dict | None = None):
                 "game_id": str(game.game_id),
                 "game_code": game.game_code
             }, 201
-
+    api.add_resource(CreateLobby, "/create-lobby")
 
     class JoinLobby(Resource):
         def post(self):
@@ -1113,10 +1111,13 @@ def create_app(test_config: dict | None = None):
             )
 
             # emit system chat join message
-            socketio.emit(
-                "player_joined_message",
-                {"username": user.username},
-                to=f"game:{game.game_id}"
+            create_and_emit_chat_message(
+                socketio=socketio,
+                game=game,
+                text=f"{user.username} joined the lobby.",
+                message_type="system",
+                user=None,
+                room_name=f"game:{game.game_id}"
             )
 
             session["game_id"] = str(game.game_id)
@@ -1177,7 +1178,7 @@ def create_app(test_config: dict | None = None):
                 "username": str(user.username),
                 "password_hash": str(user.password_hash),
             }, 201
-    
+    api.add_resource(CreateUserEndpoint, "/CreateUser")
     class LeaveLobby(Resource):
         def post(self):
             user = require_user()
@@ -1216,6 +1217,15 @@ def create_app(test_config: dict | None = None):
             is_host = (game.game_host.user_id == user.user_id)
 
             if is_host:
+                create_and_emit_chat_message(
+                    socketio=socketio,
+                    game=game,
+                    text=f"{user.username} left the game. Lobby closed.",
+                    message_type="system",
+                    user=None,
+                    room_name=room_name
+                )
+
                 socketio.emit(
                     "lobby_closed",
                     {
@@ -1259,28 +1269,59 @@ def create_app(test_config: dict | None = None):
                 to=room_name
             )
 
-            socketio.emit(
-                "player_left_message",
-                {
-                    "username": user.username,
-                    "game_id": str(game.game_id),
-                },
-                to=room_name
+            create_and_emit_chat_message(
+                socketio=socketio,
+                game=game,
+                text=f"{user.username} left the lobby.",
+                message_type="system",
+                user=None,
+                room_name=room_name
             )
 
             session.pop("game_id", None)
             session.pop("game_code", None)
 
             return {"ok": True, "hostLeft": False}, 200
+    class ChatHistory(Resource):
+        def get(self):
+            user = require_user()
+            game_id = request.args.get("game_id")
 
-    api.add_resource(CreateUserEndpoint, "/CreateUser")
+            if not game_id:
+                return {"ok": False, "error": "game_id required"}, 400
 
+            try:
+                game_uuid = uuid.UUID(str(game_id))
+            except ValueError:
+                return {"ok": False, "error": "invalid game_id"}, 400
+
+            game = Game.get_or_none(Game.game_id == game_uuid)
+            if not game:
+                return {"ok": False, "error": "Game not found"}, 404
+
+            membership = Game_Players.get_or_none(
+                (Game_Players.game_id == game) &
+                (Game_Players.user_id == user)
+            )
+            if not membership:
+                return {"ok": False, "error": "Not in this game"}, 403
+
+            messages = (
+                Chat_Message
+                .select()
+                .where(Chat_Message.game_id == game)
+                .order_by(Chat_Message.created_at.asc())
+            )
+
+            return {
+                "ok": True,
+                "messages": [serialize_chat_message(m) for m in messages]
+            }, 200
+    api.add_resource(ChatHistory, "/chat-history")
 
     # REGISTER ROUTES
-    api.add_resource(CreateLobby, "/create-lobby")
     api.add_resource(JoinLobby, "/join-lobby")
     api.add_resource(LobbyPlayers, "/lobby-players")
-    
     api.add_resource(SessionEndpoint, "/session")
     api.add_resource(LeaveLobby, "/leave-lobby")
 
