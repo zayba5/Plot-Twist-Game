@@ -4,14 +4,13 @@ import { socket } from "./global.jsx";
 import Chat from "./Chat";
 
 
-const Lobby = () => {
+const Lobby = ({ username, setUsername, currentUserId }) => {
 
-  const [username, setUsername] = useState('');
+  //const [username, setUsername] = useState('');
   const [rounds, setRounds] = useState(5);
   const [votingSessions, setVotingSessions] = useState(3);
   const [inviteCode, setInviteCode] = useState('');
   const [joinUsername, setJoinUsername] = useState('');
-  const [currentUserId, setCurrentUserId] = useState(null);
 
   const [isLobbyCreated, setIsLobbyCreated] = useState(false);
   const [isCreatingLobby, setIsCreatingLobby] = useState(false);
@@ -23,23 +22,8 @@ const Lobby = () => {
 
   const isHost = players.find(p => p.user_id === currentUserId)?.isHost;
 
+  const isLoggedIn = !!currentUserId;
 
-  React.useEffect(() => {
-    fetch("http://localhost:5000/session", {
-      credentials: "include",
-    })
-      .then(res => res.json())
-      .then(data => {
-        console.log("SESSION:", data);
-
-        if (data.username) {
-          setUsername(data.username);
-          setJoinUsername(data.username);
-          setCurrentUserId(data.user_id);
-        }
-      });
-
-  }, []);
 
 
   React.useEffect(() => {
@@ -177,7 +161,9 @@ const Lobby = () => {
       credentials: "include",
     });
 
-    const name = username.trim() || "Host";
+    const name = isLoggedIn
+      ? username
+      : (username.trim() || "Host");
 
     try {
       const res = await fetch("http://localhost:5000/create-lobby", {
@@ -229,7 +215,10 @@ const Lobby = () => {
       credentials: "include",
     });
 
-  const name = joinUsername.trim() || "Player";
+
+  const name = isLoggedIn
+    ? username
+    : (joinUsername.trim() || "Player");
 
     try {
       const res = await fetch("http://localhost:5000/join-lobby", {
@@ -322,15 +311,9 @@ const Lobby = () => {
                 <input
                   type="text"
                   className="lobby-input"
-                  placeholder="Enter username"
                   value={username}
+                  disabled={isLoggedIn}
                   onChange={(e) => setUsername(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleInvite(e);
-                    }
-                  }}
                 />
               </label>
               <label className="lobby-label">
@@ -430,11 +413,12 @@ const Lobby = () => {
               <div className="lobby-join-row">
                 <label className="lobby-label">
                   Username
+                  
                   <input
                     type="text"
                     className="lobby-input"
-                    placeholder="Enter username"
-                    value={joinUsername}
+                    value={isLoggedIn ? username : joinUsername}
+                    disabled={isLoggedIn}
                     onChange={(e) => setJoinUsername(e.target.value)}
                   />
                 </label>

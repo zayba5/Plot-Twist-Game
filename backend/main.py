@@ -229,23 +229,26 @@ def create_app(test_config: dict | None = None):
 
             try:
                 user = App_User.get_or_none(App_User.username == username)
-                stored_hash = bytes(user.password_hash)
 
-                # Invalid username
                 if not user:
                     return {"error": "invalid_credentials"}, 401
+
+                stored_hash = bytes(user.password_hash)
 
                 # Check password
                 if not bcrypt.checkpw(password.encode("utf-8"), stored_hash):
                     return {"error": "invalid_credentials"}, 401
 
+
                 # Success login
+                g.user = user
+                g.should_set_uid_cookie = True
+
+
                 return {
-                    "message": "login_success",
-                    "user": {
-                        "user_id": str(user.user_id),
-                        "username": user.username
-                    }
+                    "ok": True,
+                    "username": user.username,
+                    "user_id": str(user.user_id)
                 }, 200
 
             except Exception as e:
@@ -1014,31 +1017,19 @@ def create_app(test_config: dict | None = None):
         def get(self):
             username = request.args.get("username") or random.choice(DEFAULT_NAMES)  # default name
             
-            if getattr(g, "user", None):
+            if not getattr(g, "user", None):
                 return {
-                    "ok": True,
-                    "user_id": str(g.user.user_id),
-                    "existing": True,
-                    "username": g.user.username,
-                    "game_id": session.get("game_id"),
-                    "game_code": session.get("game_code")
+                    "ok": False,
+                    "username": None,
+                    "user_id": None
                 }, 200
-
-            user = App_User.create(
-                user_id=uuid.uuid4(),
-                username=username
-            )
-            g.user = user
-            g.should_set_uid_cookie = True
 
             return {
                 "ok": True,
-                "user_id": str(user.user_id),
-                "existing": False,
-                "username": username,
-                "game_id": None,
-                "game_code": None
-            }, 201
+                "username": g.user.username,
+                "user_id": str(g.user.user_id)
+            }, 200
+
 
 
     ###########################################################
@@ -1229,13 +1220,16 @@ def create_app(test_config: dict | None = None):
                 username=username,
                 password_hash=password_hash
             )
+            g.user = user
+            g.should_set_uid_cookie = True
+
 
             return {
                 "ok": True,
                 "user_id": str(user.user_id),
-                "username": str(user.username),
-                "password_hash": str(user.password_hash),
-            }, 201
+                "username": user.username
+            }, 201        
+
     api.add_resource(CreateUserEndpoint, "/CreateUser")
     class LeaveLobby(Resource):
         def post(self):
@@ -1373,6 +1367,16 @@ def create_app(test_config: dict | None = None):
                 "ok": True,
                 "messages": [serialize_chat_message(m) for m in messages]
             }, 200
+        
+    
+    class LogoutEndpoint(Resource):
+        def post(self):
+            response = jsonify({"ok": True})
+            response.delete_cookie("uid")
+            session.clear()
+            return response
+
+    api.add_resource(LogoutEndpoint, "/logout")
     api.add_resource(ChatHistory, "/chat-history")
 
     # REGISTER ROUTES
