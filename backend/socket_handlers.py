@@ -118,21 +118,26 @@ def register_socket_handlers(socketio, signer):
 
     @socketio.on("start_game")
     def handle_start_game(data):
+        print("start_game received:", data)
         game_id = data.get("game_id")
         if not game_id:
+            print("start_game: missing game_id")
             return
 
         try:
             game_uuid = uuid.UUID(str(game_id))
         except ValueError:
+            print("start_game: invalid UUID")
             return
 
         game = Game.get_or_none(Game.game_id == game_uuid)
         if not game:
+            print("start_game: game not found")
             return
 
         user = get_user_from_cookie(signer)
         if not user:
+            print("start_game: user not found")
             return
 
         if user.user_id != game.game_host.user_id:

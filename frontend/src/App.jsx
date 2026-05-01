@@ -60,7 +60,6 @@ function Header() {
       <div id="head">
         <h1 id="header-title-container">Plot Twist</h1>
         <FontAwesomeIcon icon={faBars} onClick={toggleMenu} />
-        <NavItem menuOpen={menuOpen} closeMenu={closeMenu} />
       </div>
     </div>
   );

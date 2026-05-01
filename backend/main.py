@@ -22,7 +22,6 @@ from flask_cors import CORS
 from socket_handlers import register_socket_handlers
 
 load_dotenv()
-#s = TimestampSigner(os.getenv("secretKey") or "")
 signer = TimestampSigner(os.getenv("secretKey") or "")
 socketio = SocketIO(cors_allowed_origins=[os.getenv("frontHost")])
 FRONTEND_ORIGIN = os.getenv("frontHost")
@@ -37,7 +36,6 @@ DEFAULT_NAMES = [
     "PanicButton"
 ]
 
-# results_ready = {}
 
 def create_app(test_config: dict | None = None):
     app = Flask(__name__)
@@ -117,6 +115,74 @@ def create_app(test_config: dict | None = None):
         if not getattr(g, "user", None):
             abort(401, description="Missing or invalid user cookie")
         return g.user
+    
+    def remove_user_from_all_lobbies(user):
+        memberships = list(
+            Game_Players.select().where(Game_Players.user_id == user)
+        )
+
+        for membership in memberships:
+            game = membership.game_id
+            room_name = f"game:{game.game_id}"
+            is_host = (game.game_host.user_id == user.user_id)
+
+            if is_host:
+                create_and_emit_chat_message(
+                    socketio=socketio,
+                    game=game,
+                    text=f"{user.username} left the game. Lobby closed.",
+                    message_type="system",
+                    user=None,
+                    room_name=room_name
+                )
+
+                socketio.emit(
+                    "lobby_closed",
+                    {
+                        "message": "The host left the game. Lobby closed.",
+                        "game_id": str(game.game_id),
+                    },
+                    to=room_name
+                )
+
+                Game.delete().where(Game.game_id == game.game_id).execute()
+
+                try:
+                    socketio.server.close_room(room_name)
+                except Exception as e:
+                    print("close_room failed:", e)
+            else:
+                Game_Players.delete().where(
+                    (Game_Players.game_id == game) &
+                    (Game_Players.user_id == user)
+                ).execute()
+
+                players_list = [
+                    {
+                        "user_id": str(p.user_id.user_id),
+                        "username": p.user_id.username,
+                        "isHost": p.user_id.user_id == game.game_host.user_id
+                    }
+                    for p in game.player
+                ]
+
+                socketio.emit(
+                    "lobby_update",
+                    {"game_id": str(game.game_id), "players": players_list},
+                    to=room_name
+                )
+
+                create_and_emit_chat_message(
+                    socketio=socketio,
+                    game=game,
+                    text=f"{user.username} left the lobby.",
+                    message_type="system",
+                    user=None,
+                    room_name=room_name
+                )
+
+        session.pop("game_id", None)
+        session.pop("game_code", None)
 
 
     #endpoints
@@ -982,11 +1048,7 @@ def create_app(test_config: dict | None = None):
     class CreateLobby(Resource):
         def post(self):
             user = require_user()
-            if session.get("game_id"):
-                return {
-                    "ok": False,
-                    "error": "You are already in a game. Leave first."
-                }, 400
+            remove_user_from_all_lobbies(user)
 
             data = request.get_json() or {}
             username = data.get("username", "Player")
@@ -994,8 +1056,8 @@ def create_app(test_config: dict | None = None):
             user.save()
             rounds = data.get("rounds", 5)
             voting_sessions = data.get("votingSessions", 3)
-            timer = data.get("timer", 60)  # default 60s per round
-            max_players = data.get("maxPlayers", 4)  # default max 4
+            timer = data.get("timer", 60)
+            max_players = data.get("maxPlayers", 4)
 
             # create new game
             status = Status.get(Status.status_type == "LOBBY")
@@ -1066,11 +1128,7 @@ def create_app(test_config: dict | None = None):
     class JoinLobby(Resource):
         def post(self):
             user = require_user()
-            if session.get("game_id"):
-                return {
-                    "ok": False,
-                    "error": "You are already in a game. Leave first."
-                }, 400
+            remove_user_from_all_lobbies(user)
 
             data = request.get_json() or {}
             username = data.get("username", "Player")
@@ -1235,8 +1293,6 @@ def create_app(test_config: dict | None = None):
                     to=room_name
                 )
 
-                Game_Players.delete().where(Game_Players.game_id == game).execute()
-                Game_Settings.delete().where(Game_Settings.game_id == game).execute()
                 Game.delete().where(Game.game_id == game.game_id).execute()
 
                 try:
