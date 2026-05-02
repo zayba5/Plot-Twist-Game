@@ -3,3 +3,4 @@ __pycache__/*
 upload/*
 config.py
 .env
+.venv/
