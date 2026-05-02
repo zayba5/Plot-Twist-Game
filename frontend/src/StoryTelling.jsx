@@ -4,7 +4,7 @@ import Waiting from "./Waiting";
 import Timer from "./timer.jsx";
 import { fetchCurrentStory, fetchUserId, fetchPollReady, fetchNextStoryPart } from "./Utility";
 import { postStory } from "./Utility.jsx";
-import { socket, api } from "./global.jsx";
+import { api, socket } from "./global.jsx";
 import { useNavigate, useLocation } from "react-router-dom";
 import DebugPanel from "./DebugPanel.jsx";
 import Chat from "./Chat";

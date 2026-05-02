@@ -1,7 +1,4 @@
-import { apiJson } from "./global.jsx";
-
-export const api =
-  import.meta.env.VITE_API;
+import { api, apiJson } from "./global.jsx";
 
 export async function fetchItem() {
   return apiJson("Sample", {
@@ -104,34 +101,47 @@ export async function fetchNextStoryPart(gameId, outerRoundNumber, innerRoundNum
 }
 
 export async function postUser(username, password) {
-  return apiJson("CreateUser", {
+  return authRequest("signup", {
     method: "POST",
-    body: {
+    body: JSON.stringify({
       username: username.trim(),
       password: password,
-    },
+    }),
   });
 }
 
-export const loginUser = async (username, password) => {
-  const response = await fetch(`${api}/login`, {
-    method: "POST",
+async function authRequest(path, options = {}) {
+  const response = await fetch(`${api}/${path}`, {
+    credentials: "include",
+    ...options,
     headers: {
       "Content-Type": "application/json",
+      ...(options.headers || {}),
     },
+  });
+
+  const result = await response.json().catch(() => ({}));
+
+  if (!response.ok || result.ok === false) {
+    throw new Error(result.error || "Auth failed");
+  }
+
+  return {
+    ok: true,
+    username: result.username || "",
+    user_id: result.user_id || null,
+    authenticated: Boolean(result.authenticated),
+  };
+}
+
+export const loginUser = async (username, password) => {
+  return authRequest("login", {
+    method: "POST",
     body: JSON.stringify({
-      username,
+      username: username.trim(),
       password,
     }),
   });
-
-  const result = await response.json();
-
-  if (!response.ok) {
-    throw new Error(result.error || "Login failed");
-  }
-
-  return result;
 };
 
 export async function fetchResults(gameID) {

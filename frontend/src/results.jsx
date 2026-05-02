@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import "./index.css";
-import { socket } from "./global.jsx";
+import { api, socket } from "./global.jsx";
 import { fetchGameStories, fetchVotingSession, fetchResults } from "./Utility.jsx";
 import { useNavigate } from "react-router-dom";
 import Timer from "./timer.jsx";
 import Waiting from "./Waiting.jsx";
 import Chat from "./Chat";
-import { api } from "./global.jsx";
 
 const StoryPart = ({ part }) => {
     if (!part) return null;

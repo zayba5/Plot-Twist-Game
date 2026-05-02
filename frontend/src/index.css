@@ -137,9 +137,23 @@ span {
 #head-wrapper #head .fa-bars:hover {
   color: gray;
 }
+
+#head {
+  display: flex;
+  align-items: center;
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
 #head-wrapper #head #nav-items {
   display: inline-flex;
-  padding-right: 50px;
+  padding-right: 10px;
+
 }
 #head-wrapper #head #nav-items .nav-item {
   white-space: nowrap;
@@ -1644,4 +1658,299 @@ span {
   align-self: flex-end;
 }
 
-/*# sourceMappingURL=index.css.map */
+/* =========================
+   AUTH OVERLAY (BACKGROUND)
+   ========================= */
+
+.auth-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+
+  background:
+    radial-gradient(circle at 20% 30%, rgba(215, 135, 171, 0.15), transparent 40%),
+    radial-gradient(circle at 80% 60%, rgba(169, 147, 209, 0.12), transparent 45%),
+    rgba(0, 0, 0, 0.75);
+
+  backdrop-filter: blur(10px);
+  animation: authFadeIn 0.2s ease-out;
+
+  cursor: pointer;
+}
+
+@keyframes authFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+
+/* =========================
+   MODAL
+   ========================= */
+
+.auth-modal {
+  width: min(420px, 92vw);
+  padding: 0;
+  border-radius: 18px;
+  overflow: hidden;
+
+  background: rgba(12, 18, 32, 0.92);
+  border: 1px solid rgba(190, 170, 255, 0.18);
+
+  color: #eef2ff;
+
+  box-shadow:
+    0 0 30px rgba(169, 147, 209, 0.25),
+    0 0 90px rgba(123, 95, 168, 0.15),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+
+  transform: scale(0.96) translateY(10px);
+  animation:
+    authPop 0.25s ease-out forwards,
+    glowPulse 4s ease-in-out infinite,
+    floaty 6s ease-in-out infinite;
+
+  cursor: default;
+}
+
+@keyframes authPop {
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    box-shadow:
+      0 0 30px rgba(169, 147, 209, 0.25),
+      0 0 90px rgba(123, 95, 168, 0.15),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  }
+  50% {
+    box-shadow:
+      0 0 40px rgba(215, 135, 171, 0.35),
+      0 0 120px rgba(123, 95, 168, 0.25),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  }
+}
+
+@keyframes floaty {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-4px); }
+}
+
+
+/* =========================
+   HEADER
+   ========================= */
+
+.auth-modal .game-window-header {
+  min-height: 90px;
+  background: rgba(123, 95, 168, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid rgba(190, 170, 255, 0.16);
+  position: relative;
+}
+
+.auth-modal .game-window-header h1 {
+  margin: 0;
+  font-size: 2rem;
+  color: #bcc5de;
+  letter-spacing: 1px;
+  text-shadow: 0 0 10px rgba(215, 135, 171, 0.25);
+}
+
+/* accent line */
+.auth-modal .game-window-header::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 20%;
+  width: 60%;
+  height: 2px;
+
+  background: linear-gradient(
+    90deg,
+    transparent,
+    #d787ab,
+    #7b5fa8,
+    transparent
+  );
+
+  opacity: 0.7;
+}
+
+
+/* =========================
+   BODY
+   ========================= */
+
+.auth-body {
+  padding: 22px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 85%;
+  margin: 0 auto;
+
+  background: linear-gradient(
+    180deg,
+    rgba(10, 14, 28, 0.6) 0%,
+    rgba(6, 9, 18, 0.95) 100%
+  );
+
+  box-shadow:
+    inset 0 0 30px rgba(169, 147, 209, 0.08),
+    inset 0 0 60px rgba(123, 95, 168, 0.05);
+}
+
+
+/* =========================
+   INPUTS
+   ========================= */
+
+.auth-modal .credential-input-section {
+  margin: 1rem auto;
+  width: 85%;
+}
+
+.auth-modal .credential-input {
+  background: rgba(6, 9, 18, 0.9);
+  border: 1px solid rgba(169, 147, 209, 0.4);
+  color: #eef2ff;
+  transition: all 0.25s ease;
+}
+
+.auth-modal .credential-input:hover {
+  box-shadow:
+    0 0 8px rgba(169, 147, 209, 0.25);
+}
+
+.auth-modal .credential-input:focus {
+  border-color: #d787ab;
+  box-shadow:
+    0 0 0 2px rgba(215, 135, 171, 0.25),
+    0 0 12px rgba(215, 135, 171, 0.2);
+  outline: none;
+}
+
+
+/* =========================
+   CONTROL BAR
+   ========================= */
+
+.auth-modal .game-window-control-bar {
+  height: 80px;
+  background: rgba(123, 95, 168, 0.18);
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  border-top: 1px solid rgba(190, 170, 255, 0.16);
+}
+
+
+/* =========================
+   BUTTON
+   ========================= */
+
+.auth-modal .button {
+  min-width: 140px;
+  position: relative;
+  overflow: hidden;
+
+  background: linear-gradient(135deg, #d787ab 0%, #7b5fa8 100%);
+  border: none;
+  color: #060912;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+
+  box-shadow:
+    0 0 14px rgba(215, 135, 171, 0.35),
+    0 0 30px rgba(123, 95, 168, 0.25);
+
+  transition: all 0.2s ease;
+}
+
+.auth-modal .button:hover {
+  filter: brightness(1.15);
+  transform: scale(1.03);
+}
+
+/* shine effect */
+.auth-modal .button::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -75%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(255,255,255,0.25),
+    transparent
+  );
+  transform: skewX(-20deg);
+}
+
+.auth-modal .button:hover::after {
+  left: 130%;
+  transition: left 0.6s ease;
+}
+
+.auth-modal .button:disabled {
+  background: gray;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+
+/* =========================
+   FOOTER
+   ========================= */
+
+.auth-footer {
+  display: flex;
+  justify-content: center;
+  padding: 10px 0 16px;
+}
+
+.auth-switch {
+  background: none;
+  border: none;
+  color: #bcc5de;
+  font-size: 0.9rem;
+  opacity: 0.7;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  padding-bottom: 2px;
+}
+
+.auth-switch:hover {
+  opacity: 1;
+  color: #d787ab;
+}
+
+.auth-switch::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 0%;
+  height: 1px;
+  background: #d787ab;
+  transition: width 0.25s ease;
+}
+
+.auth-switch:hover::after {
+  width: 100%;
+}

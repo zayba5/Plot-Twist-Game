@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import './index.css';
-import { api } from "./global.jsx"
 import { useNavigate } from "react-router-dom";
 import CredentialInput from './CredentialInput.jsx';
 import { postUser } from './Utility.jsx';
@@ -32,7 +31,7 @@ const ControlBar = ({ onSubmit, disabled, submitting }) => {
 };
 
 //start display content functions
-const SignUpPage = () => {
+const SignUpPage = ({ onSuccess }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [repassword, setRepassword] = useState("");
@@ -54,16 +53,15 @@ const SignUpPage = () => {
       const normUsername = username.trim();
       const result = await postUser(normUsername, password);
 
-    if (result.error === "username_taken") {
-      setUsernameTaken(true);
-      return;
-    }
-
       console.log("User created:", result);
+      onSuccess?.(result);
       
-      navigate("/login");
+      navigate("/lobby");
     } catch (error) {
       console.error("Failed to create user:", error);
+      if (error.message === "username_taken") {
+        setUsernameTaken(true);
+      }
     } finally {
       setSubmitting(false);
     }

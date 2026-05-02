@@ -1,17 +1,16 @@
 import React, { useState } from 'react';
 import './index.css';
-import { socket, api } from "./global.jsx";
+import { api, socket } from "./global.jsx";
 import Chat from "./Chat";
 
 
-const Lobby = () => {
+const Lobby = ({ username, setUsername, currentUserId, isAuthenticated = false }) => {
 
-  const [username, setUsername] = useState('');
+  //const [username, setUsername] = useState('');
   const [rounds, setRounds] = useState(5);
   const [votingSessions, setVotingSessions] = useState(3);
   const [inviteCode, setInviteCode] = useState('');
   const [joinUsername, setJoinUsername] = useState('');
-  const [currentUserId, setCurrentUserId] = useState(null);
 
   const [isLobbyCreated, setIsLobbyCreated] = useState(false);
   const [isCreatingLobby, setIsCreatingLobby] = useState(false);
@@ -21,25 +20,18 @@ const Lobby = () => {
   const [players, setPlayers] = useState([]);
   const [showHowToPlay, setShowHowToPlay] = useState(false);
 
-  const isHost = players.find(p => p.user_id === currentUserId)?.isHost;
+  const isHost = players.some(
+    (p) => p.user_id === currentUserId && p.isHost === true
+  );
 
+  const isLoggedIn = isAuthenticated;
 
   React.useEffect(() => {
-    fetch(api + "session", {
-      credentials: "include",
-    })
-      .then(res => res.json())
-      .then(data => {
-        console.log("SESSION:", data);
+    if (!isLoggedIn && username && !joinUsername) {
+      setJoinUsername(username);
+    }
+  }, [isLoggedIn, joinUsername, username]);
 
-        if (data.username) {
-          setUsername(data.username);
-          setJoinUsername(data.username);
-          setCurrentUserId(data.user_id);
-        }
-      });
-
-  }, []);
 
 
   React.useEffect(() => {
@@ -59,15 +51,12 @@ const Lobby = () => {
     const handleLobbyUpdate = (data) => {
       if (!data?.players) return;
 
-      setPlayers((prev) =>
-        data.players.map((p) => {
-          const existing = prev.find((x) => x.user_id === p.user_id);
-          return {
-            name: p.username,
-            user_id: p.user_id,
-            isHost: p.isHost ?? existing?.isHost ?? false,
-          };
-        })
+      setPlayers(
+        data.players.map((p) => ({
+          name: p.username,
+          user_id: p.user_id,
+          isHost: p.isHost
+        }))
       );
     };
 
@@ -145,7 +134,7 @@ const Lobby = () => {
           data.players.map((p) => ({
             name: p.username,
             user_id: p.user_id,
-            isHost: p.isHost || false,
+            isHost: p.isHost
           }))
         );
       }
@@ -177,7 +166,9 @@ const Lobby = () => {
       credentials: "include",
     });
 
-    const name = username.trim() || "Host";
+    const name = isLoggedIn
+      ? username
+      : (username.trim() || joinUsername.trim() || "Host");
 
     try {
       const res = await fetch(api + "create-lobby", {
@@ -190,11 +181,17 @@ const Lobby = () => {
       const data = await res.json();
 
       if (data.ok) {
+        if (!isLoggedIn) {
+          setUsername(name);
+          setJoinUsername(name);
+        }
         setGameCode(data.game_code);
         setGameId(data.game_id);
         setIsLobbyCreated(true);
 
         socket.emit("join_game", { game_id: data.game_id });
+      } else {
+        alert(data.error || "Could not create lobby.");
       }
     } catch (err) {
       console.error(err);
@@ -229,18 +226,25 @@ const Lobby = () => {
       credentials: "include",
     });
 
-  const name = joinUsername.trim() || "Player";
+
+  const name = isLoggedIn
+    ? username
+    : (joinUsername.trim() || username.trim() || "Player");
 
     try {
       const res = await fetch(api + "join-lobby", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ game_code: inviteCode, username: name }),
+        body: JSON.stringify({ game_code: inviteCode.trim().toUpperCase(), username: name }),
       });
       const data = await res.json();
 
       if (data.ok) {
+        if (!isLoggedIn) {
+          setUsername(name);
+          setJoinUsername(name);
+        }
         setGameCode(data.game_code);
         setGameId(data.game_id);
         setIsLobbyCreated(true);
@@ -322,13 +326,12 @@ const Lobby = () => {
                 <input
                   type="text"
                   className="lobby-input"
-                  placeholder="Enter username"
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleInvite(e);
+                  disabled={isLoggedIn}
+                  onChange={(e) => {
+                    setUsername(e.target.value);
+                    if (!isLoggedIn && !joinUsername.trim()) {
+                      setJoinUsername(e.target.value);
                     }
                   }}
                 />
@@ -430,11 +433,12 @@ const Lobby = () => {
               <div className="lobby-join-row">
                 <label className="lobby-label">
                   Username
+                  
                   <input
                     type="text"
                     className="lobby-input"
-                    placeholder="Enter username"
-                    value={joinUsername}
+                    value={isLoggedIn ? username : joinUsername}
+                    disabled={isLoggedIn}
                     onChange={(e) => setJoinUsername(e.target.value)}
                   />
                 </label>
@@ -590,3 +594,4 @@ const Lobby = () => {
 };
 
 export default Lobby;
+

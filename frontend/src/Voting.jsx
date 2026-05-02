@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import "./index.css";
-import { socket, getCookie, api } from "./global.jsx";
+import { api, socket, getCookie } from "./global.jsx";
 import { fetchGameStories, postVote, fetchVotingSession } from "./Utility.jsx";
 import { useNavigate } from "react-router-dom";
 import Timer from "./timer.jsx";
