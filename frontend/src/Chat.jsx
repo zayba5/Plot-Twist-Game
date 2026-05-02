@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { socket } from "./global.jsx";
-import { fetchChatHistory } from "./utility.jsx";
+import { fetchChatHistory } from "./Utility.jsx";
 
 const Chat = ({ username, currentUserId, gameId, players, variant = "default" }) => {
   const [chatMessage, setChatMessage] = useState("");
