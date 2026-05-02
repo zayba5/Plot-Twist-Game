@@ -15,36 +15,6 @@ const ScorePage = lazy(() => import("./Scoreboard"));
 const ResultsPage = lazy(() => import("./results"))
 
 
-// start navigation functions
-function NavItem({ menuOpen, closeMenu }) {
-  const items = [
-    { name: "Lobby", key: 1, route: "lobby" },
-    { name: "Story Telling", key: 2, route: "story" },
-    { name: "Voting", key: 3, route: "vote" },
-    { name: "Scoreboard", key: 4, route: "score" },
-    {name: "Results", key: 7, route: "results"}
-  ];
-
-  const navItems = items.map((item) => (
-    <Link
-      to={"/" + item.route}
-      className="nav-item"
-      id={item.name}
-      key={item.key}
-      onClick={closeMenu}
-    >
-      {item.name}
-    </Link>
-  ));
-
-  return (
-    <div id="nav-list-style" className={menuOpen ? "mobile-nav" : ""}>
-      <div id="nav-items">{navItems}</div>
-      <div className="greyed-out" onClick={closeMenu}></div>
-    </div>
-  );
-}
-
 function Header({ onOpenAuth, isLoggedIn, username, onLogout }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -52,44 +22,31 @@ function Header({ onOpenAuth, isLoggedIn, username, onLogout }) {
     setMenuOpen((prev) => !prev);
   }
 
-  function closeMenu() {
-    setMenuOpen(false);
+  async function handleAuthClick() {
+    if (isLoggedIn) {
+      await onLogout();
+    } else {
+      onOpenAuth();
+    }
   }
 
   return (
     <div id="head-wrapper">
       <div id="head">
-
-        {/* LEFT */}
         <h1 id="header-title-container">Plot Twist</h1>
 
-        {/* CENTER + RIGHT GROUP */}
         <div className="nav-right">
-          <NavItem menuOpen={menuOpen} closeMenu={closeMenu} />
-
           <div className="nav-auth">
-            <button onClick={() => !isLoggedIn && onOpenAuth()}>
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill={isLoggedIn ? "limegreen" : "white"}
-              >
-                <path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v3h20v-3c0-3.3-6.7-5-10-5z"/>
-              </svg>
+                        {isLoggedIn && <span>{username}</span>}
+
+            <button className="glow-btn" onClick={handleAuthClick}>
+              {isLoggedIn ? "Logout" : "Login"}
             </button>
 
-            {isLoggedIn && <span>{username}</span>}
-
-            {isLoggedIn && (
-              <button onClick={onLogout}>Logout</button>
-            )}
           </div>
         </div>
 
-        {/* RIGHT END (hamburger) */}
         <FontAwesomeIcon icon={faBars} onClick={toggleMenu} />
-
       </div>
     </div>
   );
