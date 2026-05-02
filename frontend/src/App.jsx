@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route, Link, useLocation } from "react
 import { faBars } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import SignUpPage from "./SignUp";
+import { api } from "./global";
 
 const LoginPage = lazy(() => import("./Login"));
 const LobbyPage = lazy(() => import("./Lobby"));
@@ -120,7 +121,7 @@ export default function App() {
 
     async function initSession() {
       try {
-        const response = await fetch("http://localhost:5000/session", {
+        const response = await fetch(api + "session", {
           method: "GET",
           credentials: "include",
         });

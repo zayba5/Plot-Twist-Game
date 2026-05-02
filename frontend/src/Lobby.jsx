@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import './index.css';
-import { socket } from "./global.jsx";
+import { socket, api } from "./global.jsx";
 import Chat from "./Chat";
 
 
@@ -25,7 +25,7 @@ const Lobby = () => {
 
 
   React.useEffect(() => {
-    fetch("http://localhost:5000/session", {
+    fetch(api + "session", {
       credentials: "include",
     })
       .then(res => res.json())
@@ -134,7 +134,7 @@ const Lobby = () => {
 
   const fetchPlayers = async (gameId) => {
     try {
-      const res = await fetch(`http://localhost:5000/lobby-players?game_id=${gameId}`, {
+      const res = await fetch(api + `lobby-players?game_id=${gameId}`, {
         credentials: "include",
       });
 
@@ -172,7 +172,7 @@ const Lobby = () => {
 
     setIsCreatingLobby(true); // start loading
 
-    await fetch("http://localhost:5000/leave-lobby", {
+    await fetch(api + "leave-lobby", {
       method: "POST",
       credentials: "include",
     });
@@ -180,7 +180,7 @@ const Lobby = () => {
     const name = username.trim() || "Host";
 
     try {
-      const res = await fetch("http://localhost:5000/create-lobby", {
+      const res = await fetch(api + "create-lobby", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -224,7 +224,7 @@ const Lobby = () => {
     e.preventDefault();
 
     // ADD THIS BLOCK
-    await fetch("http://localhost:5000/leave-lobby", {
+    await fetch(api + "leave-lobby", {
       method: "POST",
       credentials: "include",
     });
@@ -232,7 +232,7 @@ const Lobby = () => {
   const name = joinUsername.trim() || "Player";
 
     try {
-      const res = await fetch("http://localhost:5000/join-lobby", {
+      const res = await fetch(api + "join-lobby", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -266,7 +266,7 @@ const Lobby = () => {
     const leavingGameId = gameId;
 
     try {
-      const res = await fetch("http://localhost:5000/leave-lobby", {
+      const res = await fetch(api + "leave-lobby", {
         method: "POST",
         credentials: "include",
       });

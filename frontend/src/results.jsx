@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import Timer from "./timer.jsx";
 import Waiting from "./Waiting.jsx";
 import Chat from "./Chat";
+import { api } from "./global.jsx";
 
 const StoryPart = ({ part }) => {
     if (!part) return null;
@@ -154,7 +155,7 @@ const ResultsPage = () => {
     };
 
     useEffect(() => {
-        fetch("http://localhost:5000/session", {
+        fetch(api + "session", {
             credentials: "include",
         })
             .then((res) => res.json())

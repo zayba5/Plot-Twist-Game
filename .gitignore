@@ -8,6 +8,7 @@ lerna-debug.log*
 
 #virtual env
 .venv/
+.env/
 
 # query file
 PlotTwistQuery.sql
