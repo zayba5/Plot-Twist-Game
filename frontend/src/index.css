@@ -427,13 +427,13 @@ span {
   text-align: center;
 }
 .story-vote-card .badge-stack .badge-cont {
-  fill: #c269eb;
+  fill: rgb(194, 105, 235);
 }
 .story-vote-card .badge-stack .badge-cat-1 {
-  fill: #d3687a;
+  fill: rgb(211, 104, 122);
 }
 .story-vote-card .badge-stack .badge-cat-2 {
-  fill: #c97a45;
+  fill: rgb(201, 122, 69);
 }
 .story-vote-card .story-part {
   background: #a993d1;
@@ -482,7 +482,7 @@ span {
   position: relative;
   width: 80px;
   height: 80px;
-  fill: #c269eb;
+  fill: rgb(194, 105, 235);
 }
 #scoreboard-page .badge-stack .badge-icon svg {
   height: 100%;
@@ -556,11 +556,11 @@ span {
   transition: border-color 0.5s, box-shadow 0.5s, background 0.3s;
 }
 .credential-input-section .credential-input:hover {
-  background: linear-gradient(90deg, #060912 0%, #1c2a54 45%, #060912 100%);
+  background: linear-gradient(90deg, #060912 0%, rgb(27.87, 41.805, 83.61) 45%, #060912 100%);
   background-size: 200% 100%;
   background-position: 0% 50%;
   border-color: #a993d1;
-  box-shadow: 0 0 12px 2px #baa9da;
+  box-shadow: 0 0 12px 2px rgb(186.2, 168.6, 218.2);
   animation: gradientSweep 0.8s ease-out 1 forwards;
 }
 .credential-input-section .credential-input:focus {
@@ -574,11 +574,11 @@ span {
   color: rgba(188, 197, 222, 0.65);
 }
 .credential-input-section .credential-input:hover {
-  background: linear-gradient(90deg, #060912 0%, #1c2a54 45%, #060912 100%);
+  background: linear-gradient(90deg, #060912 0%, rgb(27.87, 41.805, 83.61) 45%, #060912 100%);
   background-size: 200% 100%;
   background-position: 0% 50%;
   border-color: #a993d1;
-  box-shadow: 0 0 12px 2px #baa9da;
+  box-shadow: 0 0 12px 2px rgb(186.2, 168.6, 218.2);
   animation: gradientSweep 0.8s ease-out 1 forwards;
 }
 .credential-input-section .credential-input:focus {
@@ -634,7 +634,7 @@ span {
 .lobby-invite-input:hover,
 .lobby-chat-input:hover,
 .lobby-select:hover {
-  background: linear-gradient(90deg, rgba(12, 18, 32, 0.9) 0%, rgba(35, 52, 93, 0.9) 45%, rgba(12, 18, 32, 0.9) 100%);
+  background: linear-gradient(90deg, rgba(12, 18, 32, 0.9) 0%, rgba(34.8763636364, 52.3145454545, 93.0036363636, 0.9) 45%, rgba(12, 18, 32, 0.9) 100%);
   background-size: 200% 100%;
   background-position: 0% 50%;
   border-color: rgba(190, 170, 255, 0.16);
@@ -1350,12 +1350,10 @@ span {
     grid-template-columns: 1fr;
     padding: 1rem;
   }
-
   .lobby-footer {
     flex-wrap: wrap;
     padding: 1rem;
   }
-
   .lobby-btn-play {
     width: 100%;
     margin-left: 0;
@@ -1367,6 +1365,7 @@ span {
 #storytelling-page #story-prompt-wrapper {
   padding: 20px;
   height: 100%;
+  width: 90%;
 }
 #storytelling-page #story-prompt-wrapper .story-textarea {
   height: 30%;
