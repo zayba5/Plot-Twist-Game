@@ -28,7 +28,7 @@ const ControlBar = ({ onSubmit, disabled, submitting }) => {
   );
 };
 
-const LoginPage = () => {
+const LoginPage = ({ onSuccess }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -51,6 +51,7 @@ const LoginPage = () => {
       const result = await loginUser(normUsername, password);
 
       console.log("Login success:", result);
+      onSuccess?.(result);
 
       navigate("/lobby");
     } catch (error) {

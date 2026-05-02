@@ -5,6 +5,7 @@ import { faBars } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import SignUpPage from "./SignUp";
 import AuthModal from "./AuthModal";
+import { api } from "./global.jsx";
 
 const LoginPage = lazy(() => import("./Login"));
 const LobbyPage = lazy(() => import("./Lobby"));
@@ -12,6 +13,7 @@ const StoryPage = lazy(() => import("./StoryTelling"));
 const VotingPage = lazy(() => import("./Voting"));
 const ScorePage = lazy(() => import("./Scoreboard"));
 const ResultsPage = lazy(() => import("./results"))
+
 
 // start navigation functions
 function NavItem({ menuOpen, closeMenu }) {
@@ -107,25 +109,40 @@ function ScrollToTop() {
 
 function PageState({
   currentUserId,
+  isAuthenticated,
   username,
   setUsername,
   setCurrentUserId,
+  setIsAuthenticated,
   setShowAuth
 }) {
+  
+  async function startGuestSession() {
+    const response = await fetch(`${api}session`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await response.json();
+
+    setUsername(data.username);
+    setCurrentUserId(data.user_id || null);
+    setIsAuthenticated(Boolean(data.authenticated));
+  }
+
   return (
     <div id="header-body">
       <Header
         onOpenAuth={() => setShowAuth(true)}
-        isLoggedIn={!!currentUserId}
+        isLoggedIn={isAuthenticated}
         username={username}
         onLogout={async () => {
-          await fetch("http://localhost:5000/logout", {
+          await fetch(`${api}logout`, {
             method: "POST",
             credentials: "include",
           });
 
-          setCurrentUserId(null);
-          setUsername("");
+          await startGuestSession();
         }}
       />
       <div id="page-body">
@@ -139,13 +156,36 @@ function PageState({
                   username={username}
                   setUsername={setUsername}
                   currentUserId={currentUserId}
+                  isAuthenticated={isAuthenticated}
                 />
               }
             />
 
             {/* AUTH */}
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup" element={<SignUpPage />} />
+            <Route
+              path="/login"
+              element={
+                <LoginPage
+                  onSuccess={({ username = "", user_id = null, authenticated = true }) => {
+                    setUsername(username);
+                    setCurrentUserId(user_id);
+                    setIsAuthenticated(Boolean(authenticated));
+                  }}
+                />
+              }
+            />
+            <Route
+              path="/signup"
+              element={
+                <SignUpPage
+                  onSuccess={({ username = "", user_id = null, authenticated = true }) => {
+                    setUsername(username);
+                    setCurrentUserId(user_id);
+                    setIsAuthenticated(Boolean(authenticated));
+                  }}
+                />
+              }
+            />
 
             {/* MAIN APP */}
             <Route
@@ -155,6 +195,7 @@ function PageState({
                   username={username}
                   setUsername={setUsername}
                   currentUserId={currentUserId}
+                  isAuthenticated={isAuthenticated}
                 />
               }
             />
@@ -188,9 +229,9 @@ export default function App() {
 
   const [showAuth, setShowAuth] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [username, setUsername] = useState("");
-
-  const [currentUser, setCurrentUser] = useState(null);
+  const guestUsernameRef = useRef("");
 
   useEffect(() => {
     if (startedRef.current) return;
@@ -198,10 +239,13 @@ export default function App() {
 
     async function initSession() {
       try {
-        const response = await fetch("http://localhost:5000/session", {
-          method: "GET",
-          credentials: "include",
-        });
+        const response = await fetch(
+          `${api}session?username=${encodeURIComponent(guestUsernameRef.current)}`,
+          {
+            method: "GET",
+            credentials: "include",
+          }
+        );
 
         if (!response.ok) {
           throw new Error(`session init failed: ${response.status}`);
@@ -209,10 +253,9 @@ export default function App() {
 
         const data = await response.json();
 
-        if (data.username) {
-          setUsername(data.username);
-          setCurrentUserId(data.user_id);
-        }
+        setUsername(data.username || guestUsernameRef.current);
+        setCurrentUserId(data.user_id || null);
+        setIsAuthenticated(Boolean(data.authenticated));
 
         setSessionReady(true);
       } catch (err) {
@@ -233,17 +276,20 @@ export default function App() {
         <ScrollToTop />
         <PageState
           currentUserId={currentUserId}
+          isAuthenticated={isAuthenticated}
           username={username}
           setUsername={setUsername}
           setCurrentUserId={setCurrentUserId}
+          setIsAuthenticated={setIsAuthenticated}
           setShowAuth={setShowAuth}
         />
         {showAuth && (
           <AuthModal
             onClose={() => setShowAuth(false)}
-            onSuccess={({ username, user_id }) => {
+            onSuccess={({ username = "", user_id = null, authenticated = true }) => {
               setUsername(username);
               setCurrentUserId(user_id);
+              setIsAuthenticated(Boolean(authenticated));
             }}
           />
         )}

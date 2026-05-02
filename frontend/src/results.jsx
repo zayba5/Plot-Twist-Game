@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import "./index.css";
-import { socket } from "./global.jsx";
+import { api, socket } from "./global.jsx";
 import { fetchGameStories, fetchVotingSession, fetchResults } from "./Utility.jsx";
 import { useNavigate } from "react-router-dom";
 import Timer from "./timer.jsx";
@@ -154,7 +154,7 @@ const ResultsPage = () => {
     };
 
     useEffect(() => {
-        fetch("http://localhost:5000/session", {
+        fetch(`${api}session`, {
             credentials: "include",
         })
             .then((res) => res.json())

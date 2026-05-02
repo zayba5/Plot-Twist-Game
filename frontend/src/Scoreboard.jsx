@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './index.css';
-import { socket } from "./global.jsx"
+import { api, socket } from "./global.jsx"
 import { fetchScores } from './Utility.jsx';
 import { useNavigate } from "react-router-dom";
 import Chat from "./Chat";
@@ -109,7 +109,7 @@ const ControlBar = ({ toggleScoreBreakdown, gameId }) => {
 
   const handleReturnToLobby = async () => {
     try {
-      await fetch("http://localhost:5000/leave-lobby", {
+      await fetch(`${api}leave-lobby`, {
         method: "POST",
         credentials: "include",
       });
@@ -156,7 +156,7 @@ const ScoreboardPage = () => {
 
   useEffect(() => {
     const loadSession = async () => {
-      const res = await fetch("http://localhost:5000/session", {
+      const res = await fetch(`${api}session`, {
         credentials: "include",
       });
       const data = await res.json();
@@ -172,7 +172,7 @@ const ScoreboardPage = () => {
 
     const loadPlayers = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/lobby-players?game_id=${gameId}`, {
+        const res = await fetch(`${api}lobby-players?game_id=${gameId}`, {
           credentials: "include",
         });
         const data = await res.json();

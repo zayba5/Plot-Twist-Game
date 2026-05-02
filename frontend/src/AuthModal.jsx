@@ -5,21 +5,37 @@ const AuthModal = ({ onClose, onSuccess }) => {
   const [mode, setMode] = useState("login"); // login | signup
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async () => {
+    if (submitting) return;
+
     try {
+      setSubmitting(true);
+      setAuthError("");
+
       let result;
+      const trimmedUsername = username.trim();
 
       if (mode === "login") {
-        result = await loginUser(username, password);
+        result = await loginUser(trimmedUsername, password);
       } else {
-        result = await postUser(username, password);
+        result = await postUser(trimmedUsername, password);
       }
 
       onSuccess(result);
       onClose();
     } catch (err) {
-      alert("Auth failed");
+      const message =
+        err.message === "username_taken"
+          ? "That username is already taken."
+          : err.message === "missing_fields"
+            ? "Enter a username and password."
+            : "Invalid username or password.";
+      setAuthError(message);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -39,8 +55,11 @@ const AuthModal = ({ onClose, onSuccess }) => {
             <input
               className="credential-input"
               placeholder="Enter username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              value={username || ""}
+              onChange={(e) => {
+                setUsername(e.target.value);
+                setAuthError("");
+              }}
             />
           </div>
 
@@ -50,16 +69,20 @@ const AuthModal = ({ onClose, onSuccess }) => {
               className="credential-input"
               type="password"
               placeholder="Enter password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              value={password || ""}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setAuthError("");
+              }}
             />
           </div>
+          {authError && <span className="credential-error">{authError}</span>}
         </div>
 
         {/* Control bar */}
         <div className="game-window-control-bar">
-          <button className="button" onClick={handleSubmit}>
-            {mode === "login" ? "Login" : "Sign Up"}
+          <button className="button" onClick={handleSubmit} disabled={submitting}>
+            {submitting ? "Working..." : mode === "login" ? "Login" : "Sign Up"}
           </button>
         </div>
 
@@ -67,9 +90,10 @@ const AuthModal = ({ onClose, onSuccess }) => {
         <div className="auth-footer">
           <button
             className="auth-switch"
-            onClick={() =>
-              setMode(mode === "login" ? "signup" : "login")
-            }
+            onClick={() => {
+              setAuthError("");
+              setMode(mode === "login" ? "signup" : "login");
+            }}
           >
             {mode === "login"
               ? "No account? Sign up"

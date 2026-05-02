@@ -14,7 +14,7 @@
   },
   "scripts": {
     "frontend": "npm run dev --prefix frontend",
-    "backend": "cd backend && python main.py",
+    "backend": "cd backend && .\\venv\\Scripts\\python.exe main.py",
     "dev": "concurrently -n \"frontend,backend\" -c \"cyan,green\" \"npm run frontend\" \"npm run backend\"",
     "test": "npm run test:all",
     "test:all": "npm run test:fe && npm run test:be && npm run test:e2e:headed",

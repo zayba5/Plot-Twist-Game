@@ -23,8 +23,15 @@ from socket_handlers import register_socket_handlers
 
 load_dotenv()
 signer = TimestampSigner(os.getenv("secretKey") or "")
-socketio = SocketIO(cors_allowed_origins=[os.getenv("frontHost")])
 FRONTEND_ORIGIN = os.getenv("frontHost")
+ALLOWED_FRONTEND_ORIGINS = {
+    origin for origin in [
+        FRONTEND_ORIGIN,
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ] if origin
+}
+socketio = SocketIO(cors_allowed_origins=list(ALLOWED_FRONTEND_ORIGINS))
 
 DEFAULT_NAMES = [
     "ToeSnatcher", "GoblinMode", "BreadHeist", "ChairThief",
@@ -83,7 +90,10 @@ def create_app(test_config: dict | None = None):
 
     @app.after_request
     def afterRequest(response):
-        response.headers["Access-Control-Allow-Origin"] = FRONTEND_ORIGIN
+        origin = request.headers.get("Origin")
+        response.headers["Access-Control-Allow-Origin"] = (
+            origin if origin in ALLOWED_FRONTEND_ORIGINS else FRONTEND_ORIGIN
+        )
         response.headers["Access-Control-Allow-Credentials"] = "true"        
         response.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, PATCH, DELETE")
         response.headers.set("Access-Control-Allow-Headers", "X-api-key, Content-Type, accept")
@@ -216,19 +226,74 @@ def create_app(test_config: dict | None = None):
             }, 200
     api.add_resource(WhoAmIEndpoint, "/WhoAmI")
 
+    def is_authenticated_user(user):
+        return bool(user and user.password_hash is not None)
+
+    def normalize_username(value):
+        return (value or "").strip()[:50]
+
+    def create_guest_user(username=None):
+        guest_username = normalize_username(username) or random.choice(DEFAULT_NAMES)
+
+        user = App_User.create(
+            user_id=uuid.uuid4(),
+            username=guest_username,
+            password_hash=None
+        )
+        g.user = user
+        g.should_set_uid_cookie = True
+        return user
+
+    def move_guest_lobbies_to_user(guest_user, authenticated_user):
+        if (
+            not guest_user or
+            not authenticated_user or
+            guest_user.user_id == authenticated_user.user_id or
+            is_authenticated_user(guest_user)
+        ):
+            return
+
+        memberships = list(Game_Players.select().where(Game_Players.user_id == guest_user))
+
+        for membership in memberships:
+            game = membership.game_id
+            existing = Game_Players.get_or_none(
+                (Game_Players.game_id == game) &
+                (Game_Players.user_id == authenticated_user)
+            )
+
+            if game.game_host.user_id == guest_user.user_id:
+                game.game_host = authenticated_user
+                game.save()
+
+            if existing:
+                Game_Players.delete().where(
+                    (Game_Players.game_id == game) &
+                    (Game_Players.user_id == guest_user)
+                ).execute()
+            else:
+                Game_Players.update(user_id=authenticated_user).where(
+                    (Game_Players.game_id == game) &
+                    (Game_Players.user_id == guest_user)
+                ).execute()
+
     class LoginEndpoint(Resource):
         def post(self):
-            data = request.get_json()
+            data = request.get_json(silent=True) or {}
 
-            username = data.get("username")
-            password = data.get("password")
+            username = normalize_username(data.get("username"))
+            password = data.get("password") or ""
 
             # Basic validation
             if not username or not password:
-                return jsonify({"error": "missing_fields"})
+                return {"ok": False, "error": "missing_fields"}, 400
 
             try:
-                user = App_User.get_or_none(App_User.username == username)
+                guest_user = g.user if getattr(g, "user", None) and not is_authenticated_user(g.user) else None
+                user = App_User.get_or_none(
+                    (App_User.username == username) &
+                    (App_User.password_hash.is_null(False))
+                )
 
                 if not user:
                     return {"error": "invalid_credentials"}, 401
@@ -239,6 +304,7 @@ def create_app(test_config: dict | None = None):
                 if not bcrypt.checkpw(password.encode("utf-8"), stored_hash):
                     return {"error": "invalid_credentials"}, 401
 
+                move_guest_lobbies_to_user(guest_user, user)
 
                 # Success login
                 g.user = user
@@ -248,7 +314,8 @@ def create_app(test_config: dict | None = None):
                 return {
                     "ok": True,
                     "username": user.username,
-                    "user_id": str(user.user_id)
+                    "user_id": str(user.user_id),
+                    "authenticated": True
                 }, 200
 
             except Exception as e:
@@ -1015,19 +1082,22 @@ def create_app(test_config: dict | None = None):
         
     class SessionEndpoint(Resource):
         def get(self):
-            username = request.args.get("username") or random.choice(DEFAULT_NAMES)  # default name
-            
+            username = request.args.get("username") or random.choice(DEFAULT_NAMES)
+
             if not getattr(g, "user", None):
+                user = create_guest_user(username)
                 return {
-                    "ok": False,
-                    "username": None,
-                    "user_id": None
+                    "ok": True,
+                    "username": user.username,
+                    "user_id": str(user.user_id),
+                    "authenticated": False
                 }, 200
 
             return {
                 "ok": True,
                 "username": g.user.username,
-                "user_id": str(g.user.user_id)
+                "user_id": str(g.user.user_id),
+                "authenticated": is_authenticated_user(g.user)
             }, 200
 
 
@@ -1204,22 +1274,37 @@ def create_app(test_config: dict | None = None):
         
     class CreateUserEndpoint(Resource):
         def post(self):
-            data = request.get_json() or {}
-            username = data.get("username")
-            password = data.get("password").encode("utf-8")
+            data = request.get_json(silent=True) or {}
+            username = normalize_username(data.get("username"))
+            password = data.get("password") or ""
+
+            if not username or not password:
+                return {"ok": False, "error": "missing_fields"}, 400
+
+            password = password.encode("utf-8")
             password_hash = bcrypt.hashpw(password, bcrypt.gensalt())
 
-            if (App_User.get_or_none(App_User.username == username)):
+            if (App_User.get_or_none(
+                (App_User.username == username) &
+                (App_User.password_hash.is_null(False))
+            )):
                 return {
                     "ok": False,
                     "error": "username_taken"
-                }
+                }, 409
 
-            user = App_User.create(
-                user_id=uuid.uuid4(),
-                username=username,
-                password_hash=password_hash
-            )
+            if getattr(g, "user", None) and not is_authenticated_user(g.user):
+                user = g.user
+                user.username = username
+                user.password_hash = password_hash
+                user.save()
+            else:
+                user = App_User.create(
+                    user_id=uuid.uuid4(),
+                    username=username,
+                    password_hash=password_hash
+                )
+
             g.user = user
             g.should_set_uid_cookie = True
 
@@ -1227,10 +1312,11 @@ def create_app(test_config: dict | None = None):
             return {
                 "ok": True,
                 "user_id": str(user.user_id),
-                "username": user.username
+                "username": user.username,
+                "authenticated": True
             }, 201        
 
-    api.add_resource(CreateUserEndpoint, "/CreateUser")
+    api.add_resource(CreateUserEndpoint, "/CreateUser", "/signup")
     class LeaveLobby(Resource):
         def post(self):
             user = require_user()
@@ -1390,4 +1476,12 @@ def create_app(test_config: dict | None = None):
 
 if __name__ == "__main__":
     app = create_app()
-    socketio.run(app, host="0.0.0.0", debug=True, allow_unsafe_werkzeug=True)
+    debug_enabled = os.getenv("FLASK_DEBUG", "1").lower() not in {"0", "false", "no"}
+    socketio.run(
+        app,
+        host="0.0.0.0",
+        port=5000,
+        debug=debug_enabled,
+        use_reloader=False,
+        allow_unsafe_werkzeug=True
+    )

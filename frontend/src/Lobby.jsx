@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import './index.css';
-import { socket } from "./global.jsx";
+import { api, socket } from "./global.jsx";
 import Chat from "./Chat";
 
 
-const Lobby = ({ username, setUsername, currentUserId }) => {
+const Lobby = ({ username, setUsername, currentUserId, isAuthenticated = false }) => {
 
   //const [username, setUsername] = useState('');
   const [rounds, setRounds] = useState(5);
@@ -20,9 +20,17 @@ const Lobby = ({ username, setUsername, currentUserId }) => {
   const [players, setPlayers] = useState([]);
   const [showHowToPlay, setShowHowToPlay] = useState(false);
 
-  const isHost = players.find(p => p.user_id === currentUserId)?.isHost;
+  const isHost = players.some(
+    (p) => p.user_id === currentUserId && p.isHost === true
+  );
 
-  const isLoggedIn = !!currentUserId;
+  const isLoggedIn = isAuthenticated;
+
+  React.useEffect(() => {
+    if (!isLoggedIn && username && !joinUsername) {
+      setJoinUsername(username);
+    }
+  }, [isLoggedIn, joinUsername, username]);
 
 
 
@@ -43,15 +51,12 @@ const Lobby = ({ username, setUsername, currentUserId }) => {
     const handleLobbyUpdate = (data) => {
       if (!data?.players) return;
 
-      setPlayers((prev) =>
-        data.players.map((p) => {
-          const existing = prev.find((x) => x.user_id === p.user_id);
-          return {
-            name: p.username,
-            user_id: p.user_id,
-            isHost: p.isHost ?? existing?.isHost ?? false,
-          };
-        })
+      setPlayers(
+        data.players.map((p) => ({
+          name: p.username,
+          user_id: p.user_id,
+          isHost: p.isHost
+        }))
       );
     };
 
@@ -118,7 +123,7 @@ const Lobby = ({ username, setUsername, currentUserId }) => {
 
   const fetchPlayers = async (gameId) => {
     try {
-      const res = await fetch(`http://localhost:5000/lobby-players?game_id=${gameId}`, {
+      const res = await fetch(`${api}lobby-players?game_id=${gameId}`, {
         credentials: "include",
       });
 
@@ -129,7 +134,7 @@ const Lobby = ({ username, setUsername, currentUserId }) => {
           data.players.map((p) => ({
             name: p.username,
             user_id: p.user_id,
-            isHost: p.isHost || false,
+            isHost: p.isHost
           }))
         );
       }
@@ -156,17 +161,17 @@ const Lobby = ({ username, setUsername, currentUserId }) => {
 
     setIsCreatingLobby(true); // start loading
 
-    await fetch("http://localhost:5000/leave-lobby", {
+    await fetch(`${api}leave-lobby`, {
       method: "POST",
       credentials: "include",
     });
 
     const name = isLoggedIn
       ? username
-      : (username.trim() || "Host");
+      : (username.trim() || joinUsername.trim() || "Host");
 
     try {
-      const res = await fetch("http://localhost:5000/create-lobby", {
+      const res = await fetch(`${api}create-lobby`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -176,11 +181,17 @@ const Lobby = ({ username, setUsername, currentUserId }) => {
       const data = await res.json();
 
       if (data.ok) {
+        if (!isLoggedIn) {
+          setUsername(name);
+          setJoinUsername(name);
+        }
         setGameCode(data.game_code);
         setGameId(data.game_id);
         setIsLobbyCreated(true);
 
         socket.emit("join_game", { game_id: data.game_id });
+      } else {
+        alert(data.error || "Could not create lobby.");
       }
     } catch (err) {
       console.error(err);
@@ -210,7 +221,7 @@ const Lobby = ({ username, setUsername, currentUserId }) => {
     e.preventDefault();
 
     // ADD THIS BLOCK
-    await fetch("http://localhost:5000/leave-lobby", {
+    await fetch(`${api}leave-lobby`, {
       method: "POST",
       credentials: "include",
     });
@@ -218,18 +229,22 @@ const Lobby = ({ username, setUsername, currentUserId }) => {
 
   const name = isLoggedIn
     ? username
-    : (joinUsername.trim() || "Player");
+    : (joinUsername.trim() || username.trim() || "Player");
 
     try {
-      const res = await fetch("http://localhost:5000/join-lobby", {
+      const res = await fetch(`${api}join-lobby`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ game_code: inviteCode, username: name }),
+        body: JSON.stringify({ game_code: inviteCode.trim().toUpperCase(), username: name }),
       });
       const data = await res.json();
 
       if (data.ok) {
+        if (!isLoggedIn) {
+          setUsername(name);
+          setJoinUsername(name);
+        }
         setGameCode(data.game_code);
         setGameId(data.game_id);
         setIsLobbyCreated(true);
@@ -255,7 +270,7 @@ const Lobby = ({ username, setUsername, currentUserId }) => {
     const leavingGameId = gameId;
 
     try {
-      const res = await fetch("http://localhost:5000/leave-lobby", {
+      const res = await fetch(`${api}leave-lobby`, {
         method: "POST",
         credentials: "include",
       });
@@ -313,7 +328,12 @@ const Lobby = ({ username, setUsername, currentUserId }) => {
                   className="lobby-input"
                   value={username}
                   disabled={isLoggedIn}
-                  onChange={(e) => setUsername(e.target.value)}
+                  onChange={(e) => {
+                    setUsername(e.target.value);
+                    if (!isLoggedIn && !joinUsername.trim()) {
+                      setJoinUsername(e.target.value);
+                    }
+                  }}
                 />
               </label>
               <label className="lobby-label">
@@ -574,3 +594,4 @@ const Lobby = ({ username, setUsername, currentUserId }) => {
 };
 
 export default Lobby;
+

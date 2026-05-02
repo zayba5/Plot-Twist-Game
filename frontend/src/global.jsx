@@ -1,7 +1,7 @@
 import { io } from "socket.io-client";
 
 export const api =
-  import.meta.env.VITE_API;
+  (import.meta.env.VITE_API || "http://localhost:5000/").replace(/\/?$/, "/");
 
 export const socket = io(api, {withCredentials: true})
 

@@ -1,6 +1,5 @@
 import React from 'react';
 import './index.css';
-import { api } from "./global.jsx"
 
 const CredentialInput = ({ label, credential, setCredential, isPassword=false, error=null }) => {
   return (
@@ -13,7 +12,7 @@ const CredentialInput = ({ label, credential, setCredential, isPassword=false, e
         id={label + "-credential-input"}
         className={`credential-input ${error ? "input-error" : ""}`}
         type={isPassword ? "password" : "text"}
-        value={credential}
+        value={credential ?? ""}
         onChange={(e) => setCredential(e.target.value)}
       />
 
