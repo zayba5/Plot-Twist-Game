@@ -12,6 +12,36 @@ def reset_tables():
     Status.create(status_type="FINISHED")
     Status.create(status_type="ACTIVE")
     Status.create(status_type="WAITING")
+    
+    funny = Voting_Category.create(
+        title = "Which story is the funniest?",
+        tag = "Funniest"
+    )
+    
+    serious = Voting_Category.create(
+        title = "Which story is the most serious?",
+        tag = "Serious"    
+    )
+    
+    unexpected = Voting_Category.create(
+        title = "Which story is the most unexpected?",
+        tag = "Unexpected"
+    )
+    
+    plotTwist = Voting_Category.create(
+        title = "Which story had the biggest plot twist?",
+        tag = "Plot twist"
+    )
+    
+    character = Voting_Category.create(
+        title = "Which story has the most interesting characters?",
+        tag = "Strong Characters"
+    )
+    
+    spooky = Voting_Category.create(
+        title = "Which story is the spookiest?",
+        tag = "Spooky"
+    )
     db.close()
 
 if __name__ == "__main__":
