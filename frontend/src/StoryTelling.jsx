@@ -403,7 +403,7 @@ const StorytellingPage = () => {
           onExpire={() => handleSubmit(true)}
           submitted={submitted}
         />
-
+        <div className="game-window-body">
         {shouldShowWaiting ? (
           <Waiting
             topText="Aligning the Stars"
@@ -419,6 +419,7 @@ const StorytellingPage = () => {
             />
           </div>
         )}
+        </div>
         <div></div>
         <ControlBar
           onSubmit={() => handleSubmit(false)}
