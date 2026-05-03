@@ -339,6 +339,7 @@ span {
   justify-content: center;
   padding: 32px 40px;
   box-sizing: border-box;
+  overflow-y: auto;
 }
 
 .story-page-content {
@@ -559,6 +560,7 @@ span {
   display: flex;
   flex-direction: column;
   align-items: center;
+  flex: 1;
 
   .story-stack {
     width: 100%;
