@@ -1590,7 +1590,6 @@ span {
 
 	#story-prompt-wrapper{
 		padding: 20px;
-		height: 100%;
     width: 90%;
 
 		.story-textarea{
@@ -1833,7 +1832,7 @@ span {
 
 .storytelling-container {
   display: flex;
-  height: calc(100vh - 80px);
+  height: calc(100vh - 150px);
 
   /* CENTER the whole layout */
   justify-content: center;
@@ -2195,4 +2194,32 @@ span {
 
 .auth-switch:hover::after {
   width: 100%;
+}
+
+/* Scrollbar width */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+/* Track (background) */
+::-webkit-scrollbar-track {
+  background: transparent; /* blends into your dark panel */
+}
+
+/* Thumb (the draggable part) */
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15); /* soft light gray */
+  border-radius: 10px;
+  border: 2px solid transparent; /* creates padding effect */
+  background-clip: content-box;
+}
+
+/* Hover effect */
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Optional: active/dragging */
+::-webkit-scrollbar-thumb:active {
+  background: rgba(255, 255, 255, 0.45);
 }
