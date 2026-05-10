@@ -7,14 +7,30 @@ import models
 def test_db():
     # create the in-memory DB instance
     db = SqliteDatabase(":memory:")
-    # bind models to this test DB
-    db.bind([models.Game], bind_refs=False, bind_backrefs=False)
-    # create tables
+    models.db = db
+
+    model_classes = [
+        models.Status,
+        models.App_User,
+        models.Game,
+        models.Game_Settings,
+        models.Game_Players,
+        models.Story,
+        models.Voting_Category,
+        models.Category_Score,
+        models.Voting_Session,
+        models.Voting,
+        models.Story_Part,
+        models.Story_Assignment,
+        models.Round_State,
+        models.Chat_Message,
+    ]
+
+    db.bind(model_classes, bind_refs=True, bind_backrefs=True)
     db.connect()
-    db.create_tables([models.Game])
+    db.create_tables(model_classes)
     yield db
-    # teardown
-    db.drop_tables([models.Game])
+    db.drop_tables(model_classes)
     db.close()
 
 
